@@ -12,26 +12,10 @@ from datetime import date, datetime
 
 print("🚀 Starting imports...")
 
-try:
-    from app.database import engine, init_db, get_session
-    print("✅ Database imports successful")
-except Exception as e:
-    print(f"❌ Database import failed: {e}")
-    sys.exit(1)
-
-try:
-    from app.models import Vehicle, MaintenanceRecord
-    print("✅ Model imports successful")
-except Exception as e:
-    print(f"❌ Model import failed: {e}")
-    sys.exit(1)
-
-try:
-    from app.importer import import_csv, ImportResult
-    print("✅ Importer imports successful")
-except Exception as e:
-    print(f"❌ Importer import failed: {e}")
-    sys.exit(1)
+# Simple imports without complex error handling
+from app.database import engine, init_db, get_session
+from app.models import Vehicle, MaintenanceRecord
+from app.importer import import_csv, ImportResult
 
 print("✅ All imports successful!")
 
