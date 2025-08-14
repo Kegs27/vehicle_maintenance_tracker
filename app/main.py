@@ -7,31 +7,65 @@ from sqlalchemy.orm import selectinload
 from typing import Optional
 import os
 import json
+import sys
 from datetime import date, datetime
 
-from app.database import engine, init_db, get_session
-from app.models import Vehicle, MaintenanceRecord
-from app.importer import import_csv, ImportResult
+print("🚀 Starting imports...")
+
+try:
+    from app.database import engine, init_db, get_session
+    print("✅ Database imports successful")
+except Exception as e:
+    print(f"❌ Database import failed: {e}")
+    sys.exit(1)
+
+try:
+    from app.models import Vehicle, MaintenanceRecord
+    print("✅ Model imports successful")
+except Exception as e:
+    print(f"❌ Model import failed: {e}")
+    sys.exit(1)
+
+try:
+    from app.importer import import_csv, ImportResult
+    print("✅ Importer imports successful")
+except Exception as e:
+    print(f"❌ Importer import failed: {e}")
+    sys.exit(1)
+
+print("✅ All imports successful!")
 
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
 
 # Templates
-templates = Jinja2Templates(directory="app/templates")
+try:
+    templates = Jinja2Templates(directory="app/templates")
+    print("✅ Templates loaded successfully")
+except Exception as e:
+    print(f"⚠️ Template loading warning: {e}")
 
 # Static files - only mount if the directory exists
 if os.path.exists("app/static"):
     app.mount("/static", StaticFiles(directory="app/static"), name="static")
+    print("✅ Static files mounted")
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup"""
     print("🚀 Starting Vehicle Maintenance Tracker...")
+    print(f"🌍 Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    print(f"🔌 Port: {os.getenv('PORT', '8000')}")
+    print(f"📁 Working directory: {os.getcwd()}")
+    print(f"📁 Files in current directory: {os.listdir('.')}")
+    
     try:
         init_db()
         print("✅ Database initialized successfully")
     except Exception as e:
         print(f"⚠️ Database initialization warning: {e}")
+        print(f"⚠️ Database error type: {type(e)}")
+        print(f"⚠️ Database error details: {str(e)}")
         # Continue startup even if database init fails
         # The app will handle database errors gracefully
     
