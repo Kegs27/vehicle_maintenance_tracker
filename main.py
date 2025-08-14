@@ -9,19 +9,19 @@ import os
 import json
 from datetime import date, datetime
 
-from app.database import engine, init_db, get_session
-from app.models import Vehicle, MaintenanceRecord
-from app.importer import import_csv, ImportResult
+from database import engine, init_db, get_session
+from models import Vehicle, MaintenanceRecord
+from importer import import_csv, ImportResult
 
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
 
 # Templates
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="templates")
 
 # Static files - only mount if the directory exists
-if os.path.exists("app/static"):
-    app.mount("/static", StaticFiles(directory="app/static"), name="static")
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("startup")
 async def startup_event():
