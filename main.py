@@ -136,9 +136,15 @@ async def create_maintenance(
     return RedirectResponse(url="/maintenance", status_code=303)
 
 @app.get("/import", response_class=HTMLResponse)
-async def import_form(request: Request):
+async def import_form(request: Request, session: Session = Depends(get_session)):
     """Form to import CSV data"""
-    return templates.TemplateResponse("import.html", {"request": request})
+    # Load vehicles for the dropdown
+    vehicles = session.execute(
+        select(Vehicle)
+        .order_by(Vehicle.name)
+    ).scalars().all()
+    
+    return templates.TemplateResponse("import.html", {"request": request, "vehicles": vehicles})
 
 @app.post("/import")
 async def import_data(
