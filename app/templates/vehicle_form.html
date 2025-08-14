@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if vehicle %}Edit{% else %}Add{% endif %} Vehicle - Vehicle Maintenance Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+        }
+        .nav-link {
+            color: #6c757d;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-car me-2"></i>Vehicle Maintenance Tracker
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/vehicles">Vehicles</a>
+                <a class="nav-link" href="/maintenance">Maintenance</a>
+                <a class="nav-link" href="/import">Data Transfer</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card form-card">
+                    <div class="card-header bg-primary text-white text-center py-3">
+                        <h4 class="mb-0">
+                            <i class="fas fa-car me-2"></i>
+                            {% if vehicle %}Edit Vehicle{% else %}Add New Vehicle{% endif %}
+                        </h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="post" action="{% if vehicle %}/vehicles/{{ vehicle.id }}{% else %}/vehicles{% endif %}">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label fw-bold">Vehicle Name (Optional)</label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ vehicle.name if vehicle else '' }}" 
+                                           placeholder="e.g., My Daily Driver">
+                                    <div class="form-text">
+                                        Give your vehicle a nickname for easy identification.
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="year" class="form-label fw-bold">Year *</label>
+                                    <input type="number" class="form-control" id="year" name="year" 
+                                           value="{{ vehicle.year if vehicle else '' }}" 
+                                           min="1900" max="2030" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="make" class="form-label fw-bold">Make *</label>
+                                    <input type="text" class="form-control" id="make" name="make" 
+                                           value="{{ vehicle.make if vehicle else '' }}" 
+                                           placeholder="e.g., Ford" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="model" class="form-label fw-bold">Model *</label>
+                                    <input type="text" class="form-control" id="model" name="model" 
+                                           value="{{ vehicle.model if vehicle else '' }}" 
+                                           placeholder="e.g., F-250" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="vin" class="form-label fw-bold">VIN (Optional)</label>
+                                <input type="text" class="form-control" id="vin" name="vin" 
+                                       value="{{ vehicle.vin if vehicle else '' }}" 
+                                       placeholder="17-character VIN number" maxlength="17">
+                                <div class="form-text">
+                                    Vehicle Identification Number - useful for detailed records and resale.
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if vehicle %}Update Vehicle{% else %}Add Vehicle{% endif %}
+                                </button>
+                                <a href="/vehicles" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
