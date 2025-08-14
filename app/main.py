@@ -26,6 +26,7 @@ if os.path.exists("app/static"):
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup"""
+    print("🚀 Starting Vehicle Maintenance Tracker...")
     try:
         init_db()
         print("✅ Database initialized successfully")
@@ -33,12 +34,19 @@ async def startup_event():
         print(f"⚠️ Database initialization warning: {e}")
         # Continue startup even if database init fails
         # The app will handle database errors gracefully
+    
+    print("✅ Application startup complete!")
+    print(f"🌐 App will be available on port: {os.getenv('PORT', '8000')}")
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Home page with navigation"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    try:
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        # Fallback if template fails
+        return {"status": "ok", "message": "Vehicle Maintenance Tracker is running"}
 
 @app.get("/health")
 async def health_check():
