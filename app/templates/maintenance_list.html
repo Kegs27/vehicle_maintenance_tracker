@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="/static/styles.css" rel="stylesheet">
+    <link href="/static/icon-styles.css" rel="stylesheet">
     <style>
         .table-card {
             border: none;
@@ -93,6 +94,8 @@
             overflow: hidden;
             box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
         }
+        
+
     </style>
 </head>
 <body>
@@ -105,7 +108,6 @@
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="/vehicles">Vehicles</a>
                 <a class="nav-link active" href="/maintenance">Maintenance</a>
-                <a class="nav-link" href="/import">Data Transfer</a>
             </div>
         </div>
     </nav>
@@ -117,16 +119,16 @@
                 <h2 class="mb-0">
                     <i class="fas fa-tools me-2"></i>Maintenance Records
                 </h2>
-                {% if filtered_vehicle %}
+                {% if vehicle %}
                     <p class="text-muted mb-0 mt-2">
                         <i class="fas fa-car me-1"></i>
-                        {{ filtered_vehicle.name }} ({{ filtered_vehicle.year }} {{ filtered_vehicle.make }} {{ filtered_vehicle.model }})
+                        {{ vehicle.name }} ({{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }})
                     </p>
                 {% endif %}
             </div>
                             <div class="d-flex flex-wrap gap-2 mb-4">
-                    {% if filtered_vehicle %}
-                        <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ filtered_vehicle.id }})">
+                    {% if vehicle %}
+                        <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
                             <i class="fas fa-plus me-2"></i>Add Maintenance
                         </button>
                     {% else %}
@@ -134,36 +136,17 @@
                             <i class="fas fa-plus me-2"></i>Add Maintenance
                         </a>
                     {% endif %}
-                    {% if filtered_vehicle %}
+                    {% if vehicle %}
                         <a href="/maintenance" class="btn btn-outline-secondary">
                             <i class="fas fa-list me-2"></i>View All Records
                         </a>
                     {% endif %}
-                    <div class="dropdown">
-                        <button class="btn btn-outline-success dropdown-toggle" type="button" id="maintenanceExportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-exchange-alt me-2"></i>Data Transfer
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="maintenanceExportDropdown">
-                            <li><a class="dropdown-item" href="/import">
-                                <i class="fas fa-upload me-2 text-primary"></i>Import Data
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="exportAllMaintenance()">
-                                <i class="fas fa-file-csv me-2 text-success"></i>Transfer All to CSV
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="exportAllMaintenancePDF()">
-                                <i class="fas fa-file-pdf me-2 text-danger"></i>Transfer All to PDF
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="exportSingleVehicleMaintenance()">
-                                <i class="fas fa-car me-2 text-primary"></i>Transfer Single Vehicle
-                            </a></li>
-                        </ul>
-                    </div>
                 </div>
         </div>
 
-        {% if sorted_records %}
+
+        
+        {% if records %}
         <!-- Maintenance Records Table -->
         <div class="card table-card">
             <div class="card-body p-0">
@@ -171,20 +154,50 @@
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                {% if not filtered_vehicle %}
-                                    <th>Vehicle</th>
+                                {% if not vehicle %}
+                                    <th class="text-center">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-car text-primary"></i>
+                                            <span>Vehicle</span>
+                                        </div>
+                                    </th>
                                 {% endif %}
-                                <th>Date</th>
-                                <th>Mileage</th>
-                                <th>Description</th>
-                                <th>Cost</th>
-                                <th>Actions</th>
+                                <th class="text-center">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <i class="fas fa-calendar-alt text-primary"></i>
+                                        <span>Date</span>
+                                    </div>
+                                </th>
+                                <th class="text-center">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <i class="fas fa-tachometer-alt text-primary mb-1"></i>
+                                        <span>Mileage</span>
+                                    </div>
+                                </th>
+                                <th class="text-center">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <i class="fas fa-clipboard-list text-primary mb-1"></i>
+                                        <span>Description</span>
+                                    </div>
+                                </th>
+                                <th class="text-center">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <i class="fas fa-dollar-sign text-primary mb-1"></i>
+                                        <span>Cost</span>
+                                    </div>
+                                </th>
+                                <th class="text-center">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <i class="fas fa-ellipsis-h text-primary mb-1"></i>
+                                        <span>Actions</span>
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for record in sorted_records %}
+                            {% for record in records %}
                             <tr>
-                                {% if not filtered_vehicle %}
+                                {% if not vehicle %}
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <i class="fas fa-car text-primary me-2"></i>
@@ -260,10 +273,10 @@
         {% else %}
         <!-- Empty State -->
         <div class="text-center py-5">
-            <i class="fas fa-tools fa-4x text-muted mb-3"></i>
-            {% if filtered_vehicle %}
-                <h4 class="text-muted">No Maintenance Records for {{ filtered_vehicle.name }}</h4>
-                                            <p class="text-muted mb-4">This vehicle doesn't have any maintenance records yet. Add the first one or import data.</p>
+            <i class="fas fa-tools empty-state text-muted"></i>
+            {% if vehicle %}
+                <h4 class="text-muted">No Maintenance Records for {{ vehicle.name }}</h4>
+                <p class="text-muted mb-4">This vehicle doesn't have any maintenance records yet. Add the first one or import data.</p>
             {% else %}
                 <h4 class="text-muted">No Maintenance Records Yet</h4>
                 <p class="text-muted mb-4">Start tracking your vehicle maintenance by adding records or importing from CSV.</p>
@@ -279,20 +292,14 @@
         <!-- Quick Actions -->
         <div class="mt-4 text-center">
             <div class="d-flex gap-3 justify-content-center flex-wrap">
-                {% if filtered_vehicle %}
-                <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ filtered_vehicle.id }})">
+                {% if vehicle %}
+                <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
                     <i class="fas fa-plus me-2"></i>Add Maintenance
                 </button>
-                                    <button type="button" class="btn btn-outline-primary" onclick="goToImport({{ filtered_vehicle.id }})">
-                        <i class="fas fa-upload me-2"></i>Import Data
-                    </button>
                 {% else %}
                 <a href="/maintenance/new" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>Add Maintenance
                 </a>
-                                    <a href="/import" class="btn btn-outline-primary">
-                        <i class="fas fa-upload me-2"></i>Import Data
-                    </a>
                 {% endif %}
                 <a href="/" class="btn btn-outline-secondary">
                     <i class="fas fa-home me-2"></i>Back to Home
@@ -348,6 +355,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/import-data.js"></script>
+    <script src="/static/export-data.js?v=3"></script>
     
     <script>
         // Handle description modal
@@ -390,13 +399,25 @@
         
         function confirmDeleteMaintenance(recordId, description) {
             if (confirm('Are you sure you want to delete this maintenance record?\n\n"' + description + '"\n\nThis action cannot be undone.')) {
-                // Create a form to submit the DELETE request
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/maintenance/' + recordId + '/delete';
-                
-                document.body.appendChild(form);
-                form.submit();
+                // Send DELETE request using fetch
+                fetch('/maintenance/' + recordId, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Reload the page to show updated records
+                        window.location.reload();
+                    } else {
+                        alert('Error deleting record. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting record. Please try again.');
+                });
             }
         }
         
@@ -413,6 +434,12 @@
             console.log('URL:', url);
             window.location.href = url;
         }
+        
+
+        
+
+        
+
         
 
     </script>

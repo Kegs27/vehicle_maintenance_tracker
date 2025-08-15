@@ -74,7 +74,7 @@ def _parse_cost_flexible(cost_str: str) -> float:
 
 def _check_duplicate_record(session, vehicle_id: int, date: date, mileage: int, description: str) -> bool:
     """Check if a maintenance record already exists with the same key fields"""
-    from .models import MaintenanceRecord
+    from models import MaintenanceRecord
     
     # Check for exact matches on key fields
     existing = session.execute(
@@ -90,7 +90,7 @@ def _check_duplicate_record(session, vehicle_id: int, date: date, mileage: int, 
 
 def _check_duplicate_record_no_date(session, vehicle_id: int, mileage: int, description: str) -> bool:
     """Check if a maintenance record already exists with the same key fields (no date)"""
-    from .models import MaintenanceRecord
+    from models import MaintenanceRecord
     
     # Check for exact matches on key fields
     existing = session.execute(
@@ -127,7 +127,7 @@ def import_csv(csv_content: bytes, vehicle_id: int, session, handle_duplicates: 
     col_mapping = {}
     for col in reader.fieldnames:
         col_lower = col.lower()
-        if col_lower in required_columns or col_lower == 'cost' or col_lower == 'date':
+        if col_lower in required_columns or col_lower == 'cost' or col_lower == 'date' or col_lower == 'mileage':
             col_mapping[col_lower] = col
     
     # Placeholder date for records without dates
@@ -144,7 +144,14 @@ def import_csv(csv_content: bytes, vehicle_id: int, session, handle_duplicates: 
                     result.skipped_rows += 1
                     result.skipped_details.append(f"Row {row_num}: Invalid date format '{row[col_mapping['date']]}' - will use placeholder date and sort by mileage")
             
-            mileage = _parse_mileage_flexible(row[col_mapping['mileage']])
+            # Check if mileage column exists and get the value
+            if 'mileage' not in col_mapping:
+                result.skipped_rows += 1
+                result.skipped_details.append(f"Row {row_num}: No 'mileage' column found in CSV. Available columns: {list(col_mapping.keys())}")
+                continue
+                
+            mileage_value = row[col_mapping['mileage']]
+            mileage = _parse_mileage_flexible(mileage_value)
             # If no mileage provided, use 0 as placeholder
             if mileage is None:
                 mileage = 0
@@ -179,7 +186,7 @@ def import_csv(csv_content: bytes, vehicle_id: int, session, handle_duplicates: 
                     )
                     continue
                 elif handle_duplicates == "replace":
-                    from .models import MaintenanceRecord
+                    from models import MaintenanceRecord
                     if date_obj:
                         existing = session.execute(
                             select(MaintenanceRecord).where(
@@ -205,7 +212,7 @@ def import_csv(csv_content: bytes, vehicle_id: int, session, handle_duplicates: 
                             f"Row {row_num}: Replaced existing record - {date_str} at {mileage:,} miles: {description}"
                         )
             
-            from .models import MaintenanceRecord
+            from models import MaintenanceRecord
             
             maintenance_record = MaintenanceRecord(
                 vehicle_id=vehicle_id,

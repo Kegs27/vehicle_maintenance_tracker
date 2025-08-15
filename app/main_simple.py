@@ -10,19 +10,19 @@ import json
 from datetime import date, datetime
 
 # Simple imports without complex error handling
-from app.database import engine, init_db, get_session
-from app.models import Vehicle, MaintenanceRecord
-from app.importer import import_csv, ImportResult
+from database import engine, init_db, get_session
+from models import Vehicle, MaintenanceRecord
+from importer import import_csv, ImportResult
 
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
 
 # Templates
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="templates")
 
 # Static files
-if os.path.exists("app/static"):
-    app.mount("/static", StaticFiles(directory="app/static"), name="static")
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("startup")
 async def startup_event():
@@ -136,18 +136,24 @@ async def create_maintenance(
     return RedirectResponse(url="/maintenance", status_code=303)
 
 @app.get("/import", response_class=HTMLResponse)
-async def import_form(request: Request):
+async def import_form(request: Request, session: Session = Depends(get_session)):
     """Form to import CSV data"""
-    return templates.TemplateResponse("import.html", {"request": request})
+    vehicles = session.execute(select(Vehicle).order_by(Vehicle.name)).scalars().all()
+    return templates.TemplateResponse("import.html", {"request": request, "vehicles": vehicles})
 
 @app.post("/import")
 async def import_data(
+    request: Request,
     file: UploadFile = File(...),
+    vehicle_id: int = Form(...),
+    handle_duplicates: str = Form("skip"),
     session: Session = Depends(get_session)
 ):
     """Import CSV data"""
     try:
-        result = import_csv(file.file, session)
-        return templates.TemplateResponse("import_result.html", {"request": Request, "result": result})
+        # Read the file content as bytes
+        file_content = await file.read()
+        result = import_csv(file_content, vehicle_id, session, handle_duplicates)
+        return templates.TemplateResponse("import_result.html", {"request": request, "result": result})
     except Exception as e:
         return {"error": str(e)}

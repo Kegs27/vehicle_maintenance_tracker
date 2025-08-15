@@ -6,6 +6,7 @@
     <title>Vehicle Maintenance Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/icon-styles.css" rel="stylesheet">
     <style>
         .hero-section {
             background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
@@ -131,7 +132,7 @@
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="/vehicles">Vehicles</a>
                 <a class="nav-link" href="/maintenance">Maintenance</a>
-                <a class="nav-link" href="#" onclick="showTransferOptions(); return false;">Transfer Data</a>
+                <a class="nav-link" href="#" onclick="showTransferOptions(); return false;">Data Transfer</a>
             </div>
         </div>
     </nav>
@@ -149,13 +150,13 @@
                 </a>
                 <div class="dropdown d-inline-block">
                     <button class="btn btn-outline-light btn-lg dropdown-toggle" type="button" id="heroTransferDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-exchange-alt me-2"></i>Transfer Data
+                        <i class="fas fa-exchange-alt me-2"></i>Data Transfer
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="heroTransferDropdown">
                         <li><a class="dropdown-item" href="/import">
                             <i class="fas fa-upload me-2 text-primary"></i>Import Data
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportToCSV()">
+                        <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
                             <i class="fas fa-file-csv me-2 text-success"></i>Transfer All to CSV
                         </a></li>
                         <li><a class="dropdown-item" href="#" onclick="exportToPDF()">
@@ -179,7 +180,7 @@
                 <div class="col-md-4">
                     <div class="card feature-card h-100 text-center">
                         <div class="card-body p-4">
-                            <i class="fas fa-car fa-3x text-primary mb-3"></i>
+                                                                        <i class="fas fa-car icon-xl text-primary icon-mb"></i>
                             <h5 class="card-title">Vehicle Management</h5>
                             <p class="card-text">Add and manage multiple vehicles with detailed information including VIN, year, make, and model.</p>
                             <a href="/vehicles" class="btn btn-outline-primary">
@@ -191,7 +192,7 @@
                 <div class="col-md-4">
                     <div class="card feature-card h-100 text-center">
                         <div class="card-body p-4">
-                            <i class="fas fa-tools fa-3x text-primary mb-3"></i>
+                                                                        <i class="fas fa-tools icon-xl text-primary icon-mb"></i>
                             <h5 class="card-title">Maintenance Tracking</h5>
                             <p class="card-text">Record and track all maintenance activities with dates, mileage, descriptions, and costs.</p>
                             <a href="/maintenance" class="btn btn-outline-primary">
@@ -203,11 +204,11 @@
                 <div class="col-md-4">
                     <div class="card feature-card h-100 text-center">
                         <div class="card-body p-4">
-                            <i class="fas fa-exchange-alt fa-3x text-primary mb-3"></i>
+                                                                        <i class="fas fa-exchange-alt icon-xl text-primary icon-mb"></i>
                             <h5 class="card-title">Data Transfer</h5>
                             <p class="card-text">Import maintenance records from CSV files and transfer data to various formats.</p>
                             <button class="btn btn-outline-primary" onclick="showTransferOptions()">
-                                <i class="fas fa-exchange-alt me-2"></i>Transfer Data
+                                <i class="fas fa-exchange-alt me-2"></i>Data Transfer
                             </button>
                         </div>
                     </div>
@@ -249,7 +250,7 @@
                 <div class="col-md-6">
                     <div class="card feature-card h-100">
                         <div class="card-body text-center p-4">
-                            <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                                                                        <i class="fas fa-book icon-xl text-primary icon-mb"></i>
                             <h5 class="card-title">ALLDATA DIY</h5>
                             <p class="card-text">Access factory service manuals, repair procedures, and technical service bulletins for over 30,000 vehicles.</p>
                             <div class="mt-3">
@@ -263,7 +264,7 @@
                 <div class="col-md-6">
                     <div class="card feature-card h-100">
                         <div class="card-body text-center p-4">
-                            <i class="fas fa-shopping-cart fa-3x text-warning mb-3"></i>
+                                                                        <i class="fas fa-shopping-cart icon-xl text-warning icon-mb"></i>
                             <h5 class="card-title">AutoZone</h5>
                             <p class="card-text">Find auto parts, tools, and accessories with in-store pickup and professional advice.</p>
                             <div class="mt-3">
@@ -277,7 +278,7 @@
                 <div class="col-md-6">
                     <div class="card feature-card h-100">
                         <div class="card-body text-center p-4">
-                            <i class="fas fa-tools fa-3x text-danger mb-3"></i>
+                                                                        <i class="fas fa-tools icon-xl text-danger icon-mb"></i>
                             <h5 class="card-title">Advanced Auto</h5>
                             <p class="card-text">Quality auto parts, tools, and expert advice for DIY mechanics and professionals.</p>
                             <div class="mt-3">
@@ -291,7 +292,7 @@
                 <div class="col-md-6">
                     <div class="card feature-card h-100">
                         <div class="card-body text-center p-4">
-                            <i class="fas fa-truck fa-3x text-info mb-3"></i>
+                                                                        <i class="fas fa-truck icon-xl text-info icon-mb"></i>
                             <h5 class="card-title">RockAuto</h5>
                             <p class="card-text">Discounted auto parts with fast shipping and extensive catalog for all vehicle makes and models.</p>
                             <div class="mt-3">
@@ -308,6 +309,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="/static/import-data.js"></script>
+    <script src="/static/export-data.js?v=3"></script>
     
     <script>
         function showTransferOptions() {
@@ -320,7 +323,7 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">
-                                <i class="fas fa-exchange-alt me-2"></i>Transfer Data
+                                <i class="fas fa-exchange-alt me-2"></i>Data Transfer
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
@@ -329,7 +332,7 @@
                                 <div class="col-md-6">
                                     <div class="card h-100 border-primary">
                                         <div class="card-body text-center p-4">
-                                            <i class="fas fa-upload fa-3x text-primary mb-3"></i>
+                                            <i class="fas fa-upload icon-xl text-primary icon-mb"></i>
                                             <h6 class="card-title">Import Data</h6>
                                             <p class="card-text small">Import maintenance records from Google Sheets CSV files.</p>
                                             <a href="/import" class="btn btn-primary btn-sm">
@@ -341,18 +344,18 @@
                                 <div class="col-md-6">
                                                                                 <div class="card h-100 border-success">
                                                 <div class="card-body text-center p-4">
-                                                    <i class="fas fa-download fa-3x text-success mb-3"></i>
+                                                    <i class="fas fa-download icon-xl text-success icon-mb"></i>
                                                     <h6 class="card-title">Transfer Data Out</h6>
                                                     <p class="card-text small">Transfer your data to CSV or create PDF reports.</p>
                                                     <div class="d-grid gap-2">
-                                                        <button class="btn btn-success btn-sm" onclick="exportToCSV(); $('#transferModal').modal('hide');">
-                                                            <i class="fas fa-file-csv me-2"></i>Transfer All to CSV
+                                                        <button class="btn btn-success btn-sm" onclick="exportAllVehicles(); closeTransferModal();">
+                                                            <i class="fas fa-file-csv me-2"></i>Export All Vehicles (CSV)
                                                         </button>
-                                                        <button class="btn btn-danger btn-sm" onclick="exportToPDF(); $('#transferModal').modal('hide');">
-                                                            <i class="fas fa-file-pdf me-2"></i>Transfer All to PDF
+                                                        <button class="btn btn-danger btn-sm" onclick="exportAllVehiclesToPDF(); closeTransferModal();">
+                                                            <i class="fas fa-file-pdf me-2"></i>Export All Vehicles (PDF)
                                                         </button>
-                                                        <button class="btn btn-primary btn-sm" onclick="exportSingleVehicle(); $('#transferModal').modal('hide');">
-                                                            <i class="fas fa-car me-2"></i>Transfer Single Vehicle
+                                                        <button class="btn btn-primary btn-sm" onclick="exportSingleVehicle(); closeTransferModal();">
+                                                            <i class="fas fa-car me-2"></i>Export Vehicle Maintenance Records
                                                         </button>
                                                     </div>
                                                 </div>
@@ -376,152 +379,14 @@
             });
         }
         
-        function exportToCSV() {
-            // Get all vehicles and their maintenance records
-            const vehicles = JSON.parse(localStorage.getItem('vehicles') || '[]');
-            let csvContent = 'Vehicle Name,Year,Make,Model,VIN,Maintenance Date,Mileage,Description,Cost\n';
-            
-            vehicles.forEach(vehicle => {
-                const maintenanceRecords = JSON.parse(localStorage.getItem(`maintenanceRecords_${vehicle.id}`) || '[]');
-                const oilChangeRecords = JSON.parse(localStorage.getItem(`oilChangeHistory_${vehicle.id}`) || '[]');
-                
-                // Add maintenance records
-                maintenanceRecords.forEach(record => {
-                    csvContent += `"${vehicle.name}",${vehicle.year},${vehicle.make},${vehicle.model},"${vehicle.vin || ''}","${record.date || ''}",${record.mileage || ''},"${record.description || ''}",${record.cost || ''}\n`;
-                });
-                
-                // Add oil change records
-                oilChangeRecords.forEach(record => {
-                    csvContent += `"${vehicle.name}",${vehicle.year},${vehicle.make},${vehicle.model},"${vehicle.vin || ''}","${record.date || ''}",${record.mileage || ''},"Oil Change - ${record.oilUsed || 'Oil not specified'}, Filter: ${record.filterUsed || 'Not specified'}",\n`;
-                });
-            });
-            
-            // Create and download CSV file
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `vehicle_maintenance_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function exportToPDF() {
-            // Get all vehicles and their data
-            const vehicles = JSON.parse(localStorage.getItem('vehicles') || '[]');
-            
-            // Create PDF content using jsPDF
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            let yPosition = 20;
-            const pageHeight = doc.internal.pageSize.height;
-            const margin = 20;
-            
-            // Add title
-            doc.setFontSize(20);
-            doc.text('Vehicle Maintenance Report', margin, yPosition);
-            yPosition += 20;
-            
-            // Add date
-            doc.setFontSize(12);
-            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, yPosition);
-            yPosition += 15;
-            
-            vehicles.forEach((vehicle, vehicleIndex) => {
-                // Check if we need a new page
-                if (yPosition > pageHeight - 40) {
-                    doc.addPage();
-                    yPosition = 20;
-                }
-                
-                // Vehicle header
-                doc.setFontSize(14);
-                doc.setFont(undefined, 'bold');
-                doc.text(`${vehicle.name} (${vehicle.year} ${vehicle.make} ${vehicle.model})`, margin, yPosition);
-                yPosition += 10;
-                
-                // Vehicle details
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                doc.text(`VIN: ${vehicle.vin || 'Not specified'}`, margin, yPosition);
-                yPosition += 8;
-                
-                // Get maintenance records
-                const maintenanceRecords = JSON.parse(localStorage.getItem(`maintenanceRecords_${vehicle.id}`) || '[]');
-                const oilChangeRecords = JSON.parse(localStorage.getItem(`oilChangeHistory_${vehicle.id}`) || '[]');
-                
-                if (maintenanceRecords.length > 0 || oilChangeRecords.length > 0) {
-                    doc.text('Maintenance Records:', margin, yPosition);
-                    yPosition += 8;
-                    
-                    // Add maintenance records
-                    maintenanceRecords.forEach(record => {
-                        if (yPosition > pageHeight - 40) {
-                            doc.addPage();
-                            yPosition = 20;
-                        }
-                        
-                        // Split description into multiple lines if it's too long
-                        const description = record.description || 'No description';
-                        const maxLineLength = 60; // Characters per line
-                        const lines = [];
-                        
-                        if (description.length > maxLineLength) {
-                            // Split long descriptions into multiple lines
-                            for (let i = 0; i < description.length; i += maxLineLength) {
-                                lines.push(description.slice(i, i + maxLineLength));
-                            }
-                        } else {
-                            lines.push(description);
-                        }
-                        
-                        // Add the main record line
-                        doc.text(`• ${record.date || 'No date'} - ${record.mileage || 'No mileage'} miles:`, margin + 5, yPosition);
-                        yPosition += 6;
-                        
-                        // Add description lines with proper indentation
-                        lines.forEach(line => {
-                            if (yPosition > pageHeight - 30) {
-                                doc.addPage();
-                                yPosition = 20;
-                            }
-                            doc.text(`  ${line}`, margin + 10, yPosition);
-                            yPosition += 6;
-                        });
-                        
-                        // Add extra spacing after each record
-                        yPosition += 2;
-                    });
-                    
-                    // Add oil change records
-                    oilChangeRecords.forEach(record => {
-                        if (yPosition > pageHeight - 30) {
-                            doc.addPage();
-                            yPosition = 20;
-                        }
-                        
-                        doc.text(`• ${record.date || 'No date'} - ${record.mileage || 'No mileage'} miles: Oil Change - ${record.oilUsed || 'Oil not specified'}`, margin + 5, yPosition);
-                        yPosition += 6;
-                    });
-                } else {
-                    doc.text('No maintenance records found.', margin, yPosition);
-                    yPosition += 8;
-                }
-                
-                yPosition += 10;
-            });
-            
-            // Save PDF
-            doc.save(`vehicle_maintenance_${new Date().toISOString().split('T')[0]}.pdf`);
+        function closeTransferModal() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
+            if (modal) {
+                modal.hide();
+            }
         }
         
-        function exportSingleVehicle() {
-            // Redirect to vehicles page for single vehicle export
-            window.location.href = '/vehicles';
-        }
+
     </script>
 </body>
 </html>
