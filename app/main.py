@@ -94,6 +94,28 @@ async def debug_database(session: Session = Depends(get_session)):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/debug/vehicles")
+async def debug_vehicles(session: Session = Depends(get_session)):
+    """Debug endpoint to check vehicle data specifically"""
+    try:
+        vehicles = session.execute(select(Vehicle)).scalars().all()
+        return {
+            "status": "debug",
+            "total_vehicles": len(vehicles),
+            "vehicles": [
+                {
+                    "id": v.id,
+                    "name": v.name,
+                    "year": v.year,
+                    "make": v.make,
+                    "model": v.model,
+                    "vin": v.vin
+                } for v in vehicles
+            ]
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/vehicles", response_class=HTMLResponse)
 async def list_vehicles(request: Request, session: Session = Depends(get_session)):
     """List all vehicles"""
@@ -357,6 +379,14 @@ async def export_maintenance_csv(
         if records_with_vehicles:
             print(f"First record: {records_with_vehicles[0]}")
         
+        # Debug: Check for orphaned records
+        print(f"Total records found: {len(records_with_vehicles)}")
+        for i, (record, vehicle) in enumerate(records_with_vehicles):
+            if not vehicle:
+                print(f"WARNING: Record {i} has no vehicle: record_id={record.id}, vehicle_id={record.vehicle_id}")
+            else:
+                print(f"Record {i}: vehicle_id={record.vehicle_id}, vehicle_name={vehicle.name}")
+        
         # Create CSV content
         output = StringIO()
         writer = csv.writer(output)
@@ -511,6 +541,14 @@ async def export_maintenance_pdf(
             # All records export
             query = select(MaintenanceRecord, Vehicle).join(Vehicle, MaintenanceRecord.vehicle_id == Vehicle.id)
             records_with_vehicles = session.execute(query.order_by(MaintenanceRecord.date.desc())).all()
+        
+        # Debug: Check for orphaned records
+        print(f"Total records found: {len(records_with_vehicles)}")
+        for i, (record, vehicle) in enumerate(records_with_vehicles):
+            if not vehicle:
+                print(f"WARNING: Record {i} has no vehicle: record_id={record.id}, vehicle_id={record.vehicle_id}")
+            else:
+                print(f"Record {i}: vehicle_id={record.vehicle_id}, vehicle_name={vehicle.name}")
         
         # Create PDF content with portrait orientation for better table layout
         buffer = BytesIO()
