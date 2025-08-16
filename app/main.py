@@ -20,9 +20,9 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 
 # Local imports
-from database import engine, init_db, get_session
-from models import Vehicle, MaintenanceRecord
-from importer import import_csv, ImportResult
+from .database import engine, init_db, get_session
+from .models import Vehicle, MaintenanceRecord
+from .importer import import_csv, ImportResult
 
 # Utility functions to reduce code duplication
 def get_all_vehicles(session: Session) -> list[Vehicle]:
