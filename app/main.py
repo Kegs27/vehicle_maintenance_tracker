@@ -732,3 +732,4 @@ async def export_maintenance_pdf(
         print(f"Error in maintenance PDF export: {e}")
         raise HTTPException(status_code=500, detail=f"PDF export failed: {str(e)}")
 # Force rebuild Fri Aug 15 21:27:44 EDT 2025
+# Force Railway rebuild - Fri Aug 15 21:56:58 EDT 2025
