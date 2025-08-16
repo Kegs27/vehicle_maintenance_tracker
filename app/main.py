@@ -382,7 +382,7 @@ async def create_maintenance(
     )
     session.add(record)
     session.commit()
-    return RedirectResponse(url="/maintenance", status_code=303)
+    return redirect_to("/maintenance")
 
 @app.delete("/maintenance/{record_id}")
 async def delete_maintenance(
@@ -481,15 +481,8 @@ async def export_maintenance_csv(
     import csv
     
     try:
-        # Query maintenance records with vehicle information using a join
-        if vehicle_id:
-            # Single vehicle export
-            query = select(MaintenanceRecord, Vehicle).join(Vehicle, MaintenanceRecord.vehicle_id == Vehicle.id).where(MaintenanceRecord.vehicle_id == vehicle_id)
-            records_with_vehicles = session.execute(query.order_by(MaintenanceRecord.date.desc())).all()
-        else:
-            # All records export
-            query = select(MaintenanceRecord, Vehicle).join(Vehicle, MaintenanceRecord.vehicle_id == Vehicle.id)
-            records_with_vehicles = session.execute(query.order_by(MaintenanceRecord.date.desc())).all()
+        # Get records using utility function
+        records_with_vehicles = get_maintenance_records_with_vehicle(session, vehicle_id)
         
         # Debug logging
         print(f"Maintenance export query returned {len(records_with_vehicles)} records")
@@ -498,11 +491,11 @@ async def export_maintenance_csv(
         
         # Debug: Check for orphaned records
         print(f"Total records found: {len(records_with_vehicles)}")
-        for i, (record, vehicle) in enumerate(records_with_vehicles):
-            if not vehicle:
+        for i, record in enumerate(records_with_vehicles):
+            if not record.vehicle:
                 print(f"WARNING: Record {i} has no vehicle: record_id={record.id}, vehicle_id={record.vehicle_id}")
             else:
-                print(f"Record {i}: vehicle_id={record.vehicle_id}, vehicle_name={vehicle.name}")
+                print(f"Record {i}: vehicle_id={record.vehicle_id}, vehicle_name={record.vehicle.name}")
         
         # Create CSV content
         output = StringIO()
@@ -512,8 +505,8 @@ async def export_maintenance_csv(
         writer.writerow(['Vehicle', 'Date', 'Mileage', 'Description', 'Cost', 'Notes'])
         
         # Write data
-        for record, vehicle in records_with_vehicles:
-            vehicle_name = f"{vehicle.year} {vehicle.make} {vehicle.model}" if vehicle else "Unknown Vehicle"
+        for record in records_with_vehicles:
+            vehicle_name = f"{record.vehicle.year} {record.vehicle.make} {record.vehicle.model}" if record.vehicle else "Unknown Vehicle"
             date_str = record.date.strftime('%m/%d/%Y') if record.date and record.date.year > 1900 else "No date"
             mileage_str = f"{record.mileage:,}" if record.mileage and record.mileage > 0 else "0"
             cost_str = f"${record.cost:.2f}" if record.cost else ""
@@ -535,11 +528,7 @@ async def export_maintenance_csv(
         
         filename = f"maintenance_export_{vehicle_id if vehicle_id else 'all'}.csv"
         
-        return Response(
-            content=csv_content,
-            media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
+        return create_csv_response(csv_content, filename)
     except Exception as e:
         # Log the error for debugging
         print(f"Error in maintenance export: {e}")
@@ -559,14 +548,8 @@ async def export_vehicles_pdf(
     from io import BytesIO
     
     try:
-        # Parse vehicle IDs if provided
-        if vehicle_ids:
-            vehicle_id_list = [int(id.strip()) for id in vehicle_ids.split(',') if id.strip()]
-            vehicles = session.execute(
-                select(Vehicle).where(Vehicle.id.in_(vehicle_id_list))
-            ).scalars().all()
-        else:
-            vehicles = session.execute(select(Vehicle)).scalars().all()
+        # Get vehicles using utility function
+        vehicles = get_vehicles_by_ids(session, vehicle_ids)
         
         # Create PDF content
         buffer = BytesIO()
@@ -649,15 +632,8 @@ async def export_maintenance_pdf(
     from io import BytesIO
     
     try:
-        # Query maintenance records with vehicle information using a join
-        if vehicle_id:
-            # Single vehicle export
-            query = select(MaintenanceRecord, Vehicle).join(Vehicle, MaintenanceRecord.vehicle_id == Vehicle.id).where(MaintenanceRecord.vehicle_id == vehicle_id)
-            records_with_vehicles = session.execute(query.order_by(MaintenanceRecord.date.desc())).all()
-        else:
-            # All records export
-            query = select(MaintenanceRecord, Vehicle).join(Vehicle, MaintenanceRecord.vehicle_id == Vehicle.id)
-            records_with_vehicles = session.execute(query.order_by(MaintenanceRecord.date.desc())).all()
+        # Get records using utility function
+        records_with_vehicles = get_maintenance_records_with_vehicle(session, vehicle_id)
         
         # Debug: Check for orphaned records
         print(f"Total records found: {len(records_with_vehicles)}")
