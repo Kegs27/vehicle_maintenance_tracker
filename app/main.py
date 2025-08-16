@@ -1,8 +1,10 @@
 # Standard library imports
 import os
 import json
+import csv
 from datetime import date, datetime
 from typing import Optional
+from io import StringIO, BytesIO
 
 # Third-party imports
 from fastapi import FastAPI, Request, Depends, HTTPException, Form, UploadFile, File, Query
@@ -11,6 +13,11 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
 
 # Local imports
 from database import engine, init_db, get_session
@@ -429,8 +436,6 @@ async def export_vehicles_csv(
     session: Session = Depends(get_session)
 ):
     """Export vehicles to CSV"""
-    from io import StringIO
-    import csv
     
     try:
         # Get vehicles using utility function
@@ -477,8 +482,6 @@ async def export_maintenance_csv(
     session: Session = Depends(get_session)
 ):
     """Export maintenance records to CSV"""
-    from io import StringIO
-    import csv
     
     try:
         # Get records using utility function
@@ -540,12 +543,6 @@ async def export_vehicles_pdf(
     session: Session = Depends(get_session)
 ):
     """Export vehicles to PDF"""
-    from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib import colors
-    from reportlab.lib.units import inch
-    from io import BytesIO
     
     try:
         # Get vehicles using utility function
@@ -624,12 +621,6 @@ async def export_maintenance_pdf(
     session: Session = Depends(get_session)
 ):
     """Export maintenance records to PDF"""
-    from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib import colors
-    from reportlab.lib.units import inch
-    from io import BytesIO
     
     try:
         # Get records using utility function
