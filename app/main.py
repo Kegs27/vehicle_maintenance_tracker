@@ -96,7 +96,7 @@ async def debug_database(session: Session = Depends(get_session)):
 
 @app.get("/debug/vehicles")
 async def debug_vehicles(session: Session = Depends(get_session)):
-    """Debug endpoint to check vehicle data specifically"""
+    """Debug endpoint to check vehicle data specifically - UPDATED FOR RAILWAY"""
     try:
         vehicles = session.execute(select(Vehicle)).scalars().all()
         return {
@@ -733,3 +733,4 @@ async def export_maintenance_pdf(
         raise HTTPException(status_code=500, detail=f"PDF export failed: {str(e)}")
 # Force rebuild Fri Aug 15 21:27:44 EDT 2025
 # Force Railway rebuild - Fri Aug 15 21:56:58 EDT 2025
+# CRITICAL: Debug endpoints not working on Railway - forcing complete rebuild
