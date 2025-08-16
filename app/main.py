@@ -39,6 +39,8 @@ async def startup_event():
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Home page with navigation"""
+    # DEBUG: This should show in Railway logs to confirm we're running the right code
+    print("🚀 HOME ROUTE CALLED - RUNNING UPDATED CODE WITH DEBUG ENDPOINTS")
     try:
         return templates.TemplateResponse("index.html", {"request": request})
     except Exception as e:
