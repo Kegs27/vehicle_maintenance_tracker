@@ -8,14 +8,17 @@ class Vehicle(SQLModel, table=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(max_length=100)
+    name: str = Field(max_length=100, unique=True)  # Prevent duplicate vehicle names
     year: int
     make: str = Field(max_length=50)
     model: str = Field(max_length=50)
-    vin: Optional[str] = Field(default=None, max_length=17)
+    vin: Optional[str] = Field(default=None, max_length=17, unique=True)  # Prevent duplicate VINs
     
-    # Relationship to maintenance records
-    maintenance_records: List["MaintenanceRecord"] = Relationship(back_populates="vehicle")
+    # Relationship to maintenance records with cascade delete
+    maintenance_records: List["MaintenanceRecord"] = Relationship(
+        back_populates="vehicle", 
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
 
 class MaintenanceRecord(SQLModel, table=True):
     """Maintenance record model"""

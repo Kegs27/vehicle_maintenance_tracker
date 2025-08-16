@@ -1,18 +1,102 @@
+# Standard library imports
+import os
+import json
+from datetime import date, datetime
+from typing import Optional
+
+# Third-party imports
 from fastapi import FastAPI, Request, Depends, HTTPException, Form, UploadFile, File, Query
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
-from typing import Optional
-import os
-import json
-from datetime import date, datetime
 
-# Simple imports without complex error handling
+# Local imports
 from database import engine, init_db, get_session
 from models import Vehicle, MaintenanceRecord
 from importer import import_csv, ImportResult
+
+# Utility functions to reduce code duplication
+def get_all_vehicles(session: Session) -> list[Vehicle]:
+    """Get all vehicles from database"""
+    return session.execute(select(Vehicle)).scalars().all()
+
+def get_all_maintenance_records(session: Session) -> list[MaintenanceRecord]:
+    """Get all maintenance records from database"""
+    return session.execute(select(MaintenanceRecord)).scalars().all()
+
+def get_vehicles_ordered(session: Session) -> list[Vehicle]:
+    """Get all vehicles ordered by name"""
+    return session.execute(select(Vehicle).order_by(Vehicle.name)).scalars().all()
+
+def render_template(template_name: str, request: Request, **context) -> HTMLResponse:
+    """Render a template with common context"""
+    return templates.TemplateResponse(template_name, {"request": request, **context})
+
+def redirect_to(url: str, status_code: int = 303) -> RedirectResponse:
+    """Create a redirect response"""
+    return RedirectResponse(url=url, status_code=status_code)
+
+def get_vehicle_by_id(session: Session, vehicle_id: int) -> Vehicle:
+    """Get a vehicle by ID or raise 404"""
+    vehicle = session.get(Vehicle, vehicle_id)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    return vehicle
+
+def get_maintenance_records_with_vehicle(session: Session, vehicle_id: Optional[int] = None) -> list[MaintenanceRecord]:
+    """Get maintenance records with vehicle relationships, optionally filtered by vehicle"""
+    query = select(MaintenanceRecord).options(selectinload(MaintenanceRecord.vehicle))
+    
+    if vehicle_id:
+        query = query.where(MaintenanceRecord.vehicle_id == vehicle_id)
+    
+    return session.execute(query.order_by(MaintenanceRecord.date.desc(), MaintenanceRecord.mileage.desc())).scalars().all()
+
+def get_vehicles_by_ids(session: Session, vehicle_ids: Optional[str] = None) -> list[Vehicle]:
+    """Get vehicles by IDs or all vehicles if no IDs provided"""
+    if vehicle_ids:
+        vehicle_id_list = [int(id.strip()) for id in vehicle_ids.split(',') if id.strip()]
+        return session.execute(
+            select(Vehicle).where(Vehicle.id.in_(vehicle_id_list))
+        ).scalars().all()
+    else:
+        return get_all_vehicles(session)
+
+def create_csv_response(content: str, filename: str) -> Response:
+    """Create a CSV response with proper headers"""
+    return Response(
+        content=content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+def cleanup_orphaned_records(session: Session) -> dict:
+    """Clean up orphaned maintenance records and return cleanup stats"""
+    # Find maintenance records with no associated vehicle
+    orphaned_records = session.execute(
+        select(MaintenanceRecord).outerjoin(Vehicle, MaintenanceRecord.vehicle_id == Vehicle.id)
+        .where(Vehicle.id.is_(None))
+    ).scalars().all()
+    
+    cleanup_stats = {
+        "orphaned_records_found": len(orphaned_records),
+        "records_deleted": 0,
+        "errors": []
+    }
+    
+    try:
+        for record in orphaned_records:
+            session.delete(record)
+            cleanup_stats["records_deleted"] += 1
+        
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        cleanup_stats["errors"].append(str(e))
+    
+    return cleanup_stats
 
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
@@ -27,22 +111,18 @@ if os.path.exists("static"):
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup"""
-    print("🚀 Starting Vehicle Maintenance Tracker...")
     try:
         init_db()
-        print("✅ Database initialized successfully")
     except Exception as e:
-        print(f"⚠️ Database initialization warning: {e}")
-    print("✅ Application startup complete!")
+        # Log database initialization issues but don't crash the app
+        print(f"Database initialization warning: {e}")
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Home page with navigation"""
-    # DEBUG: This should show in Railway logs to confirm we're running the right code
-    print("🚀 HOME ROUTE CALLED - RUNNING UPDATED CODE WITH DEBUG ENDPOINTS")
     try:
-        return templates.TemplateResponse("index.html", {"request": request})
+        return render_template("index.html", request)
     except Exception as e:
         return {"status": "ok", "message": "Vehicle Maintenance Tracker is running"}
 
@@ -54,7 +134,6 @@ async def health_check():
 @app.get("/static/export-data.js")
 async def serve_export_js():
     """Serve export-data.js with no-cache headers"""
-    from fastapi.responses import FileResponse
     return FileResponse(
         "static/export-data.js",
         media_type="application/javascript",
@@ -69,41 +148,47 @@ async def serve_export_js():
 async def debug_database(session: Session = Depends(get_session)):
     """Debug endpoint to check database contents"""
     try:
-        # Check vehicles
-        vehicles = session.execute(select(Vehicle)).scalars().all()
-        vehicle_count = len(vehicles)
+        # Get data using utility functions
+        vehicles = get_all_vehicles(session)
+        records = get_all_maintenance_records(session)
         
-        # Check maintenance records
-        records = session.execute(select(MaintenanceRecord)).scalars().all()
-        record_count = len(records)
-        
-        # Check relationships
-        vehicle_with_records = []
-        for vehicle in vehicles:
-            record_count_for_vehicle = len(vehicle.maintenance_records) if hasattr(vehicle, 'maintenance_records') else 0
-            vehicle_with_records.append({
-                "id": vehicle.id,
-                "name": vehicle.name,
-                "maintenance_count": record_count_for_vehicle
-            })
+        # Build response with list comprehension for better performance
+        vehicle_details = [
+            {
+                "id": v.id,
+                "name": v.name,
+                "maintenance_count": len(v.maintenance_records) if hasattr(v, 'maintenance_records') else 0
+            }
+            for v in vehicles
+        ]
         
         return {
             "status": "debug",
-            "vehicles": vehicle_count,
-            "maintenance_records": record_count,
-            "vehicle_details": vehicle_with_records
+            "vehicles": len(vehicles),
+            "maintenance_records": len(records),
+            "vehicle_details": vehicle_details
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @app.get("/debug/vehicles")
 async def debug_vehicles(session: Session = Depends(get_session)):
-    """Debug endpoint to check vehicle data specifically - UPDATED FOR RAILWAY"""
+    """Debug endpoint to check vehicle data specifically"""
     try:
-        vehicles = session.execute(select(Vehicle)).scalars().all()
+        vehicles = get_all_vehicles(session)
+        
+        # Check for duplicate names and VINs
+        names = [v.name for v in vehicles]
+        vins = [v.vin for v in vehicles if v.vin]
+        
+        duplicate_names = [name for name in set(names) if names.count(name) > 1]
+        duplicate_vins = [vin for vin in set(vins) if vins.count(vin) > 1]
+        
         return {
             "status": "debug",
             "total_vehicles": len(vehicles),
+            "duplicate_names": duplicate_names,
+            "duplicate_vins": duplicate_vins,
             "vehicles": [
                 {
                     "id": v.id,
@@ -118,20 +203,29 @@ async def debug_vehicles(session: Session = Depends(get_session)):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.post("/debug/cleanup")
+async def cleanup_database(session: Session = Depends(get_session)):
+    """Clean up orphaned records and return cleanup stats"""
+    try:
+        cleanup_stats = cleanup_orphaned_records(session)
+        return {
+            "status": "success",
+            "message": "Database cleanup completed",
+            "cleanup_stats": cleanup_stats
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/vehicles", response_class=HTMLResponse)
 async def list_vehicles(request: Request, session: Session = Depends(get_session)):
     """List all vehicles"""
-    vehicles = session.execute(
-        select(Vehicle)
-        .options(selectinload(Vehicle.maintenance_records))
-        .order_by(Vehicle.name)
-    ).scalars().all()
-    return templates.TemplateResponse("vehicles_list.html", {"request": request, "vehicles": vehicles})
+    vehicles = get_vehicles_ordered(session)
+    return render_template("vehicles_list.html", request, vehicles=vehicles)
 
 @app.get("/vehicles/new", response_class=HTMLResponse)
 async def new_vehicle_form(request: Request):
     """Form to add new vehicle"""
-    return templates.TemplateResponse("vehicle_form.html", {"request": request, "vehicle": None})
+    return render_template("vehicle_form.html", request, vehicle=None)
 
 @app.post("/vehicles")
 async def create_vehicle(
@@ -143,11 +237,34 @@ async def create_vehicle(
     session: Session = Depends(get_session)
 ):
     """Create a new vehicle"""
-    vehicle = Vehicle(name=name, year=year, make=make, model=model, vin=vin)
-    session.add(vehicle)
-    session.commit()
-    session.refresh(vehicle)
-    return RedirectResponse(url="/vehicles", status_code=303)
+    try:
+        # Check for duplicate name
+        existing_vehicle = session.execute(
+            select(Vehicle).where(Vehicle.name == name)
+        ).scalar_one_or_none()
+        
+        if existing_vehicle:
+            raise HTTPException(status_code=400, detail=f"Vehicle with name '{name}' already exists")
+        
+        # Check for duplicate VIN if provided
+        if vin:
+            existing_vin = session.execute(
+                select(Vehicle).where(Vehicle.vin == vin)
+            ).scalar_one_or_none()
+            
+            if existing_vin:
+                raise HTTPException(status_code=400, detail=f"Vehicle with VIN '{vin}' already exists")
+        
+        vehicle = Vehicle(name=name, year=year, make=make, model=model, vin=vin)
+        session.add(vehicle)
+        session.commit()
+        session.refresh(vehicle)
+        return redirect_to("/vehicles")
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create vehicle: {str(e)}")
 
 @app.get("/vehicles/{vehicle_id}/edit", response_class=HTMLResponse)
 async def edit_vehicle_form(
@@ -160,7 +277,7 @@ async def edit_vehicle_form(
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
     
-    return templates.TemplateResponse("vehicle_form.html", {"request": request, "vehicle": vehicle})
+    return render_template("vehicle_form.html", request, vehicle=vehicle)
 
 @app.post("/vehicles/{vehicle_id}")
 async def update_vehicle(
@@ -173,19 +290,41 @@ async def update_vehicle(
     session: Session = Depends(get_session)
 ):
     """Update an existing vehicle"""
-    vehicle = session.get(Vehicle, vehicle_id)
-    if not vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
-    
-    vehicle.name = name
-    vehicle.year = year
-    vehicle.make = make
-    vehicle.model = model
-    vehicle.vin = vin
-    
-    session.commit()
-    session.refresh(vehicle)
-    return RedirectResponse(url="/vehicles", status_code=303)
+    try:
+        vehicle = get_vehicle_by_id(session, vehicle_id)
+        
+        # Check for duplicate name (excluding current vehicle)
+        if name != vehicle.name:
+            existing_vehicle = session.execute(
+                select(Vehicle).where(Vehicle.name == name, Vehicle.id != vehicle_id)
+            ).scalar_one_or_none()
+            
+            if existing_vehicle:
+                raise HTTPException(status_code=400, detail=f"Vehicle with name '{name}' already exists")
+        
+        # Check for duplicate VIN if provided (excluding current vehicle)
+        if vin and vin != vehicle.vin:
+            existing_vin = session.execute(
+                select(Vehicle).where(Vehicle.vin == vin, Vehicle.id != vehicle_id)
+            ).scalar_one_or_none()
+            
+            if existing_vin:
+                raise HTTPException(status_code=400, detail=f"Vehicle with VIN '{vin}' already exists")
+        
+        vehicle.name = name
+        vehicle.year = year
+        vehicle.make = make
+        vehicle.model = model
+        vehicle.vin = vin
+        
+        session.commit()
+        session.refresh(vehicle)
+        return redirect_to("/vehicles")
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update vehicle: {str(e)}")
 
 @app.get("/maintenance", response_class=HTMLResponse)
 async def list_maintenance(
@@ -194,22 +333,13 @@ async def list_maintenance(
     session: Session = Depends(get_session)
 ):
     """List maintenance records, optionally filtered by vehicle"""
-    from sqlalchemy.orm import selectinload
+    # Get records using utility function
+    records = get_maintenance_records_with_vehicle(session, vehicle_id)
     
-    # Query maintenance records with vehicle relationships
-    query = select(MaintenanceRecord).options(selectinload(MaintenanceRecord.vehicle))
+    # Get vehicle if filtering by vehicle_id
+    vehicle = get_vehicle_by_id(session, vehicle_id) if vehicle_id else None
     
-    if vehicle_id:
-        query = query.where(MaintenanceRecord.vehicle_id == vehicle_id)
-        vehicle = session.get(Vehicle, vehicle_id)
-        if not vehicle:
-            raise HTTPException(status_code=404, detail="Vehicle not found")
-    else:
-        vehicle = None
-    
-    records = session.execute(query.order_by(MaintenanceRecord.date.desc(), MaintenanceRecord.mileage.desc())).scalars().all()
-    
-    return templates.TemplateResponse("maintenance_list.html", {"request": request, "records": records, "vehicle": vehicle})
+    return render_template("maintenance_list.html", request, records=records, vehicle=vehicle)
 
 @app.get("/maintenance/new", response_class=HTMLResponse)
 async def new_maintenance_form(
@@ -223,12 +353,10 @@ async def new_maintenance_form(
     # Check if a specific vehicle was selected
     selected_vehicle_id = vehicle_id
     
-    return templates.TemplateResponse("maintenance_form.html", {
-        "request": request, 
-        "vehicles": vehicles, 
-        "record": None,
-        "selected_vehicle_id": selected_vehicle_id
-    })
+    return render_template("maintenance_form.html", request, 
+                         vehicles=vehicles, 
+                         record=None,
+                         selected_vehicle_id=selected_vehicle_id)
 
 @app.post("/maintenance")
 async def create_maintenance(
@@ -274,12 +402,9 @@ async def delete_maintenance(
 async def import_form(request: Request, session: Session = Depends(get_session)):
     """Form to import CSV data"""
     # Load vehicles for the dropdown
-    vehicles = session.execute(
-        select(Vehicle)
-        .order_by(Vehicle.name)
-    ).scalars().all()
+    vehicles = get_vehicles_ordered(session)
     
-    return templates.TemplateResponse("import.html", {"request": request, "vehicles": vehicles})
+    return render_template("import.html", request, vehicles=vehicles)
 
 @app.post("/import")
 async def import_data(
@@ -294,7 +419,7 @@ async def import_data(
         # Read the file content as bytes
         file_content = await file.read()
         result = import_csv(file_content, vehicle_id, session, handle_duplicates)
-        return templates.TemplateResponse("import_result.html", {"request": request, "result": result})
+        return render_template("import_result.html", request, result=result)
     except Exception as e:
         return {"error": str(e)}
 
@@ -308,14 +433,8 @@ async def export_vehicles_csv(
     import csv
     
     try:
-        # Parse vehicle IDs if provided
-        if vehicle_ids:
-            vehicle_id_list = [int(id.strip()) for id in vehicle_ids.split(',') if id.strip()]
-            vehicles = session.execute(
-                select(Vehicle).where(Vehicle.id.in_(vehicle_id_list))
-            ).scalars().all()
-        else:
-            vehicles = session.execute(select(Vehicle)).scalars().all()
+        # Get vehicles using utility function
+        vehicles = get_vehicles_by_ids(session, vehicle_ids)
         
         # Debug logging
         print(f"Vehicles export query returned {len(vehicles)} vehicles")
@@ -346,11 +465,7 @@ async def export_vehicles_csv(
         
         filename = f"vehicles_export_{vehicle_ids if vehicle_ids else 'all'}.csv"
         
-        return Response(
-            content=csv_content,
-            media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
+        return create_csv_response(csv_content, filename)
     except Exception as e:
         # Log the error for debugging
         print(f"Error in vehicles export: {e}")

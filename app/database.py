@@ -1,7 +1,10 @@
+# Standard library imports
+import os
+
+# Third-party imports
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
-import os
 from dotenv import load_dotenv
 
 # Load environment variables
