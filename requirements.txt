@@ -1,10 +1,10 @@
-# Core FastAPI and server - Conservative versions
+# Core FastAPI and server
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
-# Database and ORM - Stable versions
-sqlalchemy==2.0.23
-sqlmodel==0.0.14
+# Database and ORM - SQLAlchemy 3.x for Python 3.13 compatibility
+sqlalchemy>=3.0.0
+sqlmodel>=0.0.16
 
 # Template and static file handling
 jinja2==3.1.2
@@ -18,3 +18,7 @@ python-dateutil==2.8.2
 
 # PostgreSQL adapter
 psycopg2-binary==2.9.9
+
+# Additional dependencies for Python 3.13 compatibility
+typing-extensions>=4.8.0
+pydantic>=2.0.0
