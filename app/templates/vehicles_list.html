@@ -442,13 +442,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function confirmDeleteVehicle(vehicleId, vehicleName) {
     if (confirm('Are you sure you want to delete the vehicle "' + vehicleName + '"?\n\nThis will also delete ALL maintenance records for this vehicle.\n\nThis action cannot be undone.')) {
-        // Create a form to submit the DELETE request
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/vehicles/' + vehicleId + '?method=DELETE';
-        
-        document.body.appendChild(form);
-        form.submit();
+        // Use fetch with DELETE method
+        fetch('/vehicles/' + vehicleId, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Reload the page to show updated vehicle list
+                window.location.reload();
+            } else {
+                response.json().then(data => {
+                    alert('Error deleting vehicle: ' + (data.detail || 'Unknown error'));
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting vehicle: ' + error.message);
+        });
     }
 }
 

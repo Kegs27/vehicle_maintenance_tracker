@@ -236,6 +236,21 @@ async def update_vehicle(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update vehicle: {str(e)}")
 
+@app.delete("/vehicles/{vehicle_id}")
+async def delete_vehicle_route(vehicle_id: int):
+    """Delete a vehicle and all its maintenance records using centralized data operations"""
+    try:
+        result = delete_vehicle(vehicle_id)
+        
+        if result["success"]:
+            return {"success": True, "message": "Vehicle deleted successfully"}
+        else:
+            raise HTTPException(status_code=400, detail=result["error"])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete vehicle: {str(e)}")
+
 @app.get("/maintenance", response_class=HTMLResponse)
 async def list_maintenance(request: Request):
     """List maintenance records using centralized data operations"""
@@ -274,18 +289,19 @@ async def create_maintenance(
         raise HTTPException(status_code=500, detail=f"Failed to create maintenance record: {str(e)}")
 
 @app.delete("/maintenance/{record_id}")
-async def delete_maintenance(
-    record_id: int,
-    session: Session = Depends(get_session)
-):
-    """Delete a maintenance record"""
-    record = session.get(MaintenanceRecord, record_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="Maintenance record not found")
-    
-    session.delete(record)
-    session.commit()
-    return {"message": "Maintenance record deleted successfully"}
+async def delete_maintenance(record_id: int):
+    """Delete a maintenance record using centralized data operations"""
+    try:
+        result = delete_maintenance_record(record_id)
+        
+        if result["success"]:
+            return {"success": True, "message": "Maintenance record deleted successfully"}
+        else:
+            raise HTTPException(status_code=400, detail=result["error"])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete maintenance record: {str(e)}")
 
 @app.get("/import", response_class=HTMLResponse)
 async def import_form(request: Request):
