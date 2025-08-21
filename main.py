@@ -30,6 +30,10 @@ except ImportError as e:
         # Add app directory to Python path
         app_dir = os.path.join(os.path.dirname(__file__), 'app')
         print(f"Adding {app_dir} to Python path")
+        print(f"App directory exists: {os.path.exists(app_dir)}")
+        if os.path.exists(app_dir):
+            print(f"App directory contents: {os.listdir(app_dir)}")
+        
         sys.path.insert(0, app_dir)
         
         # Try direct imports
@@ -39,19 +43,36 @@ except ImportError as e:
         print("Successfully imported using fallback method")
     except ImportError as e2:
         print(f"Fallback import also failed: {e2}")
-        # Create minimal stubs to prevent crashes
-        class DummyEngine:
-            pass
-        class DummySession:
-            pass
-        engine = DummyEngine()
-        init_db = lambda: print("Database init skipped")
-        get_session = lambda: None
-        Vehicle = None
-        MaintenanceRecord = None
-        import_csv = lambda *args, **kwargs: None
-        ImportResult = None
-        print("Using dummy objects to prevent crashes")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Files in current directory: {os.listdir('.')}")
+        
+        # Try one more approach - look for files in subdirectories
+        try:
+            for root, dirs, files in os.walk('.'):
+                print(f"Directory: {root}, Files: {files}")
+                if 'database.py' in files:
+                    print(f"Found database.py in {root}")
+                    sys.path.insert(0, root)
+                    from database import engine, init_db, get_session
+                    from models import Vehicle, MaintenanceRecord
+                    from importer import import_csv, ImportResult
+                    print("Successfully imported using file search method")
+                    break
+        except Exception as e3:
+            print(f"File search method also failed: {e3}")
+            # Create minimal stubs to prevent crashes
+            class DummyEngine:
+                pass
+            class DummySession:
+                pass
+            engine = DummyEngine()
+            init_db = lambda: print("Database init skipped")
+            get_session = lambda: None
+            Vehicle = None
+            MaintenanceRecord = None
+            import_csv = lambda *args, **kwargs: None
+            ImportResult = None
+            print("Using dummy objects to prevent crashes")
 
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
@@ -143,10 +164,23 @@ async def test_endpoint():
 async def list_vehicles(request: Request, session: Session = Depends(get_session)):
     """List all vehicles"""
     try:
+        if session is None:
+            return HTMLResponse(content="""
+            <h1>Database Error</h1>
+            <p>The database connection is not available. This usually means the database modules failed to import.</p>
+            <p>Please check the deployment logs for import errors.</p>
+            <a href="/">Back to Home</a>
+            """)
+        
         vehicles = session.execute(select(Vehicle).order_by(Vehicle.name)).scalars().all()
         return templates.TemplateResponse("vehicles_list.html", {"request": request, "vehicles": vehicles})
     except Exception as e:
-        return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
+        return HTMLResponse(content=f"""
+        <h1>Database Error</h1>
+        <p>Error: {str(e)}</p>
+        <p>This suggests the database connection or models are not properly configured.</p>
+        <a href="/">Back to Home</a>
+        """)
 
 @app.get("/vehicles/new", response_class=HTMLResponse)
 async def new_vehicle_form(request: Request):
