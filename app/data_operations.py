@@ -6,12 +6,24 @@ This module contains all database operations to ensure consistency across pages
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
-from models import Vehicle, MaintenanceRecord
-from database import SessionLocal
-from importer import import_csv, ImportResult
 import csv
 from io import StringIO
 from datetime import datetime
+
+# Try to import local modules, with fallbacks
+try:
+    from models import Vehicle, MaintenanceRecord
+    from database import SessionLocal
+    from importer import import_csv, ImportResult
+    print("Successfully imported all modules in data_operations.py")
+except ImportError as e:
+    print(f"Failed to import modules in data_operations.py: {e}")
+    # Create dummy objects to prevent crashes
+    Vehicle = None
+    MaintenanceRecord = None
+    SessionLocal = None
+    import_csv = None
+    ImportResult = None
 
 # ============================================================================
 # VEHICLE OPERATIONS

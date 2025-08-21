@@ -4,12 +4,17 @@ services:
     env: python
     plan: free
     buildCommand: |
+      echo "Forcing Python 3.11..."
+      python3.11 --version
       python3.11 -m pip install --upgrade pip
       python3.11 -m pip install -r requirements.txt
       echo "Python version check:"
       python3.11 --version
       echo "Available Python versions:"
       ls -la /usr/bin/python*
+      echo "Current Python:"
+      which python
+      python --version
     startCommand: /usr/bin/python3.11 -m uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
@@ -18,3 +23,5 @@ services:
         value: production
       - key: PYTHONPATH
         value: /opt/render/project/src
+      - key: PYTHON
+        value: /usr/bin/python3.11
