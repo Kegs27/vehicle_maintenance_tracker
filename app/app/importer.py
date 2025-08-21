@@ -74,7 +74,7 @@ def _parse_cost_flexible(cost_str: str) -> float:
 
 def _check_duplicate_record(session, vehicle_id: int, date: date, mileage: int, description: str) -> bool:
     """Check if a maintenance record already exists with the same key fields"""
-    from models import MaintenanceRecord
+    from .models import MaintenanceRecord
     
     # Check for exact matches on key fields
     existing = session.execute(
@@ -90,7 +90,7 @@ def _check_duplicate_record(session, vehicle_id: int, date: date, mileage: int, 
 
 def _check_duplicate_record_no_date(session, vehicle_id: int, mileage: int, description: str) -> bool:
     """Check if a maintenance record already exists with the same key fields (no date)"""
-    from models import MaintenanceRecord
+    from .models import MaintenanceRecord
     
     # Check for exact matches on key fields
     existing = session.execute(
@@ -186,7 +186,7 @@ def import_csv(csv_content: bytes, vehicle_id: int, session, handle_duplicates: 
                     )
                     continue
                 elif handle_duplicates == "replace":
-                    from models import MaintenanceRecord
+                    from .models import MaintenanceRecord
                     if date_obj:
                         existing = session.execute(
                             select(MaintenanceRecord).where(
@@ -212,7 +212,7 @@ def import_csv(csv_content: bytes, vehicle_id: int, session, handle_duplicates: 
                             f"Row {row_num}: Replaced existing record - {date_str} at {mileage:,} miles: {description}"
                         )
             
-            from models import MaintenanceRecord
+            from .models import MaintenanceRecord
             
             maintenance_record = MaintenanceRecord(
                 vehicle_id=vehicle_id,

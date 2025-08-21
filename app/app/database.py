@@ -1,5 +1,6 @@
 # Standard library imports
 import os
+from pathlib import Path
 
 # Third-party imports
 from sqlalchemy import create_engine
@@ -21,8 +22,16 @@ def get_database_url():
         return database_url
     else:
         # We're in development, use local SQLite
-        DB_PATH = "vehicle_maintenance.db"
-        return f"sqlite:///{DB_PATH}"
+        # Get the current working directory and create a proper path
+        current_dir = Path.cwd()
+        if current_dir.name == "app":
+            # If we're in the app directory, go up one level
+            db_path = current_dir.parent / "vehicle_maintenance.db"
+        else:
+            # If we're in the root directory
+            db_path = current_dir / "vehicle_maintenance.db"
+        
+        return f"sqlite:///{db_path}"
 
 # Get the database URL
 DATABASE_URL = get_database_url()
@@ -32,7 +41,9 @@ if DATABASE_URL.startswith("postgresql"):
     # PostgreSQL (cloud) configuration
     engine = create_engine(
         DATABASE_URL,
-        echo=False
+        echo=False,
+        pool_pre_ping=True,  # Better connection handling
+        pool_recycle=300      # Recycle connections every 5 minutes
     )
 else:
     # SQLite (local) configuration
@@ -47,7 +58,13 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
     """Initialize the database by creating all tables"""
-    SQLModel.metadata.create_all(engine)
+    try:
+        SQLModel.metadata.create_all(engine)
+        print(f"Database initialized successfully: {DATABASE_URL}")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        # Don't crash the app if database init fails
+        # This allows the app to start even if there are DB issues
 
 def get_session():
     """Get a database session"""
