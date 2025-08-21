@@ -109,6 +109,15 @@ async def home(request: Request):
         print(f"Exception type: {type(e)}")
         import traceback
         traceback.print_exc()
+        
+        # Create a default summary for the error fallback
+        default_summary = {
+            'total_vehicles': 0,
+            'total_records': 0,
+            'total_cost': 0,
+            'average_cost_per_record': 0
+        }
+        
         return HTMLResponse(content=f"""
         <!DOCTYPE html>
         <head>
@@ -130,9 +139,9 @@ async def home(request: Request):
                 <div class="status">✅ App is running successfully!</div>
                 <div class="summary">
                     <h3>Summary</h3>
-                    <p>Total Vehicles: {summary.get('total_vehicles', 0)}</p>
-                    <p>Total Maintenance Records: {summary.get('total_records', 0)}</p>
-                    <p>Total Cost: ${summary.get('total_cost', 0):.2f}</p>
+                    <p>Total Vehicles: {default_summary['total_vehicles']}</p>
+                    <p>Total Maintenance Records: {default_summary['total_records']}</p>
+                    <p>Total Cost: ${default_summary['total_cost']:.2f}</p>
                 </div>
                 <div class="nav">
                     <a href="/vehicles">View Vehicles</a>
@@ -236,7 +245,7 @@ async def update_vehicle(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update vehicle: {str(e)}")
 
-@app.delete("/vehicles/{vehicle_id}")
+@app.delete("/vehicles/{vehicle_id}/delete")
 async def delete_vehicle_route(vehicle_id: int):
     """Delete a vehicle and all its maintenance records using centralized data operations"""
     try:
