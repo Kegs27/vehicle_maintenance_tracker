@@ -44,9 +44,11 @@ DATABASE_URL = get_database_url()
 
 # Create engine with appropriate configuration
 if DATABASE_URL.startswith("postgresql"):
-    # PostgreSQL (cloud) configuration
+    # PostgreSQL (cloud) configuration - convert to asyncpg format
+    # Replace postgresql:// with postgresql+asyncpg:// for asyncpg compatibility
+    asyncpg_url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
     engine = create_engine(
-        DATABASE_URL,
+        asyncpg_url,
         echo=False,
         pool_pre_ping=True,  # Better connection handling
         pool_recycle=300      # Recycle connections every 5 minutes
@@ -54,7 +56,7 @@ if DATABASE_URL.startswith("postgresql"):
 else:
     # SQLite (local) configuration
     engine = create_engine(
-        DATABASE_URL,
+        asyncpg_url,
         connect_args={"check_same_thread": False},
         echo=False
     )
