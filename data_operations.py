@@ -7,7 +7,6 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from models import Vehicle, MaintenanceRecord
-from database import SessionLocal
 from importer import import_csv, ImportResult
 import csv
 from io import StringIO
