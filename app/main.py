@@ -341,8 +341,8 @@ async def import_data(
             raise HTTPException(status_code=400, detail="Selected vehicle not found")
         
         file_content = await file.read()
-        # Use centralized import function
-        result = import_csv_data(file_content.decode('utf-8'))
+        # Use centralized import function with vehicle_id
+        result = import_csv_data(file_content.decode('utf-8'), vehicle_id)
         return templates.TemplateResponse("import_result.html", {"request": request, "result": result})
     except HTTPException:
         raise

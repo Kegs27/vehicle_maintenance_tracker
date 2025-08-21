@@ -17,6 +17,13 @@ def get_database_url():
     # Check if we're in production (cloud) or development (local)
     database_url = os.getenv("DATABASE_URL")
     
+    # Debug logging
+    print(f"Environment check - DATABASE_URL: {'SET' if database_url else 'NOT SET'}")
+    if database_url:
+        print(f"Using PostgreSQL: {database_url[:20]}...")  # Show first 20 chars for security
+    else:
+        print("Using SQLite fallback")
+    
     if database_url:
         # We're in production with a cloud database
         return database_url

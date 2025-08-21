@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from models import Vehicle, MaintenanceRecord
-from database import get_session
+from database import SessionLocal
 from importer import import_csv, ImportResult
 import csv
 from io import StringIO
@@ -18,12 +18,16 @@ from datetime import datetime
 # ============================================================================
 
 def get_all_vehicles() -> List[Vehicle]:
-    """Get all vehicles ordered by name"""
-    # Create a new session directly
-    from database import SessionLocal
+    """Get all vehicles ordered by name with maintenance records eagerly loaded"""
     session = SessionLocal()
     try:
-        vehicles = session.execute(select(Vehicle).order_by(Vehicle.name)).scalars().all()
+        # Use selectinload to eagerly load the maintenance_records relationship
+        from sqlalchemy.orm import selectinload
+        vehicles = session.execute(
+            select(Vehicle)
+            .options(selectinload(Vehicle.maintenance_records))
+            .order_by(Vehicle.name)
+        ).scalars().all()
         return vehicles
     except Exception as e:
         print(f"Error getting vehicles: {e}")
@@ -82,7 +86,7 @@ def create_vehicle(name: str, make: str, model: str, year: int, vin: str) -> Dic
 
 def update_vehicle(vehicle_id: int, name: str, make: str, model: str, year: int, vin: str) -> Dict[str, Any]:
     """Update an existing vehicle with duplicate checking"""
-    session = get_session()
+    session = SessionLocal()
     try:
         vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
         if not vehicle:
@@ -123,7 +127,7 @@ def update_vehicle(vehicle_id: int, name: str, make: str, model: str, year: int,
 
 def delete_vehicle(vehicle_id: int) -> Dict[str, Any]:
     """Delete a vehicle and all its maintenance records"""
-    session = get_session()
+    session = SessionLocal()
     try:
         vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
         if not vehicle:
@@ -150,10 +154,14 @@ def delete_vehicle(vehicle_id: int) -> Dict[str, Any]:
 
 def get_all_maintenance_records() -> List[MaintenanceRecord]:
     """Get all maintenance records with vehicle information"""
-    session = get_session()
+    session = SessionLocal()
     try:
+        # Use selectinload to eagerly load the vehicle relationship
+        from sqlalchemy.orm import selectinload
         records = session.execute(
-            select(MaintenanceRecord).order_by(MaintenanceRecord.date.desc())
+            select(MaintenanceRecord)
+            .options(selectinload(MaintenanceRecord.vehicle))
+            .order_by(MaintenanceRecord.date.desc())
         ).scalars().all()
         return records
     except Exception as e:
@@ -276,12 +284,134 @@ def delete_maintenance_record(record_id: int) -> Dict[str, Any]:
 # IMPORT/EXPORT OPERATIONS
 # ============================================================================
 
-def import_csv_data(file_content: str) -> ImportResult:
+def import_csv_data(file_content: str, vehicle_id: int = None) -> ImportResult:
     """Import CSV data with centralized logic"""
+    session = SessionLocal()
     try:
-        result = import_csv(file_content)
+        if vehicle_id is None:
+            return ImportResult(
+                success=False,
+                message="Vehicle ID is required for import",
+                vehicles_imported=0,
+                maintenance_imported=0,
+                errors=[]
+            )
+        
+        # Verify vehicle exists
+        vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
+        if not vehicle:
+            return ImportResult(
+                success=False,
+                message="Selected vehicle not found",
+                vehicles_imported=0,
+                maintenance_imported=0,
+                errors=[]
+            )
+        
+        # Parse CSV content
+        csv_file = StringIO(file_content)
+        reader = csv.DictReader(csv_file)
+        
+        fieldnames_lower = [col.lower() for col in reader.fieldnames]
+        required_columns = ['description']
+        if not all(col in fieldnames_lower for col in required_columns):
+            return ImportResult(
+                success=False,
+                message=f"Missing required columns. Found: {reader.fieldnames}",
+                vehicles_imported=0,
+                maintenance_imported=0,
+                errors=[]
+            )
+        
+        # Check that we have either date OR mileage
+        has_date = 'date' in fieldnames_lower
+        has_mileage = 'mileage' in fieldnames_lower
+        if not has_date and not has_mileage:
+            return ImportResult(
+                success=False,
+                message="CSV must contain either 'date' or 'mileage' column (or both)",
+                vehicles_imported=0,
+                maintenance_imported=0,
+                errors=[]
+            )
+        
+        has_cost = 'cost' in fieldnames_lower
+        col_mapping = {}
+        for col in reader.fieldnames:
+            col_lower = col.lower()
+            if col_lower in required_columns or col_lower == 'cost' or col_lower == 'date' or col_lower == 'mileage':
+                col_mapping[col_lower] = col
+        
+        # Placeholder date for records without dates
+        from datetime import date
+        PLACEHOLDER_DATE = date(1900, 1, 1)
+        
+        result = ImportResult()
+        
+        for row_num, row in enumerate(reader, start=2):
+            result.total_rows += 1
+            
+            try:
+                date_obj = None
+                if has_date and row[col_mapping['date']] and row[col_mapping['date']].strip():
+                    try:
+                        date_obj = datetime.strptime(row[col_mapping['date']], "%Y-%m-%d").date()
+                    except ValueError:
+                        result.skipped_rows += 1
+                        result.skipped_details.append(f"Row {row_num}: Invalid date format '{row[col_mapping['date']]}' - will use placeholder date")
+                        date_obj = None
+                
+                mileage = 0
+                if has_mileage and row[col_mapping['mileage']]:
+                    try:
+                        mileage = int(row[col_mapping['mileage']])
+                    except ValueError:
+                        result.skipped_rows += 1
+                        result.skipped_details.append(f"Row {row_num}: Invalid mileage '{row[col_mapping['mileage']]}' - using 0")
+                        mileage = 0
+                
+                cost = None
+                if has_cost and row[col_mapping['cost']]:
+                    try:
+                        cost = float(row[col_mapping['cost']])
+                    except ValueError:
+                        result.skipped_rows += 1
+                        result.skipped_details.append(f"Row {row_num}: Invalid cost '{row[col_mapping['cost']]}' - using null")
+                        cost = None
+                
+                description = row[col_mapping['description']].strip()
+                if not description:
+                    result.skipped_rows += 1
+                    result.skipped_details.append(f"Row {row_num}: Empty description - skipping")
+                    continue
+                
+                # Use placeholder date if no valid date provided
+                final_date = date_obj if date_obj else PLACEHOLDER_DATE
+                
+                # Create maintenance record
+                record = MaintenanceRecord(
+                    vehicle_id=vehicle_id,
+                    date=final_date,
+                    description=description,
+                    cost=cost,
+                    mileage=mileage
+                )
+                
+                session.add(record)
+                result.maintenance_imported += 1
+                
+            except Exception as e:
+                result.skipped_rows += 1
+                result.skipped_details.append(f"Row {row_num}: Error processing row - {str(e)}")
+                continue
+        
+        session.commit()
+        result.success = True
+        result.message = f"Successfully imported {result.maintenance_imported} maintenance records"
         return result
+        
     except Exception as e:
+        session.rollback()
         print(f"Error importing CSV: {e}")
         return ImportResult(
             success=False,
@@ -290,6 +420,8 @@ def import_csv_data(file_content: str) -> ImportResult:
             maintenance_imported=0,
             errors=[]
         )
+    finally:
+        session.close()
 
 def export_vehicles_csv() -> str:
     """Export vehicles to CSV format"""
@@ -319,8 +451,15 @@ def export_vehicles_csv() -> str:
 
 def export_maintenance_csv() -> str:
     """Export maintenance records to CSV format"""
+    session = SessionLocal()
     try:
-        records = get_all_maintenance_records()
+        # Get records with vehicle info while session is active
+        from sqlalchemy.orm import selectinload
+        records = session.execute(
+            select(MaintenanceRecord)
+            .options(selectinload(MaintenanceRecord.vehicle))
+            .order_by(MaintenanceRecord.date.desc())
+        ).scalars().all()
         
         output = StringIO()
         writer = csv.writer(output)
@@ -328,14 +467,14 @@ def export_maintenance_csv() -> str:
         # Write header
         writer.writerow(['Vehicle Name', 'Date', 'Description', 'Cost', 'Mileage'])
         
-        # Write data
+        # Write data while session is still active
         for record in records:
             vehicle_name = record.vehicle.name if record.vehicle else "Unknown"
             writer.writerow([
                 vehicle_name,
                 record.date.strftime("%Y-%m-%d"),
                 record.description,
-                f"${record.cost:.2f}",
+                f"${record.cost:.2f}" if record.cost else "$0.00",
                 record.mileage
             ])
         
@@ -343,6 +482,8 @@ def export_maintenance_csv() -> str:
     except Exception as e:
         print(f"Error exporting maintenance: {e}")
         return ""
+    finally:
+        session.close()
 
 # ============================================================================
 # UTILITY OPERATIONS

@@ -3,10 +3,18 @@ services:
     name: vehicle-maintenance-tracker
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: |
+      python3.11 -m pip install --upgrade pip
+      python3.11 -m pip install -r requirements.txt
+      echo "Python version check:"
+      python3.11 --version
+      echo "Available Python versions:"
+      ls -la /usr/bin/python*
+    startCommand: /usr/bin/python3.11 -m uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.18
       - key: ENVIRONMENT
         value: production
+      - key: PYTHONPATH
+        value: /opt/render/project/src

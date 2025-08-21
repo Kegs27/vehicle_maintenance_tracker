@@ -659,44 +659,49 @@ function addOilChangeRecord() {
     history.push(newRecord);
     localStorage.setItem(`oilChangeHistory_${currentVehicleId}`, JSON.stringify(history));
     
-    // Create maintenance record description
-    let description = `Oil Change - ${oilUsed || 'Oil not specified'}`;
-    if (filterUsed) {
-        description += `, Filter: ${filterUsed}`;
-    }
-    if (nextDueDate || nextDueMileage) {
-        description += ` | Next due: `;
-        if (nextDueDate) description += `${nextDueDate}`;
-        if (nextDueDate && nextDueMileage) description += ` or `;
-        if (nextDueMileage) description += `${nextDueMileage.toLocaleString()} miles`;
-    }
+    // Create maintenance record description (simplified as requested)
+    const description = "Oil change/filter";
     
-    // Create maintenance record
-    const maintenanceRecord = {
-        vehicle_id: currentVehicleId,
-        date: date,
-        mileage: parseInt(mileage),
-        description: description,
-        cost: null
-    };
-    
-    // Get existing maintenance records or create new array
-    const existingMaintenance = localStorage.getItem(`maintenanceRecords_${currentVehicleId}`);
-    const maintenanceRecords = existingMaintenance ? JSON.parse(existingMaintenance) : [];
-    
-    // Check for duplicate maintenance records
-    const isMaintenanceDuplicate = maintenanceRecords.some(record => {
-        return record.date === date || record.mileage === parseInt(mileage);
+    // Create maintenance record in database
+    fetch('/maintenance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            'vehicle_id': currentVehicleId,
+            'date_str': date,
+            'description': description,
+            'cost': '',  // Empty cost as requested
+            'mileage': mileage
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            // Success - maintenance record created in database
+            console.log('Maintenance record created successfully');
+        } else {
+            // Handle error
+            response.json().then(data => {
+                console.error('Error creating maintenance record:', data);
+                let errorMessage = 'Unknown error';
+                if (data.detail) {
+                    if (typeof data.detail === 'string') {
+                        errorMessage = data.detail;
+                    } else if (Array.isArray(data.detail)) {
+                        errorMessage = data.detail.map(err => err.msg || err.message || 'Validation error').join(', ');
+                    } else if (typeof data.detail === 'object') {
+                        errorMessage = data.detail.message || data.detail.msg || 'Validation error';
+                    }
+                }
+                alert('Oil change saved, but maintenance record creation failed: ' + errorMessage);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error creating maintenance record:', error);
+        alert('Oil change saved, but maintenance record creation failed: ' + error.message);
     });
-    
-    if (isMaintenanceDuplicate) {
-        alert('A maintenance record already exists for this date or mileage. Please check your entries.');
-        return;
-    }
-    
-    // Add maintenance record
-    maintenanceRecords.push(maintenanceRecord);
-    localStorage.setItem(`maintenanceRecords_${currentVehicleId}`, JSON.stringify(maintenanceRecords));
     
     // Refresh the history table
     loadOilChangeHistory(currentVehicleId);
@@ -705,7 +710,7 @@ function addOilChangeRecord() {
     clearOilChangeForm();
     
     // Show success message
-    alert('Oil change record and maintenance record added successfully!');
+    alert('Oil change record saved and maintenance record created successfully!');
 }
 
 function deleteOilChangeRecord(vehicleId, index) {
