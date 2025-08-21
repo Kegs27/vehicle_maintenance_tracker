@@ -188,7 +188,7 @@ async def new_vehicle_form(request: Request):
     return templates.TemplateResponse("vehicle_form.html", {"request": request, "vehicle": None})
 
 @app.post("/vehicles")
-async def create_vehicle(
+async def create_vehicle_route(
     name: str = Form(...),
     year: int = Form(...),
     make: str = Form(...),
@@ -223,7 +223,7 @@ async def edit_vehicle_form(
     return templates.TemplateResponse("vehicle_form.html", {"request": request, "vehicle": vehicle})
 
 @app.post("/vehicles/{vehicle_id}")
-async def update_vehicle(
+async def update_vehicle_route(
     vehicle_id: int,
     name: str = Form(...),
     year: int = Form(...),
@@ -276,7 +276,7 @@ async def new_maintenance_form(request: Request):
     return templates.TemplateResponse("maintenance_form.html", {"request": request, "vehicles": vehicles, "record": None})
 
 @app.post("/maintenance")
-async def create_maintenance(
+async def create_maintenance_route(
     vehicle_id: int = Form(...),
     date_str: str = Form(...),
     mileage: int = Form(...),
