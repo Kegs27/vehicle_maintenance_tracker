@@ -236,7 +236,7 @@ async def update_vehicle(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update vehicle: {str(e)}")
 
-@app.delete("/vehicles/{vehicle_id}")
+@app.delete("/vehicles/{vehicle_id}/delete")
 async def delete_vehicle_route(vehicle_id: int):
     """Delete a vehicle and all its maintenance records using centralized data operations"""
     try:

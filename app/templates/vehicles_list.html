@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function confirmDeleteVehicle(vehicleId, vehicleName) {
     if (confirm('Are you sure you want to delete the vehicle "' + vehicleName + '"?\n\nThis will also delete ALL maintenance records for this vehicle.\n\nThis action cannot be undone.')) {
         // Use fetch with DELETE method
-        fetch('/vehicles/' + vehicleId, {
+        fetch('/vehicles/' + vehicleId + '/delete', {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
