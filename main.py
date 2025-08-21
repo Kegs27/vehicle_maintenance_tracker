@@ -14,9 +14,18 @@ from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 
 # Local imports
-from app.database import engine, init_db, get_session
-from app.models import Vehicle, MaintenanceRecord
-from app.importer import import_csv, ImportResult
+try:
+    from app.database import engine, init_db, get_session
+    from app.models import Vehicle, MaintenanceRecord
+    from app.importer import import_csv, ImportResult
+except ImportError:
+    # Fallback for Render environment
+    import sys
+    import os
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
+    from database import engine, init_db, get_session
+    from models import Vehicle, MaintenanceRecord
+    from importer import import_csv, ImportResult
 
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
@@ -36,6 +45,8 @@ async def startup_event():
         print(f"Current working directory: {os.getcwd()}")
         print(f"Templates directory exists: {os.path.exists('templates')}")
         print(f"Static directory exists: {os.path.exists('static')}")
+        print(f"App directory exists: {os.path.exists('app')}")
+        print(f"App directory contents: {os.listdir('.') if os.path.exists('.') else 'No current dir'}")
         
         init_db()
         print("Startup completed successfully!")
