@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from models import Vehicle, MaintenanceRecord
-from database import get_session
+from database import SessionLocal
 from importer import import_csv, ImportResult
 import csv
 from io import StringIO
@@ -19,7 +19,7 @@ from datetime import datetime
 
 def get_all_vehicles() -> List[Vehicle]:
     """Get all vehicles ordered by name"""
-    session = get_session()
+    session = SessionLocal()
     try:
         vehicles = session.execute(select(Vehicle).order_by(Vehicle.name)).scalars().all()
         return vehicles
@@ -31,7 +31,7 @@ def get_all_vehicles() -> List[Vehicle]:
 
 def get_vehicle_by_id(vehicle_id: int) -> Optional[Vehicle]:
     """Get a specific vehicle by ID"""
-    session = get_session()
+    session = SessionLocal()
     try:
         vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
         return vehicle
@@ -43,7 +43,7 @@ def get_vehicle_by_id(vehicle_id: int) -> Optional[Vehicle]:
 
 def create_vehicle(name: str, make: str, model: str, year: int, vin: str) -> Dict[str, Any]:
     """Create a new vehicle with duplicate checking"""
-    session = get_session()
+    session = SessionLocal()
     try:
         # Check for duplicate name
         existing_name = session.execute(
@@ -76,7 +76,7 @@ def create_vehicle(name: str, make: str, model: str, year: int, vin: str) -> Dic
 
 def update_vehicle(vehicle_id: int, name: str, make: str, model: str, year: int, vin: str) -> Dict[str, Any]:
     """Update an existing vehicle with duplicate checking"""
-    session = get_session()
+    session = SessionLocal()
     try:
         vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
         if not vehicle:
@@ -117,7 +117,7 @@ def update_vehicle(vehicle_id: int, name: str, make: str, model: str, year: int,
 
 def delete_vehicle(vehicle_id: int) -> Dict[str, Any]:
     """Delete a vehicle and all its maintenance records"""
-    session = get_session()
+    session = SessionLocal()
     try:
         vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
         if not vehicle:
@@ -144,7 +144,7 @@ def delete_vehicle(vehicle_id: int) -> Dict[str, Any]:
 
 def get_all_maintenance_records() -> List[MaintenanceRecord]:
     """Get all maintenance records with vehicle information"""
-    session = get_session()
+    session = SessionLocal()
     try:
         records = session.execute(
             select(MaintenanceRecord).order_by(MaintenanceRecord.date.desc())
@@ -158,7 +158,7 @@ def get_all_maintenance_records() -> List[MaintenanceRecord]:
 
 def get_maintenance_by_id(record_id: int) -> Optional[MaintenanceRecord]:
     """Get a specific maintenance record by ID"""
-    session = get_session()
+    session = SessionLocal()
     try:
         record = session.execute(
             select(MaintenanceRecord).where(MaintenanceRecord.id == record_id)
@@ -172,7 +172,7 @@ def get_maintenance_by_id(record_id: int) -> Optional[MaintenanceRecord]:
 
 def create_maintenance_record(vehicle_id: int, date: str, description: str, cost: float, mileage: int) -> Dict[str, Any]:
     """Create a new maintenance record"""
-    session = get_session()
+    session = SessionLocal()
     try:
         # Verify vehicle exists
         vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
@@ -208,7 +208,7 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
 
 def update_maintenance_record(record_id: int, vehicle_id: int, date: str, description: str, cost: float, mileage: int) -> Dict[str, Any]:
     """Update an existing maintenance record"""
-    session = get_session()
+    session = SessionLocal()
     try:
         record = session.execute(
             select(MaintenanceRecord).where(MaintenanceRecord.id == record_id)
@@ -247,7 +247,7 @@ def update_maintenance_record(record_id: int, vehicle_id: int, date: str, descri
 
 def delete_maintenance_record(record_id: int) -> Dict[str, Any]:
     """Delete a maintenance record"""
-    session = get_session()
+    session = SessionLocal()
     try:
         record = session.execute(
             select(MaintenanceRecord).where(MaintenanceRecord.id == record_id)
