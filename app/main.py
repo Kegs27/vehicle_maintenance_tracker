@@ -14,15 +14,47 @@ from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 
 # Local imports
-from app.database import engine, init_db, get_session
-from app.models import Vehicle, MaintenanceRecord
-from app.importer import import_csv, ImportResult
+import sys
+import os
+
+# Try to import from current directory first (for Render)
+try:
+    from database import engine, init_db, get_session
+    from models import Vehicle, MaintenanceRecord
+    from importer import import_csv, ImportResult
+    print("Successfully imported from current directory")
+except ImportError as e:
+    print(f"Failed to import from current directory: {e}")
+    # Fallback for app package (for local development)
+    try:
+        from app.database import engine, init_db, get_session
+        from app.models import Vehicle, MaintenanceRecord
+        from app.importer import import_csv, ImportResult
+        print("Successfully imported from app package")
+    except ImportError as e2:
+        print(f"Failed to import from app package: {e2}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Files in current directory: {os.listdir('.')}")
+        
+        # Create minimal stubs to prevent crashes
+        class DummyEngine:
+            pass
+        class DummySession:
+            pass
+        engine = DummyEngine()
+        init_db = lambda: print("Database init skipped")
+        get_session = lambda: None
+        Vehicle = None
+        MaintenanceRecord = None
+        import_csv = lambda *args, **kwargs: None
+        ImportResult = None
+        print("Using dummy objects to prevent crashes")
 
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
 
 # Templates
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="./templates")
 
 # Static files
 if os.path.exists("static"):
@@ -36,6 +68,8 @@ async def startup_event():
         print(f"Current working directory: {os.getcwd()}")
         print(f"Templates directory exists: {os.path.exists('templates')}")
         print(f"Static directory exists: {os.path.exists('static')}")
+        print(f"App directory exists: {os.path.exists('app')}")
+        print(f"App directory contents: {os.listdir('.') if os.path.exists('.') else 'No current dir'}")
         
         init_db()
         print("Startup completed successfully!")
@@ -47,9 +81,17 @@ async def startup_event():
 async def home(request: Request):
     """Home page with navigation"""
     try:
+        print(f"Attempting to render index.html template...")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Templates directory exists: {os.path.exists('./templates')}")
+        print(f"Index.html exists: {os.path.exists('./templates/index.html')}")
+        
         return templates.TemplateResponse("index.html", {"request": request})
     except Exception as e:
         print(f"Template error: {e}")
+        print(f"Exception type: {type(e)}")
+        import traceback
+        traceback.print_exc()
         return HTMLResponse(content=f"""
         <!DOCTYPE html>
         <html>
@@ -98,10 +140,23 @@ async def test_endpoint():
 async def list_vehicles(request: Request, session: Session = Depends(get_session)):
     """List all vehicles"""
     try:
+        if session is None:
+            return HTMLResponse(content="""
+            <h1>Database Error</h1>
+            <p>The database connection is not available. This usually means the database modules failed to import.</p>
+            <p>Please check the deployment logs for import errors.</p>
+            <a href="/">Back to Home</a>
+            """)
+        
         vehicles = session.execute(select(Vehicle).order_by(Vehicle.name)).scalars().all()
         return templates.TemplateResponse("vehicles_list.html", {"request": request, "vehicles": vehicles})
     except Exception as e:
-        return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
+        return HTMLResponse(content=f"""
+        <h1>Database Error</h1>
+        <p>Error: {str(e)}</p>
+        <p>This suggests the database connection or models are not properly configured.</p>
+        <a href="/">Back to Home</a>
+        """)
 
 @app.get("/vehicles/new", response_class=HTMLResponse)
 async def new_vehicle_form(request: Request):
