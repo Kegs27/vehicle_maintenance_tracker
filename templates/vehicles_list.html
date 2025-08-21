@@ -670,7 +670,7 @@ function addOilChangeRecord() {
         },
         body: new URLSearchParams({
             'vehicle_id': currentVehicleId,
-            'date': date,
+            'date_str': date,
             'description': description,
             'cost': '',  // Empty cost as requested
             'mileage': mileage
@@ -684,7 +684,17 @@ function addOilChangeRecord() {
             // Handle error
             response.json().then(data => {
                 console.error('Error creating maintenance record:', data);
-                alert('Oil change saved, but maintenance record creation failed: ' + (data.detail || 'Unknown error'));
+                let errorMessage = 'Unknown error';
+                if (data.detail) {
+                    if (typeof data.detail === 'string') {
+                        errorMessage = data.detail;
+                    } else if (Array.isArray(data.detail)) {
+                        errorMessage = data.detail.map(err => err.msg || err.message || 'Validation error').join(', ');
+                    } else if (typeof data.detail === 'object') {
+                        errorMessage = data.detail.message || data.detail.msg || 'Validation error';
+                    }
+                }
+                alert('Oil change saved, but maintenance record creation failed: ' + errorMessage);
             });
         }
     })
