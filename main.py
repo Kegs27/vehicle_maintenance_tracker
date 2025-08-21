@@ -189,7 +189,7 @@ async def new_vehicle_form(request: Request):
 
 @app.post("/vehicles")
 async def create_vehicle_route(
-    name: str = Form(...),
+    name: Optional[str] = Form(None),
     year: int = Form(...),
     make: str = Form(...),
     model: str = Form(...),
@@ -197,6 +197,10 @@ async def create_vehicle_route(
 ):
     """Create a new vehicle using centralized data operations"""
     try:
+        # Auto-generate name if none provided
+        if not name or name.strip() == "":
+            name = f"{year} {make} {model}"
+        
         # Use centralized function with duplicate checking
         result = create_vehicle(name, make, model, year, vin)
         
@@ -225,7 +229,7 @@ async def edit_vehicle_form(
 @app.post("/vehicles/{vehicle_id}")
 async def update_vehicle_route(
     vehicle_id: int,
-    name: str = Form(...),
+    name: Optional[str] = Form(None),
     year: int = Form(...),
     make: str = Form(...),
     model: str = Form(...),
@@ -233,6 +237,10 @@ async def update_vehicle_route(
 ):
     """Update an existing vehicle using centralized data operations"""
     try:
+        # Auto-generate name if none provided
+        if not name or name.strip() == "":
+            name = f"{year} {make} {model}"
+        
         # Use centralized function with duplicate checking
         result = update_vehicle(vehicle_id, name, make, model, year, vin)
         
@@ -333,8 +341,8 @@ async def import_data(
             raise HTTPException(status_code=400, detail="Selected vehicle not found")
         
         file_content = await file.read()
-        # Use centralized import function
-        result = import_csv_data(file_content.decode('utf-8'))
+        # Use centralized import function with vehicle_id
+        result = import_csv_data(file_content.decode('utf-8'), vehicle_id)
         return templates.TemplateResponse("import_result.html", {"request": request, "result": result})
     except HTTPException:
         raise
