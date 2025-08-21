@@ -109,6 +109,15 @@ async def home(request: Request):
         print(f"Exception type: {type(e)}")
         import traceback
         traceback.print_exc()
+        
+        # Create a default summary for the error fallback
+        default_summary = {
+            'total_vehicles': 0,
+            'total_records': 0,
+            'total_cost': 0,
+            'average_cost_per_record': 0
+        }
+        
         return HTMLResponse(content=f"""
         <!DOCTYPE html>
         <head>
@@ -130,9 +139,9 @@ async def home(request: Request):
                 <div class="status">✅ App is running successfully!</div>
                 <div class="summary">
                     <h3>Summary</h3>
-                    <p>Total Vehicles: {summary.get('total_vehicles', 0)}</p>
-                    <p>Total Maintenance Records: {summary.get('total_records', 0)}</p>
-                    <p>Total Cost: ${summary.get('total_cost', 0):.2f}</p>
+                    <p>Total Vehicles: {default_summary['total_vehicles']}</p>
+                    <p>Total Maintenance Records: {default_summary['total_records']}</p>
+                    <p>Total Cost: ${default_summary['total_cost']:.2f}</p>
                 </div>
                 <div class="nav">
                     <a href="/vehicles">View Vehicles</a>
@@ -179,8 +188,8 @@ async def new_vehicle_form(request: Request):
     return templates.TemplateResponse("vehicle_form.html", {"request": request, "vehicle": None})
 
 @app.post("/vehicles")
-async def create_vehicle(
-    name: str = Form(...),
+async def create_vehicle_route(
+    name: Optional[str] = Form(None),
     year: int = Form(...),
     make: str = Form(...),
     model: str = Form(...),
@@ -188,6 +197,10 @@ async def create_vehicle(
 ):
     """Create a new vehicle using centralized data operations"""
     try:
+        # Auto-generate name if none provided
+        if not name or name.strip() == "":
+            name = f"{year} {make} {model}"
+        
         # Use centralized function with duplicate checking
         result = create_vehicle(name, make, model, year, vin)
         
@@ -214,9 +227,9 @@ async def edit_vehicle_form(
     return templates.TemplateResponse("vehicle_form.html", {"request": request, "vehicle": vehicle})
 
 @app.post("/vehicles/{vehicle_id}")
-async def update_vehicle(
+async def update_vehicle_route(
     vehicle_id: int,
-    name: str = Form(...),
+    name: Optional[str] = Form(None),
     year: int = Form(...),
     make: str = Form(...),
     model: str = Form(...),
@@ -224,6 +237,10 @@ async def update_vehicle(
 ):
     """Update an existing vehicle using centralized data operations"""
     try:
+        # Auto-generate name if none provided
+        if not name or name.strip() == "":
+            name = f"{year} {make} {model}"
+        
         # Use centralized function with duplicate checking
         result = update_vehicle(vehicle_id, name, make, model, year, vin)
         
@@ -267,7 +284,7 @@ async def new_maintenance_form(request: Request):
     return templates.TemplateResponse("maintenance_form.html", {"request": request, "vehicles": vehicles, "record": None})
 
 @app.post("/maintenance")
-async def create_maintenance(
+async def create_maintenance_route(
     vehicle_id: int = Form(...),
     date_str: str = Form(...),
     mileage: int = Form(...),
