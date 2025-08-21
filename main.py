@@ -17,18 +17,100 @@ from sqlalchemy.orm import selectinload
 import sys
 import os
 
+# Define dummy functions at module level to ensure they're always available
+def dummy_get_all_vehicles():
+    return []
+def dummy_get_vehicle_by_id(vehicle_id):
+    return None
+def dummy_create_vehicle(*args, **kwargs):
+    return {"success": False, "error": "Database not available"}
+def dummy_update_vehicle(*args, **kwargs):
+    return {"success": False, "error": "Database not available"}
+def dummy_delete_vehicle(*args, **kwargs):
+    return {"success": False, "error": "Database not available"}
+def dummy_get_all_maintenance_records():
+    return []
+def dummy_get_maintenance_by_id(*args, **kwargs):
+    return None
+def dummy_create_maintenance_record(*args, **kwargs):
+    return {"success": False, "error": "Database not available"}
+def dummy_update_maintenance_record(*args, **kwargs):
+    return {"success": False, "error": "Database not available"}
+def dummy_delete_maintenance_record(*args, **kwargs):
+    return {"success": False, "error": "Database not available"}
+def dummy_import_csv_data(*args, **kwargs):
+    return {"success": False, "error": "Database not available"}
+def dummy_export_vehicles_csv():
+    return ""
+def dummy_export_maintenance_csv():
+    return ""
+def dummy_get_vehicle_names():
+    return []
+def dummy_get_maintenance_summary():
+    return {
+        "total_vehicles": 0,
+        "total_records": 0,
+        "total_cost": 0,
+        "average_cost_per_record": 0
+    }
+
+# Initialize functions with dummy versions by default
+get_all_vehicles = dummy_get_all_vehicles
+get_vehicle_by_id = dummy_get_vehicle_by_id
+create_vehicle = dummy_create_vehicle
+update_vehicle = dummy_update_vehicle
+delete_vehicle = dummy_delete_vehicle
+get_all_maintenance_records = dummy_get_all_maintenance_records
+get_maintenance_by_id = dummy_get_maintenance_by_id
+create_maintenance_record = dummy_create_maintenance_record
+update_maintenance_record = dummy_update_maintenance_record
+delete_maintenance_record = dummy_delete_maintenance_record
+import_csv_data = dummy_import_csv_data
+export_vehicles_csv = dummy_export_vehicles_csv
+export_maintenance_csv = dummy_export_maintenance_csv
+get_vehicle_names = dummy_get_vehicle_names
+get_maintenance_summary = dummy_get_maintenance_summary
+
 # Try to import from current directory first (for Render)
 try:
     from database import engine, init_db, get_session
     from models import Vehicle, MaintenanceRecord
     from importer import import_csv, ImportResult
     from data_operations import (
-        get_all_vehicles, get_vehicle_by_id, create_vehicle, update_vehicle, delete_vehicle,
-        get_all_maintenance_records, get_maintenance_by_id, create_maintenance_record,
-        update_maintenance_record, delete_maintenance_record,
-        import_csv_data, export_vehicles_csv, export_maintenance_csv,
-        get_vehicle_names, get_maintenance_summary
+        get_all_vehicles as real_get_all_vehicles,
+        get_vehicle_by_id as real_get_vehicle_by_id,
+        create_vehicle as real_create_vehicle,
+        update_vehicle as real_update_vehicle,
+        delete_vehicle as real_delete_vehicle,
+        get_all_maintenance_records as real_get_all_maintenance_records,
+        get_maintenance_by_id as real_get_maintenance_by_id,
+        create_maintenance_record as real_create_maintenance_record,
+        update_maintenance_record as real_update_maintenance_record,
+        delete_maintenance_record as real_delete_maintenance_record,
+        import_csv_data as real_import_csv_data,
+        export_vehicles_csv as real_export_vehicles_csv,
+        export_maintenance_csv as real_export_maintenance_csv,
+        get_vehicle_names as real_get_vehicle_names,
+        get_maintenance_summary as real_get_maintenance_summary
     )
+    
+    # Replace dummy functions with real ones
+    get_all_vehicles = real_get_all_vehicles
+    get_vehicle_by_id = real_get_vehicle_by_id
+    create_vehicle = real_create_vehicle
+    update_vehicle = real_update_vehicle
+    delete_vehicle = real_delete_vehicle
+    get_all_maintenance_records = real_get_all_maintenance_records
+    get_maintenance_by_id = real_get_maintenance_by_id
+    create_maintenance_record = real_create_maintenance_record
+    update_maintenance_record = real_update_maintenance_record
+    delete_maintenance_record = real_delete_maintenance_record
+    import_csv_data = real_import_csv_data
+    export_vehicles_csv = real_export_vehicles_csv
+    export_maintenance_csv = real_export_maintenance_csv
+    get_vehicle_names = real_get_vehicle_names
+    get_maintenance_summary = real_get_maintenance_summary
+    
     print("Successfully imported from current directory")
 except ImportError as e:
     print(f"Failed to import from current directory: {e}")
@@ -38,12 +120,40 @@ except ImportError as e:
         from app.models import Vehicle, MaintenanceRecord
         from app.importer import import_csv, ImportResult
         from app.data_operations import (
-            get_all_vehicles, get_vehicle_by_id, create_vehicle, update_vehicle, delete_vehicle,
-            get_all_maintenance_records, get_maintenance_by_id, create_maintenance_record,
-            update_maintenance_record, delete_maintenance_record,
-            import_csv_data, export_vehicles_csv, export_maintenance_csv,
-            get_vehicle_names, get_maintenance_summary
+            get_all_vehicles as real_get_all_vehicles,
+            get_vehicle_by_id as real_get_vehicle_by_id,
+            create_vehicle as real_create_vehicle,
+            update_vehicle as real_update_vehicle,
+            delete_vehicle as real_delete_vehicle,
+            get_all_maintenance_records as real_get_all_maintenance_records,
+            get_maintenance_by_id as real_get_maintenance_by_id,
+            create_maintenance_record as real_create_maintenance_record,
+            update_maintenance_record as real_update_maintenance_record,
+            delete_maintenance_record as real_delete_maintenance_record,
+            import_csv_data as real_import_csv_data,
+            export_vehicles_csv as real_export_vehicles_csv,
+            export_maintenance_csv as real_export_maintenance_csv,
+            get_vehicle_names as real_get_vehicle_names,
+            get_maintenance_summary as real_get_maintenance_summary
         )
+        
+        # Replace dummy functions with real ones
+        get_all_vehicles = real_get_all_vehicles
+        get_vehicle_by_id = real_get_vehicle_by_id
+        create_vehicle = real_create_vehicle
+        update_vehicle = real_update_vehicle
+        delete_vehicle = real_delete_vehicle
+        get_all_maintenance_records = real_get_all_maintenance_records
+        get_maintenance_by_id = real_get_maintenance_by_id
+        create_maintenance_record = real_create_maintenance_record
+        update_maintenance_record = real_update_maintenance_record
+        delete_maintenance_record = real_delete_maintenance_record
+        import_csv_data = real_import_csv_data
+        export_vehicles_csv = real_export_vehicles_csv
+        export_maintenance_csv = real_export_maintenance_csv
+        get_vehicle_names = real_get_vehicle_names
+        get_maintenance_summary = real_get_maintenance_summary
+        
         print("Successfully imported from app package")
     except ImportError as e2:
         print(f"Failed to import from app package: {e2}")
@@ -62,6 +172,7 @@ except ImportError as e:
         MaintenanceRecord = None
         import_csv = lambda *args, **kwargs: None
         ImportResult = None
+        
         print("Using dummy objects to prevent crashes")
 
 # Create FastAPI app
@@ -102,6 +213,7 @@ async def home(request: Request):
         
         # Get summary data using centralized function
         summary = get_maintenance_summary()
+        print(f"Summary data: {summary}")
         
         return templates.TemplateResponse("index.html", {"request": request, "summary": summary})
     except Exception as e:

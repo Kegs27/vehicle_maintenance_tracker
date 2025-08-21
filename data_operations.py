@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from models import Vehicle, MaintenanceRecord
 from importer import import_csv, ImportResult
+from database import SessionLocal
 import csv
 from io import StringIO
 from datetime import datetime
@@ -36,8 +37,6 @@ def get_all_vehicles() -> List[Vehicle]:
 
 def get_vehicle_by_id(vehicle_id: int) -> Optional[Vehicle]:
     """Get a specific vehicle by ID"""
-    # Create a new session directly
-    from database import SessionLocal
     session = SessionLocal()
     try:
         vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
@@ -50,8 +49,6 @@ def get_vehicle_by_id(vehicle_id: int) -> Optional[Vehicle]:
 
 def create_vehicle(name: str, make: str, model: str, year: int, vin: str) -> Dict[str, Any]:
     """Create a new vehicle with duplicate checking"""
-    # Create a new session directly
-    from database import SessionLocal
     session = SessionLocal()
     try:
         # Check for duplicate name
