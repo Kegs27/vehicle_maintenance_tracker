@@ -57,10 +57,10 @@
                         <form method="post" action="{% if vehicle %}/vehicles/{{ vehicle.id }}{% else %}/vehicles{% endif %}">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="name" class="form-label fw-bold">Vehicle Name (Optional)</label>
+                                    <label for="name" class="form-label fw-bold">Vehicle Name *</label>
                                     <input type="text" class="form-control" id="name" name="name" 
                                            value="{{ vehicle.name if vehicle else '' }}" 
-                                           placeholder="e.g., My Daily Driver">
+                                           placeholder="e.g., My Daily Driver" required>
                                     <div class="form-text">
                                         Give your vehicle a nickname for easy identification.
                                     </div>
