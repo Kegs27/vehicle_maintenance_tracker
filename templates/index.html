@@ -156,6 +156,11 @@
                         <li><a class="dropdown-item" href="/import">
                             <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
                         </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showOilChangeMenu()">
+                            <i class="fas fa-oil-can me-2 text-purple-600"></i>Oil Change
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
                             <i class="fas fa-file-csv me-2 text-success"></i>Export All to CSV
                         </a></li>
@@ -440,6 +445,104 @@
             }
         }
         
+        function showOilChangeMenu() {
+            // Create a modal for oil change vehicle selection
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'oilChangeMenuModal';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-oil-can me-2"></i>Oil Change Management
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted mb-3">Select a vehicle to manage oil change records:</p>
+                            <div id="oilChangeVehicleList">
+                                <!-- Vehicles will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Load vehicles for oil change management
+            loadVehiclesForOilChange();
+            
+            // Show the modal
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+            
+            // Remove modal from DOM after it's hidden
+            modal.addEventListener('hidden.bs.modal', function () {
+                document.body.removeChild(modal);
+            });
+        }
+        
+        function loadVehiclesForOilChange() {
+            // Fetch vehicles from the API
+            fetch('/vehicles')
+                .then(response => response.text())
+                .then(html => {
+                    // Parse HTML to extract vehicle data
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const vehicleRows = doc.querySelectorAll('[data-vehicle-id]');
+                    
+                    const vehicleList = document.getElementById('oilChangeVehicleList');
+                    vehicleList.innerHTML = '';
+                    
+                    if (vehicleRows.length === 0) {
+                        vehicleList.innerHTML = '<div class="text-center text-muted">No vehicles found. Please add a vehicle first.</div>';
+                        return;
+                    }
+                    
+                    vehicleRows.forEach((row, index) => {
+                        const vehicleId = row.getAttribute('data-vehicle-id');
+                        const vehicleName = row.querySelector('a')?.textContent?.trim() || 'Unnamed Vehicle';
+                        
+                        const vehicleCard = document.createElement('div');
+                        vehicleCard.className = 'card mb-2 border-primary';
+                        vehicleCard.innerHTML = `
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">${vehicleName}</h6>
+                                        <small class="text-muted">Click to manage oil change records</small>
+                                    </div>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="openOilChangeForVehicle(${vehicleId}, '${vehicleName}')">
+                                            <i class="fas fa-oil-can me-1"></i>Manage
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        vehicleList.appendChild(vehicleCard);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading vehicles:', error);
+                    document.getElementById('oilChangeVehicleList').innerHTML = '<div class="text-center text-danger">Error loading vehicles. Please try again.</div>';
+                });
+        }
+        
+        function openOilChangeForVehicle(vehicleId, vehicleName) {
+            // Close the menu modal
+            const menuModal = bootstrap.Modal.getInstance(document.getElementById('oilChangeMenuModal'));
+            if (menuModal) {
+                menuModal.hide();
+            }
+            
+            // Redirect to vehicles page with oil change modal trigger
+            window.location.href = `/vehicles?oil_change=${vehicleId}`;
+        }
 
     </script>
 </body>

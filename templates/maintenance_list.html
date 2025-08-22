@@ -135,6 +135,11 @@
                         <li><a class="dropdown-item" href="/import">
                             <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
                         </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showOilChangeMenu()">
+                            <i class="fas fa-oil-can me-2 text-purple-600"></i>Oil Change
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
                             <i class="fas fa-file-csv me-2 text-success"></i>Export All to CSV
                         </a></li>
@@ -473,12 +478,10 @@
             window.location.href = url;
         }
         
-
-        
-
-        
-
-        
+        function showOilChangeMenu() {
+            // Redirect to vehicles page for oil change management
+            window.location.href = '/vehicles';
+        }
 
     </script>
 
