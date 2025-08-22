@@ -23,19 +23,24 @@ def _parse_date_flexible(date_str: str) -> date:
         return None
     
     date_str = date_str.strip()
+    print(f"DEBUG: Parsing date: '{date_str}'")  # Debug logging
     
     try:
         # Try parsing with dateutil first (most flexible)
         parsed = parser.parse(date_str, fuzzy=True)
+        print(f"DEBUG: dateutil parsed successfully: {parsed.date()}")  # Debug logging
         return parsed.date()
-    except:
+    except Exception as e:
+        print(f"DEBUG: dateutil failed: {e}")  # Debug logging
         # Handle specific formats from your CSV
         try:
             # Format: '10/6/19' -> '2019-10-06'
             if re.match(r'^\d{1,2}/\d{1,2}/\d{2}$', date_str):
                 month, day, year = date_str.split('/')
                 year = '20' + year if len(year) == 2 else year
-                return datetime.strptime(f"{year}-{month.zfill(2)}-{day.zfill(2)}", '%Y-%m-%d').date()
+                result = datetime.strptime(f"{year}-{month.zfill(2)}-{day.zfill(2)}", '%Y-%m-%d').date()
+                print(f"DEBUG: MM/DD/YY format parsed: {result}")  # Debug logging
+                return result
             
             # Format: '1/2020' -> '2020-01-01'
             elif re.match(r'^\d{1,2}/\d{4}$', date_str):
@@ -71,9 +76,11 @@ def _parse_date_flexible(date_str: str) -> date:
                 year = '20' + year if len(year) == 2 else year
                 return datetime.strptime(f"{year}-{month.zfill(2)}-{day.zfill(2)}", '%Y-%m-%d').date()
             
-        except:
+        except Exception as e:
+            print(f"DEBUG: Custom format parsing failed: {e}")  # Debug logging
             pass
     
+    print(f"DEBUG: All parsing methods failed for: '{date_str}'")  # Debug logging
     return None
 
 def _parse_mileage_flexible(mileage_str: str) -> int:
