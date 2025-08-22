@@ -417,6 +417,45 @@ async def create_maintenance_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create maintenance record: {str(e)}")
 
+@app.get("/maintenance/{record_id}/edit", response_class=HTMLResponse)
+async def edit_maintenance_form(request: Request, record_id: int):
+    """Form to edit existing maintenance record using centralized data operations"""
+    try:
+        record = get_maintenance_by_id(record_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Maintenance record not found")
+        
+        vehicles = get_vehicle_names()
+        return templates.TemplateResponse("maintenance_form.html", {"request": request, "vehicles": vehicles, "record": record})
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load maintenance record: {str(e)}")
+
+@app.post("/maintenance/{record_id}")
+async def update_maintenance_route(
+    record_id: int,
+    vehicle_id: int = Form(...),
+    date_str: str = Form(...),
+    mileage: int = Form(...),
+    description: str = Form(...),
+    cost: Optional[float] = Form(None),
+    _method: Optional[str] = Form(None)
+):
+    """Update an existing maintenance record using centralized data operations"""
+    try:
+        # Use centralized function with validation
+        result = update_maintenance_record(record_id, vehicle_id, date_str, description, cost or 0.0, mileage)
+        
+        if result["success"]:
+            return RedirectResponse(url="/maintenance", status_code=303)
+        else:
+            raise HTTPException(status_code=400, detail=result["error"])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update maintenance record: {str(e)}")
+
 @app.delete("/maintenance/{record_id}")
 async def delete_maintenance(record_id: int):
     """Delete a maintenance record using centralized data operations"""
