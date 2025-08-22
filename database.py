@@ -39,11 +39,9 @@ DATABASE_URL = get_database_url()
 
 # Create engine with appropriate configuration
 if DATABASE_URL.startswith("postgresql"):
-    # PostgreSQL (cloud) configuration - convert to asyncpg format
-    # Replace postgresql:// with postgresql+asyncpg:// for asyncpg compatibility
-    asyncpg_url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+    # PostgreSQL (cloud) configuration - use psycopg2 for better compatibility
     engine = create_engine(
-        asyncpg_url,
+        DATABASE_URL,
         echo=False,
         pool_pre_ping=True,  # Better connection handling
         pool_recycle=300      # Recycle connections every 5 minutes

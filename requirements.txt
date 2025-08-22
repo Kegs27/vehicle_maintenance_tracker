@@ -18,4 +18,3 @@ python-dateutil==2.8.2
 
 # PostgreSQL adapter
 psycopg2-binary==2.9.9
-asyncpg==0.29.0
