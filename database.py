@@ -30,12 +30,7 @@ def get_database_url():
         # We're in development, use local SQLite
         # Get the current working directory and create a proper path
         current_dir = Path.cwd()
-        if current_dir.name == "app":
-            # If we're in the app directory, go up one level
-            db_path = current_dir.parent / "vehicle_maintenance.db"
-        else:
-            # If we're in the root directory
-            db_path = current_dir / "vehicle_maintenance.db"
+        db_path = current_dir / "vehicle_maintenance.db"
         
         return f"sqlite:///{db_path}"
 
