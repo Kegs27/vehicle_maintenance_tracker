@@ -588,9 +588,14 @@ function loadOilChangeHistory(vehicleId) {
                     <td>${record.nextDueDate || '-'}</td>
                     <td>${record.nextDueMileage ? record.nextDueMileage.toLocaleString() : '-'}</td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteOilChangeRecord(${vehicleId}, ${index})">
-                                                            <i class="fas fa-trash-alt me-1"></i>Delete
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editOilChangeRecord(${vehicleId}, ${index})">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteOilChangeRecord(${vehicleId}, ${index})">
+                                <i class="fas fa-trash-alt me-1"></i>Delete
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -610,6 +615,19 @@ function clearOilChangeForm() {
     document.getElementById('modalNextOilChangeMileage').value = '';
     document.getElementById('modalOilUsed').value = '';
     document.getElementById('modalFilterUsed').value = '';
+    
+    // Reset button to add mode
+    const addButton = document.querySelector('.modal-footer .btn-success');
+    if (addButton) {
+        addButton.innerHTML = '<i class="fas fa-plus me-2"></i>Add Oil Change';
+        addButton.onclick = addOilChangeRecord;
+    }
+    
+    // Remove cancel button if it exists
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.remove();
+    }
 }
 
 function addOilChangeRecord() {
@@ -711,6 +729,105 @@ function addOilChangeRecord() {
     
     // Show success message
     alert('Oil change record saved and maintenance record created successfully!');
+}
+
+function editOilChangeRecord(vehicleId, index) {
+    const existingHistory = localStorage.getItem(`oilChangeHistory_${vehicleId}`);
+    if (existingHistory) {
+        const history = JSON.parse(existingHistory);
+        const record = history[index];
+        
+        // Populate the form with existing data
+        document.getElementById('modalLastOilChange').value = record.date;
+        document.getElementById('modalOilChangeMileage').value = record.mileage;
+        document.getElementById('modalOilUsed').value = record.oilUsed || '';
+        document.getElementById('modalFilterUsed').value = record.filterUsed || '';
+        document.getElementById('modalNextOilChangeDate').value = record.nextDueDate || '';
+        document.getElementById('modalNextOilChangeMileage').value = record.nextDueMileage || '';
+        
+        // Change the add button to update button
+        const addButton = document.querySelector('.modal-footer .btn-success');
+        addButton.innerHTML = '<i class="fas fa-save me-2"></i>Update Oil Change';
+        addButton.onclick = () => updateOilChangeRecord(vehicleId, index);
+        
+        // Add a cancel button to reset to add mode
+        if (!document.getElementById('cancelEditBtn')) {
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'btn btn-outline-secondary me-2';
+            cancelBtn.id = 'cancelEditBtn';
+            cancelBtn.innerHTML = '<i class="fas fa-times me-2"></i>Cancel Edit';
+            cancelBtn.onclick = cancelEditMode;
+            addButton.parentNode.insertBefore(cancelBtn, addButton);
+        }
+    }
+}
+
+function cancelEditMode() {
+    // Reset form
+    clearOilChangeForm();
+    
+    // Reset button to add mode
+    const addButton = document.querySelector('.modal-footer .btn-success');
+    addButton.innerHTML = '<i class="fas fa-plus me-2"></i>Add Oil Change';
+    addButton.onclick = addOilChangeRecord;
+    
+    // Remove cancel button
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.remove();
+    }
+}
+
+function updateOilChangeRecord(vehicleId, index) {
+    // Get form values
+    const date = document.getElementById('modalLastOilChange').value;
+    const mileage = document.getElementById('modalOilChangeMileage').value;
+    const oilUsed = document.getElementById('modalOilUsed').value;
+    const filterUsed = document.getElementById('modalFilterUsed').value;
+    const nextDueDate = document.getElementById('modalNextOilChangeDate').value;
+    const nextDueMileage = document.getElementById('modalNextOilChangeMileage').value;
+    
+    if (!date || !mileage) {
+        alert('Please fill in at least the date and mileage.');
+        return;
+    }
+    
+    // Check for duplicate oil change records (excluding current record)
+    const existingHistory = localStorage.getItem(`oilChangeHistory_${vehicleId}`);
+    const history = JSON.parse(existingHistory);
+    
+    const isDuplicate = history.some((record, i) => {
+        if (i === index) return false; // Skip current record
+        return record.date === date || record.mileage === parseInt(mileage);
+    });
+    
+    if (isDuplicate) {
+        alert('An oil change record already exists for this date or mileage. Please check your entries.');
+        return;
+    }
+    
+    // Update the record
+    history[index] = {
+        date: date,
+        mileage: parseInt(mileage),
+        oilUsed: oilUsed,
+        filterUsed: filterUsed,
+        nextDueDate: nextDueDate,
+        nextDueMileage: nextDueMileage ? parseInt(nextDueMileage) : null
+    };
+    
+    // Save updated history
+    localStorage.setItem(`oilChangeHistory_${vehicleId}`, JSON.stringify(history));
+    
+    // Refresh the history table
+    loadOilChangeHistory(vehicleId);
+    
+    // Reset to add mode
+    cancelEditMode();
+    
+    // Show success message
+    alert('Oil change record updated successfully!');
 }
 
 function deleteOilChangeRecord(vehicleId, index) {
