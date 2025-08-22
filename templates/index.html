@@ -141,9 +141,32 @@
                 <i class="fas fa-car me-2"></i>Vehicle Maintenance Tracker
             </a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/vehicles">Vehicles</a>
-                <a class="nav-link" href="/maintenance">Maintenance</a>
-                <a class="nav-link" href="#" onclick="showTransferOptions(); return false;">Data Transfer</a>
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-bars me-2"></i>Menu
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mainNavDropdown">
+                        <li><a class="dropdown-item" href="/vehicles">
+                            <i class="fas fa-car me-2 text-purple-600"></i>Vehicles
+                        </a></li>
+                        <li><a class="dropdown-item" href="/maintenance">
+                            <i class="fas fa-tools me-2 text-purple-600"></i>Maintenance
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/import">
+                            <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
+                            <i class="fas fa-file-csv me-2 text-success"></i>Export All to CSV
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportToPDF()">
+                            <i class="fas fa-file-pdf me-2 text-danger"></i>Export All to PDF
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
+                            <i class="fas fa-car me-2 text-purple-600"></i>Export Single Vehicle
+                        </a></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
