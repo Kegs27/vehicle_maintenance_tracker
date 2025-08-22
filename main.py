@@ -439,8 +439,7 @@ async def update_maintenance_route(
     date_str: str = Form(...),
     mileage: int = Form(...),
     description: str = Form(...),
-    cost: Optional[float] = Form(None),
-    _method: Optional[str] = Form(None)
+    cost: Optional[float] = Form(None)
 ):
     """Update an existing maintenance record using centralized data operations"""
     try:

@@ -75,10 +75,7 @@
                         </div>
                         {% endif %}
 
-                        <form method="{% if record %}post{% else %}post{% endif %}" action="{% if record %}/maintenance/{{ record.id }}{% else %}/maintenance{% endif %}">
-                            {% if record %}
-                            <input type="hidden" name="_method" value="PUT">
-                            {% endif %}
+                        <form method="post" action="{% if record %}/maintenance/{{ record.id }}{% else %}/maintenance{% endif %}">
                             {% if not record %}
                             <!-- Vehicle selection for new records -->
                             <div class="mb-3">
