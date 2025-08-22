@@ -167,11 +167,15 @@ def get_all_maintenance_records() -> List[MaintenanceRecord]:
         session.close()
 
 def get_maintenance_by_id(record_id: int) -> Optional[MaintenanceRecord]:
-    """Get a specific maintenance record by ID"""
+    """Get a specific maintenance record by ID with vehicle eagerly loaded"""
     session = SessionLocal()
     try:
+        # Use selectinload to eagerly load the vehicle relationship
+        from sqlalchemy.orm import selectinload
         record = session.execute(
-            select(MaintenanceRecord).where(MaintenanceRecord.id == record_id)
+            select(MaintenanceRecord)
+            .options(selectinload(MaintenanceRecord.vehicle))
+            .where(MaintenanceRecord.id == record_id)
         ).scalar_one_or_none()
         return record
     except Exception as e:
