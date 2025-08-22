@@ -12,8 +12,10 @@ class ImportResult:
         self.imported_rows = 0
         self.skipped_rows = 0
         self.duplicate_rows = 0
+        self.maintenance_imported = 0
         self.skipped_details = []
         self.duplicate_details = []
+        self.message = ""
 
 def _parse_date_flexible(date_str: str) -> date:
     """Parse date from various formats"""
