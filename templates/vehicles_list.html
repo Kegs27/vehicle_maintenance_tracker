@@ -364,18 +364,18 @@
     </div>
 
     <!-- Oil Change History Modal -->
-    <div class="modal fade" id="oilChangeModal" tabindex="-1" aria-labelledby="oilChangeModalLabel" aria-hidden="true">
+    <div class="modal fade" id="oilChangeModal" tabindex="-1" aria-labelledby="oilChangeModalLabel" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="oilChangeModalLabel">
+                    <h5 class="modal-title" id="oilChangeModalTitle">
                         <i class="fas fa-history me-2"></i>Oil Change History - <span id="modalVehicleName"></span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <!-- Oil Change History Table -->
-                    <div class="table-responsive mb-4">
+                    <div id="oilChangeHistorySection" class="table-responsive mb-4">
                         <h5 class="text-dark mb-3 fw-bold">
                             <i class="fas fa-history me-2 text-purple-600"></i>Oil Change Records
                         </h5>
@@ -398,7 +398,7 @@
                     </div>
                     
                     <!-- Add New Oil Change Form -->
-                    <div class="card border-primary">
+                    <div id="oilChangeFormSection" class="card border-primary">
                         <div class="card-header bg-primary text-white">
                             <h6 class="mb-0 fw-bold">
                                 <i class="fas fa-plus me-2"></i>Add New Oil Change Record
@@ -514,8 +514,12 @@ function showOilChangeHistory(vehicleId, vehicleName) {
     // Load and display oil change history
     loadOilChangeHistory(vehicleId);
     
-    // Clear the form
-    clearOilChangeForm();
+    // Hide the form section - show only history
+    document.getElementById('oilChangeFormSection').style.display = 'none';
+    document.getElementById('oilChangeHistorySection').style.display = 'block';
+    
+    // Change modal title to indicate view-only mode
+    document.getElementById('oilChangeModalTitle').innerHTML = '<i class="fas fa-history me-2"></i>Oil Change History - ' + vehicleName;
     
     // Show the modal
     const modal = new bootstrap.Modal(document.getElementById('oilChangeModal'));
@@ -526,11 +530,18 @@ function addNewOilChange(vehicleId, vehicleName) {
     currentVehicleId = vehicleId;
     document.getElementById('modalVehicleName').textContent = vehicleName;
     
-    // Load existing history but don't populate form
+    // Load existing history
     loadOilChangeHistory(vehicleId);
     
     // Clear the form for new entry
     clearOilChangeForm();
+    
+    // Show both sections - history and form
+    document.getElementById('oilChangeFormSection').style.display = 'block';
+    document.getElementById('oilChangeHistorySection').style.display = 'block';
+    
+    // Change modal title to indicate add mode
+    document.getElementById('oilChangeModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>Add New Oil Change - ' + vehicleName;
     
     // Show the modal
     const modal = new bootstrap.Modal(document.getElementById('oilChangeModal'));
@@ -886,6 +897,28 @@ function deleteOilChangeRecord(vehicleId, index) {
     }
 }
 
+// Add event listener to reset modal state when it's shown
+document.addEventListener('DOMContentLoaded', function() {
+    const oilChangeModal = document.getElementById('oilChangeModal');
+    if (oilChangeModal) {
+        oilChangeModal.addEventListener('show.bs.modal', function() {
+            // Reset modal to default state
+            resetOilChangeModal();
+        });
+    }
+});
+
+function resetOilChangeModal() {
+    // Reset modal title
+    document.getElementById('oilChangeModalTitle').innerHTML = '<i class="fas fa-history me-2"></i>Oil Change History - <span id="modalVehicleName"></span>';
+    
+    // Show both sections by default
+    document.getElementById('oilChangeHistorySection').style.display = 'block';
+    document.getElementById('oilChangeFormSection').style.display = 'block';
+    
+    // Clear the form
+    clearOilChangeForm();
+}
 
 </script>
 
