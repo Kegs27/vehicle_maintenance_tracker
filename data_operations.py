@@ -412,7 +412,7 @@ def get_maintenance_summary() -> Dict[str, Any]:
         
         total_vehicles = len(vehicles)
         total_records = len(records)
-        total_cost = sum(record.cost for record in records)
+        total_cost = sum(record.cost or 0 for record in records)
         
         return {
             "total_vehicles": total_vehicles,
