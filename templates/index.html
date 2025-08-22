@@ -153,14 +153,16 @@
                             <i class="fas fa-tools me-2 text-purple-600"></i>Maintenance
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/import">
-                            <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#" onclick="showOilChangeMenu()">
                             <i class="fas fa-oil-can me-2 text-purple-600"></i>Oil Change
                         </a></li>
+                        <li><a class="dropdown-item" href="/fuel">
+                            <i class="fas fa-gas-pump me-2 text-purple-600"></i>Fuel Tracking
+                        </a></li>
                         <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/import">
+                            <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
+                        </a></li>
                         <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
                             <i class="fas fa-file-csv me-2 text-success"></i>Export All to CSV
                         </a></li>
@@ -259,10 +261,10 @@
         <div class="container">
             <h3 class="text-center mb-5">Features</h3>
             <div class="row g-4">
-                <div class="col-md-4">
+                <div class="col-lg-3 col-md-6">
                     <div class="card feature-card h-100 text-center">
                         <div class="card-body p-4">
-                                                                        <i class="fas fa-car icon-xl text-purple-600 icon-mb"></i>
+                            <i class="fas fa-car icon-xl text-purple-600 icon-mb"></i>
                             <h5 class="card-title">Vehicle Management</h5>
                             <p class="card-text">Add and manage multiple vehicles with detailed information including VIN, year, make, and model.</p>
                             <a href="/vehicles" class="btn btn-outline-primary">
@@ -271,10 +273,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-3 col-md-6">
                     <div class="card feature-card h-100 text-center">
                         <div class="card-body p-4">
-                                                                        <i class="fas fa-tools icon-xl text-purple-600 icon-mb"></i>
+                            <i class="fas fa-tools icon-xl text-purple-600 icon-mb"></i>
                             <h5 class="card-title">Maintenance Tracking</h5>
                             <p class="card-text">Record and track all maintenance activities with dates, mileage, descriptions, and costs.</p>
                             <a href="/maintenance" class="btn btn-outline-primary">
@@ -283,15 +285,27 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-3 col-md-6">
                     <div class="card feature-card h-100 text-center">
                         <div class="card-body p-4">
-                                                                        <i class="fas fa-exchange-alt icon-xl text-purple-600 icon-mb"></i>
+                            <i class="fas fa-exchange-alt icon-xl text-purple-600 icon-mb"></i>
                             <h5 class="card-title">Data Transfer</h5>
                             <p class="card-text">Import maintenance records from CSV files and transfer data to various formats.</p>
                             <button class="btn btn-outline-primary" onclick="showTransferOptions()">
                                 <i class="fas fa-exchange-alt me-2"></i>Data Transfer
                             </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="card feature-card h-100 text-center">
+                        <div class="card-body p-4">
+                            <i class="fas fa-gas-pump icon-xl text-purple-600 icon-mb"></i>
+                            <h5 class="card-title">Fuel Tracking</h5>
+                            <p class="card-text">Track fuel consumption, mileage, and efficiency with photo verification.</p>
+                            <a href="/fuel" class="btn btn-outline-primary">
+                                <i class="fas fa-gas-pump me-2"></i>Track Fuel
+                            </a>
                         </div>
                     </div>
                 </div>

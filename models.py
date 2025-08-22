@@ -19,6 +19,12 @@ class Vehicle(SQLModel, table=True):
         back_populates="vehicle", 
         sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )
+    
+    # Relationship to fuel entries with cascade delete
+    fuel_entries: List["FuelEntry"] = Relationship(
+        back_populates="vehicle",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
 
 class MaintenanceRecord(SQLModel, table=True):
     """Maintenance record model"""
@@ -34,3 +40,23 @@ class MaintenanceRecord(SQLModel, table=True):
     
     # Relationship to vehicle
     vehicle: Vehicle = Relationship(back_populates="maintenance_records")
+
+class FuelEntry(SQLModel, table=True):
+    """Fuel entry model for tracking fill-ups"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    vehicle_id: int = Field(foreign_key="vehicle.id")
+    date: date_type = Field()
+    mileage: int
+    fuel_amount: float = Field(description="Fuel amount in gallons")
+    fuel_cost: float = Field(description="Total fuel cost")
+    fuel_type: str = Field(max_length=10, description="87, 89, 91, 93, diesel")
+    driving_pattern: str = Field(max_length=20, description="highway, city, mixed")
+    notes: Optional[str] = Field(default=None, max_length=500)
+    odometer_photo: Optional[str] = Field(default=None, description="Base64 encoded image or file path")
+    created_at: Optional[date_type] = Field(default_factory=date_type.today)
+    updated_at: Optional[date_type] = Field(default_factory=date_type.today)
+    
+    # Relationship to vehicle
+    vehicle: Vehicle = Relationship(back_populates="fuel_entries")

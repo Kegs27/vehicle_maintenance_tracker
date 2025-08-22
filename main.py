@@ -546,3 +546,61 @@ async def export_maintenance_csv():
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+@app.get("/fuel", response_class=HTMLResponse)
+async def fuel_tracking(request: Request):
+    """Fuel tracking page with vehicle selection and entry form"""
+    try:
+        vehicles = get_all_vehicles()
+        # For now, we'll pass empty data until we implement fuel tracking
+        last_fuel_entry = None
+        
+        # Convert vehicles to simple dictionaries to avoid session issues
+        vehicle_list = []
+        for vehicle in vehicles:
+            vehicle_dict = {
+                'id': vehicle.id,
+                'name': vehicle.name,
+                'year': vehicle.year,
+                'make': vehicle.make,
+                'model': vehicle.model,
+                'vin': vehicle.vin,
+                'fuel_entries': []  # Empty for now
+            }
+            vehicle_list.append(vehicle_dict)
+        
+        return templates.TemplateResponse("fuel_tracking.html", {
+            "request": request, 
+            "vehicles": vehicle_list,
+            "last_fuel_entry": last_fuel_entry
+        })
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Fuel Tracking Error</h1><p>{str(e)}</p>")
+
+@app.post("/api/fuel/entry")
+async def create_fuel_entry(
+    vehicle_id: int = Form(...),
+    date: str = Form(...),
+    time: str = Form(...),
+    mileage: int = Form(...),
+    fuel_amount: float = Form(...),
+    fuel_cost: float = Form(...),
+    fuel_type: str = Form(...),
+    driving_pattern: str = Form(...),
+    notes: Optional[str] = Form(None),
+    odometer_photo: Optional[str] = Form(None)
+):
+    """Create a new fuel entry"""
+    try:
+        # For now, return a placeholder response
+        # This will be implemented when we add the database functionality
+        return {
+            "success": True,
+            "message": "Fuel entry created successfully (placeholder - database not yet implemented)",
+            "entry_id": 1
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to create fuel entry: {str(e)}"
+        }
