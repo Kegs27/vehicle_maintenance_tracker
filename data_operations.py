@@ -310,7 +310,11 @@ def import_csv_data(file_content: str, vehicle_id: int = None) -> ImportResult:
         
         # Use the improved importer.py functions instead of basic parsing
         from importer import import_csv
-        return import_csv(file_content.encode('utf-8'), vehicle_id, session, "skip")
+        print(f"DEBUG: Calling importer.import_csv with file_content length: {len(file_content)}")
+        print(f"DEBUG: First 100 chars of file_content: {file_content[:100]}")
+        result = import_csv(file_content.encode('utf-8'), vehicle_id, session, "skip")
+        print(f"DEBUG: Import result: {result}")
+        return result
         
     except Exception as e:
         session.rollback()
