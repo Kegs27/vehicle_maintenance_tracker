@@ -575,10 +575,15 @@ function loadOilChangeHistory(vehicleId) {
         const history = JSON.parse(savedData);
         let tableHTML = '';
         
-        // Sort by date (newest first)
-        history.sort((a, b) => new Date(b.date) - new Date(a.date));
+        // Create a sorted copy for display, but keep original indices
+        const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        history.forEach((record, index) => {
+        sortedHistory.forEach((record, displayIndex) => {
+            // Find the original index in the unsorted array
+            const originalIndex = history.findIndex(r => 
+                r.date === record.date && r.mileage === record.mileage
+            );
+            
             tableHTML += `
                 <tr>
                     <td>${record.date}</td>
@@ -589,10 +594,10 @@ function loadOilChangeHistory(vehicleId) {
                     <td>${record.nextDueMileage ? record.nextDueMileage.toLocaleString() : '-'}</td>
                     <td>
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editOilChangeRecord(${vehicleId}, ${index})">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editOilChangeRecord(${vehicleId}, ${originalIndex})">
                                 <i class="fas fa-edit me-1"></i>Edit
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteOilChangeRecord(${vehicleId}, ${index})">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteOilChangeRecord(${vehicleId}, ${originalIndex})">
                                 <i class="fas fa-trash-alt me-1"></i>Delete
                             </button>
                         </div>
