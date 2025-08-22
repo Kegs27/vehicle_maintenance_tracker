@@ -166,6 +166,25 @@ def get_all_maintenance_records() -> List[MaintenanceRecord]:
     finally:
         session.close()
 
+def get_maintenance_records_by_vehicle(vehicle_id: int) -> List[MaintenanceRecord]:
+    """Get maintenance records for a specific vehicle ordered by date (newest first) with vehicle eagerly loaded"""
+    session = SessionLocal()
+    try:
+        # Use selectinload to eagerly load the vehicle relationship
+        from sqlalchemy.orm import selectinload
+        records = session.execute(
+            select(MaintenanceRecord)
+            .options(selectinload(MaintenanceRecord.vehicle))
+            .where(MaintenanceRecord.vehicle_id == vehicle_id)
+            .order_by(MaintenanceRecord.date.desc(), MaintenanceRecord.mileage.desc())
+        ).scalars().all()
+        return records
+    except Exception as e:
+        print(f"Error getting maintenance records for vehicle {vehicle_id}: {e}")
+        return []
+    finally:
+        session.close()
+
 def get_maintenance_by_id(record_id: int) -> Optional[MaintenanceRecord]:
     """Get a specific maintenance record by ID with vehicle eagerly loaded"""
     session = SessionLocal()

@@ -381,11 +381,26 @@ async def delete_vehicle_route(vehicle_id: int):
         raise HTTPException(status_code=500, detail=f"Failed to delete vehicle: {str(e)}")
 
 @app.get("/maintenance", response_class=HTMLResponse)
-async def list_maintenance(request: Request):
+async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(None)):
     """List maintenance records using centralized data operations"""
     try:
-        records = get_all_maintenance_records()
-        return templates.TemplateResponse("maintenance_list.html", {"request": request, "records": records})
+        if vehicle_id:
+            # Filter records for specific vehicle
+            records = get_maintenance_records_by_vehicle(vehicle_id)
+            vehicle = get_vehicle_by_id(vehicle_id)
+            vehicle_name = vehicle.name if vehicle else f"Vehicle {vehicle_id}"
+        else:
+            # Show all records
+            records = get_all_maintenance_records()
+            vehicle = None
+            vehicle_name = None
+        
+        return templates.TemplateResponse("maintenance_list.html", {
+            "request": request, 
+            "records": records, 
+            "vehicle": vehicle,
+            "vehicle_name": vehicle_name
+        })
     except Exception as e:
         return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
 
