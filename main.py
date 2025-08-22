@@ -30,6 +30,8 @@ def dummy_delete_vehicle(*args, **kwargs):
     return {"success": False, "error": "Database not available"}
 def dummy_get_all_maintenance_records():
     return []
+def dummy_get_maintenance_records_by_vehicle(*args, **kwargs):
+    return []
 def dummy_get_maintenance_by_id(*args, **kwargs):
     return None
 def dummy_create_maintenance_record(*args, **kwargs):
@@ -61,6 +63,7 @@ create_vehicle = dummy_create_vehicle
 update_vehicle = dummy_update_vehicle
 delete_vehicle = dummy_delete_vehicle
 get_all_maintenance_records = dummy_get_all_maintenance_records
+get_maintenance_records_by_vehicle = dummy_get_maintenance_records_by_vehicle
 get_maintenance_by_id = dummy_get_maintenance_by_id
 create_maintenance_record = dummy_create_maintenance_record
 update_maintenance_record = dummy_update_maintenance_record
@@ -83,6 +86,7 @@ try:
         update_vehicle as real_update_vehicle,
         delete_vehicle as real_delete_vehicle,
         get_all_maintenance_records as real_get_all_maintenance_records,
+        get_maintenance_records_by_vehicle as real_get_maintenance_records_by_vehicle,
         get_maintenance_by_id as real_get_maintenance_by_id,
         create_maintenance_record as real_create_maintenance_record,
         update_maintenance_record as real_update_maintenance_record,
@@ -101,6 +105,7 @@ try:
     update_vehicle = real_update_vehicle
     delete_vehicle = real_delete_vehicle
     get_all_maintenance_records = real_get_all_maintenance_records
+    get_maintenance_records_by_vehicle = real_get_maintenance_records_by_vehicle
     get_maintenance_by_id = real_get_maintenance_by_id
     create_maintenance_record = real_create_maintenance_record
     update_maintenance_record = real_update_maintenance_record
