@@ -1,5 +1,5 @@
-# Python version specification
-python-version>=3.11,<3.12
+# Python version specification (3.11+)
+# Note: This is a comment, not a pip requirement
 
 # Core FastAPI and server
 fastapi==0.104.1
