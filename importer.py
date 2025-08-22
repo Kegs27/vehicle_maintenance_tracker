@@ -22,21 +22,55 @@ def _parse_date_flexible(date_str: str) -> date:
     if not date_str or not date_str.strip():
         return None
     
-    # Remove common separators and normalize
-    date_str = re.sub(r'[,/\-]', ' ', date_str.strip())
+    date_str = date_str.strip()
     
     try:
         # Try parsing with dateutil first (most flexible)
         parsed = parser.parse(date_str, fuzzy=True)
         return parsed.date()
     except:
+        # Handle specific formats from your CSV
         try:
-            # Try common formats
-            for fmt in ['%m %Y', '%m %d %Y', '%Y %m %d']:
-                try:
-                    return datetime.strptime(date_str, fmt).date()
-                except:
-                    continue
+            # Format: '10/6/19' -> '2019-10-06'
+            if re.match(r'^\d{1,2}/\d{1,2}/\d{2}$', date_str):
+                month, day, year = date_str.split('/')
+                year = '20' + year if len(year) == 2 else year
+                return datetime.strptime(f"{year}-{month.zfill(2)}-{day.zfill(2)}", '%Y-%m-%d').date()
+            
+            # Format: '1/2020' -> '2020-01-01'
+            elif re.match(r'^\d{1,2}/\d{4}$', date_str):
+                month, year = date_str.split('/')
+                return datetime.strptime(f"{year}-{month.zfill(2)}-01", '%Y-%m-%d').date()
+            
+            # Format: '6/2020' -> '2020-06-01'
+            elif re.match(r'^\d{1,2}/\d{4}$', date_str):
+                month, year = date_str.split('/')
+                return datetime.strptime(f"{year}-{month.zfill(2)}-01", '%Y-%m-%d').date()
+            
+            # Format: '6/23/24' -> '2024-06-23'
+            elif re.match(r'^\d{1,2}/\d{1,2}/\d{2}$', date_str):
+                month, day, year = date_str.split('/')
+                year = '20' + year if len(year) == 2 else year
+                return datetime.strptime(f"{year}-{month.zfill(2)}-{day.zfill(2)}", '%Y-%m-%d').date()
+            
+            # Format: '7/11/24' -> '2024-07-11'
+            elif re.match(r'^\d{1,2}/\d{1,2}/\d{2}$', date_str):
+                month, day, year = date_str.split('/')
+                year = '20' + year if len(year) == 2 else year
+                return datetime.strptime(f"{year}-{month.zfill(2)}-{day.zfill(2)}", '%Y-%m-%d').date()
+            
+            # Format: '7/20/24' -> '2024-07-20'
+            elif re.match(r'^\d{1,2}/\d{1,2}/\d{2}$', date_str):
+                month, day, year = date_str.split('/')
+                year = '20' + year if len(year) == 2 else year
+                return datetime.strptime(f"{year}-{month.zfill(2)}-{day.zfill(2)}", '%Y-%m-%d').date()
+            
+            # Format: '7/31/24' -> '2024-07-31'
+            elif re.match(r'^\d{1,2}/\d{1,2}/\d{2}$', date_str):
+                month, day, year = date_str.split('/')
+                year = '20' + year if len(year) == 2 else year
+                return datetime.strptime(f"{year}-{month.zfill(2)}-{day.zfill(2)}", '%Y-%m-%d').date()
+            
         except:
             pass
     
@@ -52,7 +86,15 @@ def _parse_mileage_flexible(mileage_str: str) -> int:
     mileage_str = re.sub(r'miles?', '', mileage_str)
     mileage_str = re.sub(r'k$', '000', mileage_str)
     
+    # Handle specific formats from your CSV
     try:
+        # Remove commas from numbers like '188,000'
+        mileage_str = mileage_str.replace(',', '')
+        
+        # Handle 'k' notation (e.g., '188k' -> 188000)
+        if mileage_str.lower().endswith('k'):
+            mileage_str = mileage_str[:-1] + '000'
+        
         return int(mileage_str)
     except ValueError:
         return None
@@ -62,7 +104,13 @@ def _parse_cost_flexible(cost_str: str) -> float:
     if not cost_str:
         return None
     
-    # Remove currency symbols and parentheses (negative amounts)
+    cost_str = cost_str.strip()
+    
+    # Skip non-numeric text like 'insurance'
+    if not re.match(r'^[\$\(\),\d\s\.-]+$', cost_str):
+        return None
+    
+    # Remove currency symbols and commas
     cost_str = re.sub(r'[\$,\s]', '', cost_str)
     
     # Handle negative amounts in parentheses
