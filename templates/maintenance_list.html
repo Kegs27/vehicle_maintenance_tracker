@@ -6,7 +6,7 @@
     <title>Maintenance Records - Vehicle Maintenance Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/icon-styles.css" rel="stylesheet">
+    <link href="/static/icon-styles.css?v=1" rel="stylesheet">
     <style>
         .table-card {
             border: none;
@@ -94,6 +94,21 @@
             box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
         }
         
+        /* Custom purple color for table icons */
+        .text-purple-600 {
+            color: #9333ea !important;
+        }
+        
+        /* Table header icon styling */
+        .table th i {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+        
+        .table th span {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
 
     </style>
 </head>
@@ -156,39 +171,39 @@
                                 {% if not vehicle %}
                                     <th class="text-center">
                                         <div class="d-flex flex-column align-items-center">
-                                            <i class="fas fa-car text-primary"></i>
-                                            <span>Vehicle</span>
+                                            <i class="fas fa-car text-purple-600 small mb-2"></i>
+                                            <span class="small fw-semibold">Vehicle</span>
                                         </div>
                                     </th>
                                 {% endif %}
                                 <th class="text-center">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-calendar-alt text-primary"></i>
-                                        <span>Date</span>
+                                        <i class="fas fa-calendar-alt text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Date</span>
                                     </div>
                                 </th>
                                 <th class="text-center">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-tachometer-alt text-primary mb-1"></i>
-                                        <span>Mileage</span>
+                                        <i class="fas fa-tachometer-alt text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Mileage</span>
                                     </div>
                                 </th>
                                 <th class="text-center">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-clipboard-list text-primary mb-1"></i>
-                                        <span>Description</span>
+                                        <i class="fas fa-clipboard-list text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Description</span>
                                     </div>
                                 </th>
                                 <th class="text-center">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-dollar-sign text-primary mb-1"></i>
-                                        <span>Cost</span>
+                                        <i class="fas fa-dollar-sign text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Cost</span>
                                     </div>
                                 </th>
                                 <th class="text-center">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-ellipsis-h text-primary mb-1"></i>
-                                        <span>Actions</span>
+                                        <i class="fas fa-ellipsis-h text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Actions</span>
                                     </div>
                                 </th>
                             </tr>
