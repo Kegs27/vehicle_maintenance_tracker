@@ -12,3 +12,5 @@ services:
         value: 3.11.18
       - key: ENVIRONMENT
         value: production
+      - key: DATABASE_URL
+        sync: false  # This will be set manually in Render dashboard
