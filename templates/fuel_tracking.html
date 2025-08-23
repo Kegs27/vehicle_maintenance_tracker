@@ -173,6 +173,20 @@
             padding: 1.5rem;
         }
         
+        /* MPG Summary styling */
+        .display-6 {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        
+        .card.border-success {
+            border-color: #198754 !important;
+        }
+        
+        .card.border-light {
+            border-color: #f8f9fa !important;
+        }
+        
 
     </style>
 </head>
@@ -487,9 +501,23 @@
             </div>
         </div>
 
-        
-
-
+        <!-- Simple MPG Display -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>Vehicle MPG Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="mpgSummary" class="row g-3">
+                            <!-- MPG data will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Recent Fuel Entries -->
         <div class="row justify-content-center mt-5">
@@ -527,7 +555,8 @@
             // Load recent fuel entries
             loadRecentFuelEntries();
             
-
+            // Load MPG summary
+            loadMPGSummary();
             
             // Set up form validation
             setupFormValidation();
@@ -651,6 +680,86 @@
                     '<strong>Estimated Mileage:</strong> ' + (lastEntry.mileage + 300).toLocaleString() + '<br>' +
                     '<strong>Notes:</strong> ' + (lastEntry.notes || 'None');
             }
+        }
+
+        // Calculate and display MPG summary for all vehicles
+        function loadMPGSummary() {
+            const vehicles = JSON.parse(localStorage.getItem('vehicles') || '[]');
+            const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
+            
+            if (vehicles.length === 0) {
+                document.getElementById('mpgSummary').innerHTML = 
+                    '<div class="col-12 text-center text-muted py-4">' +
+                    '<i class="fas fa-info-circle me-2"></i>No vehicles found. Add vehicles to see MPG data.' +
+                    '</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            vehicles.forEach(vehicle => {
+                const vehicleEntries = fuelEntries.filter(entry => entry.vehicleId == vehicle.id);
+                
+                if (vehicleEntries.length < 2) {
+                    // Not enough entries to calculate MPG
+                    html += '<div class="col-md-6 col-lg-4">';
+                    html += '<div class="card border-light h-100">';
+                    html += '<div class="card-body text-center">';
+                    html += '<h6 class="card-title text-muted">' + vehicle.name + '</h6>';
+                    html += '<div class="text-muted small">';
+                    html += '<i class="fas fa-info-circle me-1"></i>Need at least 2 fuel entries';
+                    html += '</div>';
+                    html += '</div></div></div>';
+                } else {
+                    // Calculate MPG
+                    const mpgData = calculateMPG(vehicleEntries);
+                    
+                    html += '<div class="col-md-6 col-lg-4">';
+                    html += '<div class="card border-success h-100">';
+                    html += '<div class="card-body text-center">';
+                    html += '<h6 class="card-title text-success">' + vehicle.name + '</h6>';
+                    html += '<div class="display-6 text-primary mb-2">' + mpgData.averageMPG + '</div>';
+                    html += '<div class="text-muted small">MPG Average</div>';
+                    html += '<div class="mt-2 small text-muted">';
+                    html += 'Based on ' + mpgData.calculations + ' calculations';
+                    html += '</div>';
+                    html += '</div></div></div>';
+                }
+            });
+            
+            document.getElementById('mpgSummary').innerHTML = html;
+        }
+
+        // Calculate MPG for a set of fuel entries
+        function calculateMPG(vehicleEntries) {
+            if (vehicleEntries.length < 2) return null;
+            
+            // Sort by date and calculate MPG between consecutive entries
+            vehicleEntries.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+            
+            let totalMPG = 0;
+            let validCalculations = 0;
+            
+            for (let i = 1; i < vehicleEntries.length; i++) {
+                const current = vehicleEntries[i];
+                const previous = vehicleEntries[i - 1];
+                
+                const mileageDiff = current.mileage - previous.mileage;
+                const fuelUsed = previous.fuel_amount;
+                
+                if (mileageDiff > 0 && fuelUsed > 0) {
+                    const mpg = mileageDiff / fuelUsed;
+                    totalMPG += mpg;
+                    validCalculations++;
+                }
+            }
+            
+            if (validCalculations === 0) return null;
+            
+            return {
+                averageMPG: (totalMPG / validCalculations).toFixed(1),
+                calculations: validCalculations
+            };
         }
 
         function showQuickFillUp() {
@@ -851,6 +960,7 @@
                     alert('Fuel entry saved successfully!');
                     resetForm();
                     loadRecentFuelEntries();
+                    loadMPGSummary();
                     
                     // Close the modal
                     const modal = bootstrap.Modal.getInstance(document.getElementById('fuelEntryModal'));
@@ -865,6 +975,7 @@
                 alert('Fuel entry saved locally! (API connection failed)');
                 resetForm();
                 loadRecentFuelEntries();
+                loadMPGSummary();
                 
                 // Close the modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('fuelEntryModal'));
@@ -1085,6 +1196,7 @@
             localStorage.setItem('fuelEntries', JSON.stringify(fuelEntries));
             
             loadRecentFuelEntries();
+            loadMPGSummary();
             alert('Fuel entry deleted successfully!');
         }
         
