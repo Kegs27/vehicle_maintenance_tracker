@@ -457,6 +457,10 @@
     <script>
         // Make vehicles data available globally for JavaScript functions
         window.vehiclesData = {{ vehicles | tojson }};
+        
+        // Debug: Log the vehicles data structure
+        console.log('Vehicles data loaded:', window.vehiclesData);
+        console.log('First vehicle structure:', window.vehiclesData[0]);
         let selectedVehicleId = null;
         let selectedVehicleName = '';
         let currentPhoto = null;
@@ -1006,7 +1010,9 @@
             let html = '<div class="row">';
             
             vehicles.forEach(vehicle => {
-                const mpgData = calculateVehicleMPG(vehicle.id);
+                // Filter fuel entries for this specific vehicle
+                const vehicleFuelEntries = fuelEntries.filter(entry => entry.vehicleId === vehicle.id);
+                const mpgData = calculateMPG(vehicleFuelEntries);
                 
                 html += '<div class="col-lg-6 col-md-12 mb-4">';
                 html += '<div class="card h-100 border-0 shadow-sm">';
