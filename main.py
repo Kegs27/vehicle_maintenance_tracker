@@ -98,7 +98,9 @@ try:
         get_maintenance_summary as real_get_maintenance_summary,
         get_home_dashboard_summary as real_get_home_dashboard_summary,
         get_current_mileage_from_all_sources as real_get_current_mileage_from_all_sources,
-        get_oil_change_interval_from_record as real_get_oil_change_interval_from_record
+        get_oil_change_interval_from_record as real_get_oil_change_interval_from_record,
+        get_fuel_entries_for_vehicle as real_get_fuel_entries_for_vehicle,
+        get_all_fuel_entries as real_get_all_fuel_entries
     )
     
     # Replace dummy functions with real ones
@@ -148,7 +150,9 @@ except ImportError as e:
             get_maintenance_summary as real_get_maintenance_summary,
             get_home_dashboard_summary as real_get_home_dashboard_summary,
             get_current_mileage_from_all_sources as real_get_current_mileage_from_all_sources,
-            get_oil_change_interval_from_record as real_get_oil_change_interval_from_record
+            get_oil_change_interval_from_record as real_get_oil_change_interval_from_record,
+            get_fuel_entries_for_vehicle as real_get_fuel_entries_for_vehicle,
+            get_all_fuel_entries as real_get_all_fuel_entries
         )
         
         # Replace dummy functions with real ones
@@ -633,12 +637,13 @@ async def fuel_tracking(request: Request):
     """Fuel tracking page with vehicle selection and entry form"""
     try:
         vehicles = get_all_vehicles()
-        # For now, we'll pass empty data until we implement fuel tracking
-        last_fuel_entry = None
         
-        # Convert vehicles to simple dictionaries to avoid session issues
+        # Get fuel entries for each vehicle from the database
+        from data_operations import get_fuel_entries_for_vehicle
+        
         vehicle_list = []
         for vehicle in vehicles:
+            fuel_entries = get_fuel_entries_for_vehicle(vehicle.id)
             vehicle_dict = {
                 'id': vehicle.id,
                 'name': vehicle.name,
@@ -646,9 +651,13 @@ async def fuel_tracking(request: Request):
                 'make': vehicle.make,
                 'model': vehicle.model,
                 'vin': vehicle.vin,
-                'fuel_entries': []  # Empty for now
+                'fuel_entries': fuel_entries
             }
             vehicle_list.append(vehicle_dict)
+        
+        # Get the most recent fuel entry across all vehicles
+        all_fuel_entries = get_all_fuel_entries()
+        last_fuel_entry = all_fuel_entries[0] if all_fuel_entries else None
         
         return templates.TemplateResponse("fuel_tracking.html", {
             "request": request, 
@@ -671,16 +680,60 @@ async def create_fuel_entry(
     notes: Optional[str] = Form(None),
     odometer_photo: Optional[str] = Form(None)
 ):
-    """Create a new fuel entry"""
+    """Create a new fuel entry in the database"""
     try:
-        # For now, return a placeholder response
-        # This will be implemented when we add the database functionality
-        return {
-            "success": True,
-            "message": "Fuel entry created successfully (placeholder - database not yet implemented)",
-            "entry_id": 1
-        }
+        from database import SessionLocal
+        from models import FuelEntry
+        from datetime import datetime
+        
+        # Parse the date string
+        try:
+            parsed_date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            return {
+                "success": False,
+                "error": "Invalid date format. Use YYYY-MM-DD"
+            }
+        
+        # Create the fuel entry
+        session = SessionLocal()
+        try:
+            fuel_entry = FuelEntry(
+                vehicle_id=vehicle_id,
+                date=parsed_date,
+                mileage=mileage,
+                fuel_amount=fuel_amount,
+                fuel_cost=fuel_cost,
+                fuel_type=fuel_type,
+                driving_pattern=driving_pattern,
+                notes=notes,
+                odometer_photo=odometer_photo,
+                created_at=datetime.now().date(),
+                updated_at=datetime.now().date()
+            )
+            
+            session.add(fuel_entry)
+            session.commit()
+            session.refresh(fuel_entry)
+            
+            print(f"Fuel entry created: Vehicle {vehicle_id}, Mileage {mileage:,}, Date {parsed_date}")
+            
+            return {
+                "success": True,
+                "message": "Fuel entry created successfully",
+                "entry_id": fuel_entry.id,
+                "mileage": mileage,
+                "date": str(parsed_date)
+            }
+            
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+            
     except Exception as e:
+        print(f"Error creating fuel entry: {e}")
         return {
             "success": False,
             "error": f"Failed to create fuel entry: {str(e)}"

@@ -118,36 +118,15 @@
     <!-- Navigation -->
     {% include 'nav.html' %}
 
-    <!-- Hero Section -->
-    <section class="hero-section text-white text-center py-5">
+    <!-- Page Title Section -->
+    <section class="py-4">
         <div class="container">
-            <h1 class="display-4 mb-4">
-                <i class="fas fa-wrench me-3"></i>Vehicle Maintenance Tracker
-            </h1>
-            <p class="lead mb-4">Keep track of your vehicle maintenance, oil changes, and service history in one place.</p>
-            <div class="d-flex flex-wrap justify-content-center gap-3">
-                <a href="/maintenance/new" class="btn btn-outline-light btn-lg">
-                    <i class="fas fa-tools me-2"></i>Add Maintenance Record
-                </a>
-                <div class="dropdown d-inline-block">
-                    <button class="btn btn-outline-light btn-lg dropdown-toggle" type="button" id="heroTransferDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-exchange-alt me-2"></i>Data Transfer
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="heroTransferDropdown">
-                        <li><a class="dropdown-item" href="/import">
-                            <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
-                            <i class="fas fa-file-csv me-2 text-success"></i>Transfer All to CSV
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportToPDF()">
-                            <i class="fas fa-file-pdf me-2 text-danger"></i>Transfer All to PDF
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
-                            <i class="fas fa-car me-2 text-purple-600"></i>Transfer Single Vehicle
-                        </a></li>
-                    </ul>
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <h1 class="display-5 text-purple-600 mb-3">
+                        <i class="fas fa-wrench me-3"></i>Vehicle Maintenance Tracker
+                    </h1>
+                    <p class="lead text-muted">Keep track of your vehicle maintenance, oil changes, and service history in one place.</p>
                 </div>
             </div>
         </div>
@@ -198,9 +177,9 @@
                             {% if dashboard.oil_change_reminders %}
                                 <h3 class="text-warning mb-2">{{ dashboard.oil_change_reminders|length }}</h3>
                                 <p class="text-muted mb-3">Vehicle(s) Need Service</p>
-                                                                   <a href="/oil-changes" class="btn btn-outline-warning btn-sm">
-                                       <i class="fas fa-exclamation-triangle me-2"></i>View Details
-                                   </a>
+                                <a href="/oil-changes" class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>View Details
+                                </a>
                             {% else %}
                                 <h3 class="text-success mb-2">0</h3>
                                 <p class="text-muted mb-3">All Good!</p>
@@ -211,12 +190,12 @@
                 </div>
             </div>
 
-            <!-- Quick Actions Row -->
+            <!-- Enhanced Quick Actions Row -->
             <div class="row justify-content-center mt-4">
                 <div class="col-lg-8">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center p-4">
-                            <h4 class="text-purple-600 mb-3">
+                            <h4 class="text-purple-600 mb-4">
                                 <i class="fas fa-bolt me-2"></i>Quick Actions
                             </h4>
                             <div class="row g-3">
@@ -227,10 +206,14 @@
                                 </div>
                                 <div class="col-md-6">
                                     <a href="/maintenance/new" class="btn btn-success btn-lg w-100">
-                                        <i class="fas fa-tools me-2"></i>Add Maintenance
+                                        <i class="fas fa-tools me-2"></i>Add Maintenance Record
                                     </a>
                                 </div>
                             </div>
+                            <p class="text-muted mt-3 mb-0 small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Need to check oil status, track fuel, or transfer data? Use the navigation menu above.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -261,8 +244,8 @@
                             <i class="fas fa-tools icon-xl text-purple-600 icon-mb"></i>
                             <h5 class="card-title">Maintenance Tracking</h5>
                             <p class="card-text">Record and track all maintenance activities with dates, mileage, descriptions, and costs.</p>
-                            <a href="/maintenance" class="btn btn-outline-primary">
-                                <i class="fas fa-list me-2"></i>View Records
+                            <a href="/maintenance/new" class="btn btn-outline-primary">
+                                <i class="fas fa-plus me-2"></i>Add Maintenance
                             </a>
                         </div>
                     </div>
@@ -273,9 +256,9 @@
                             <i class="fas fa-exchange-alt icon-xl text-purple-600 icon-mb"></i>
                             <h5 class="card-title">Data Transfer</h5>
                             <p class="card-text">Import maintenance records from CSV files and transfer data to various formats.</p>
-                            <button class="btn btn-outline-primary" onclick="showTransferOptions()">
-                                <i class="fas fa-exchange-alt me-2"></i>Data Transfer
-                            </button>
+                            <a href="/import" class="btn btn-outline-primary">
+                                <i class="fas fa-upload me-2"></i>Import Data
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -368,81 +351,6 @@
     <script src="/static/export-data.js?v=3"></script>
     
     <script>
-        function showTransferOptions() {
-            // Create a modal or use Bootstrap's built-in modal
-            const modal = document.createElement('div');
-            modal.className = 'modal fade';
-            modal.id = 'transferModal';
-            modal.innerHTML = `
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <i class="fas fa-exchange-alt me-2"></i>Data Transfer
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="card h-100 border-primary">
-                                        <div class="card-body text-center p-4">
-                                            <i class="fas fa-upload icon-xl text-primary icon-mb"></i>
-                                            <h6 class="card-title">Import Data</h6>
-                                            <p class="card-text small">Import maintenance records from Google Sheets CSV files.</p>
-                                            <a href="/import" class="btn btn-primary btn-sm">
-                                                <i class="fas fa-upload me-2"></i>Import CSV
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                                                                <div class="card h-100 border-success">
-                                                <div class="card-body text-center p-4">
-                                                    <i class="fas fa-download icon-xl text-success icon-mb"></i>
-                                                    <h6 class="card-title">Transfer Data Out</h6>
-                                                    <p class="card-text small">Transfer your data to CSV or create PDF reports.</p>
-                                                    <div class="d-grid gap-2">
-                                                        <button class="btn btn-success btn-sm" onclick="exportAllVehicles(); closeTransferModal();">
-                                                            <i class="fas fa-file-csv me-2"></i>Export All Vehicles (CSV)
-                                                        </button>
-                                                        <button class="btn btn-danger btn-sm" onclick="exportAllVehiclesToPDF(); closeTransferModal();">
-                                                            <i class="fas fa-file-pdf me-2"></i>Export All Vehicles (PDF)
-                                                        </button>
-                                                        <button class="btn btn-primary btn-sm" onclick="exportSingleVehicle(); closeTransferModal();">
-                                                            <i class="fas fa-car me-2"></i>Export Vehicle Maintenance Records
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // Show the modal
-            const bootstrapModal = new bootstrap.Modal(modal);
-            bootstrapModal.show();
-            
-            // Remove modal from DOM after it's hidden
-            modal.addEventListener('hidden.bs.modal', function () {
-                document.body.removeChild(modal);
-            });
-        }
-        
-        function closeTransferModal() {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
-            if (modal) {
-                modal.hide();
-            }
-        }
-        
-
-
         // Dashboard Modal Functions
         function showRecentActivityModal() {
             const modal = document.createElement('div');

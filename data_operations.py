@@ -450,34 +450,53 @@ def get_maintenance_summary() -> Dict[str, Any]:
             "average_cost_per_record": 0
         }
 
-def get_current_mileage_from_all_sources(vehicle_id: int) -> int:
-    """Get current mileage from all sources (maintenance, oil change, fuel) - use highest/most recent"""
+# ============================================================================
+# MILEAGE TRACKING OPERATIONS
+# ============================================================================
+
+def get_vehicle_current_mileage(vehicle_id: int) -> Dict[str, Any]:
+    """
+    Centralized function to get current mileage for any vehicle from all data sources.
+    Returns comprehensive mileage information including source and confidence level.
+    
+    Args:
+        vehicle_id: ID of the vehicle
+        
+    Returns:
+        Dict containing:
+        - current_mileage: int - The most accurate current mileage
+        - source: str - Where the mileage came from ('maintenance', 'fuel', 'vehicle')
+        - source_date: date - When this mileage was recorded
+        - source_description: str - Description of the source record
+        - confidence: str - How confident we are in this mileage ('high', 'medium', 'low')
+        - all_sources: list - All mileage records found for this vehicle
+    """
     try:
-        # Get all records for this vehicle
-        records = get_all_maintenance_records()
-        vehicle_records = [record for record in records if record.vehicle_id == vehicle_id]
-        
-        # Get fuel entries for this vehicle
-        from database import SessionLocal
         session = SessionLocal()
-        try:
-            from models import FuelEntry
-            fuel_entries = session.execute(
-                select(FuelEntry).where(FuelEntry.vehicle_id == vehicle_id)
-            ).scalars().all()
-        finally:
-            session.close()
         
-        # Collect all mileage data with dates
+        # Get all maintenance records for this vehicle
+        maintenance_records = session.execute(
+            select(MaintenanceRecord).where(MaintenanceRecord.vehicle_id == vehicle_id)
+        ).scalars().all()
+        
+        # Get all fuel entries for this vehicle
+        from models import FuelEntry
+        fuel_entries = session.execute(
+            select(FuelEntry).where(FuelEntry.vehicle_id == vehicle_id)
+        ).scalars().all()
+        
+        # Collect all mileage data with metadata
         mileage_data = []
         
         # Add maintenance records
-        for record in vehicle_records:
+        for record in maintenance_records:
             mileage_data.append({
                 'mileage': record.mileage,
                 'date': record.date,
                 'source': 'maintenance',
-                'description': record.description
+                'description': record.description,
+                'record_id': record.id,
+                'type': 'maintenance'
             })
         
         # Add fuel entries
@@ -486,13 +505,22 @@ def get_current_mileage_from_all_sources(vehicle_id: int) -> int:
                 'mileage': fuel.mileage,
                 'date': fuel.date,
                 'source': 'fuel',
-                'description': f'Fuel fill-up'
+                'description': f'Fuel fill-up ({fuel.fuel_amount} gal)',
+                'record_id': fuel.id,
+                'type': 'fuel'
             })
         
         if not mileage_data:
-            return 0
+            return {
+                'current_mileage': 0,
+                'source': 'none',
+                'source_date': None,
+                'source_description': 'No mileage data found',
+                'confidence': 'low',
+                'all_sources': []
+            }
         
-        # Sort by date (most recent first) and mileage (highest first)
+        # Sort by date (most recent first) and then by mileage (highest first)
         mileage_data.sort(key=lambda x: (x['date'], x['mileage']), reverse=True)
         
         # Get the highest mileage from the most recent date
@@ -500,12 +528,78 @@ def get_current_mileage_from_all_sources(vehicle_id: int) -> int:
         latest_mileages = [m for m in mileage_data if m['date'] == latest_date]
         current_mileage = max(m['mileage'] for m in latest_mileages)
         
-        print(f"Vehicle {vehicle_id} current mileage: {current_mileage:,} from {latest_mileages[0]['source']} on {latest_date}")
-        return current_mileage
+        # Find the record that provides this mileage
+        current_record = next(m for m in latest_mileages if m['mileage'] == current_mileage)
+        
+        # Determine confidence level
+        confidence = 'high'
+        if len(latest_mileages) > 1:
+            # Multiple sources on same date - check for consistency
+            mileage_range = max(m['mileage'] for m in latest_mileages) - min(m['mileage'] for m in latest_mileages)
+            if mileage_range > 1000:  # More than 1000 mile difference
+                confidence = 'medium'
+        elif len(mileage_data) == 1:
+            confidence = 'medium'  # Only one data point
+        
+        # Calculate days since last update
+        days_since_update = (datetime.now().date() - latest_date).days if latest_date else None
+        
+        result = {
+            'current_mileage': current_mileage,
+            'source': current_record['source'],
+            'source_date': latest_date,
+            'source_description': current_record['description'],
+            'record_id': current_record['record_id'],
+            'confidence': confidence,
+            'days_since_update': days_since_update,
+            'all_sources': mileage_data,
+            'total_sources': len(mileage_data)
+        }
+        
+        print(f"Vehicle {vehicle_id} current mileage: {current_mileage:,} from {current_record['source']} on {latest_date} (confidence: {confidence})")
+        return result
         
     except Exception as e:
         print(f"Error getting current mileage for vehicle {vehicle_id}: {e}")
-        return 0
+        return {
+            'current_mileage': 0,
+            'source': 'error',
+            'source_date': None,
+            'source_description': f'Error: {str(e)}',
+            'confidence': 'low',
+            'all_sources': [],
+            'total_sources': 0
+        }
+    finally:
+        session.close()
+
+def get_all_vehicles_current_mileage() -> Dict[int, Dict[str, Any]]:
+    """
+    Get current mileage for all vehicles at once.
+    Useful for bulk operations and dashboard displays.
+    
+    Returns:
+        Dict mapping vehicle_id to mileage info from get_vehicle_current_mileage()
+    """
+    vehicles = get_all_vehicles()
+    mileage_data = {}
+    
+    for vehicle in vehicles:
+        mileage_data[vehicle.id] = get_vehicle_current_mileage(vehicle.id)
+    
+    return mileage_data
+
+# ============================================================================
+# LEGACY FUNCTIONS (keeping for backward compatibility)
+# ============================================================================
+
+def get_current_mileage_from_all_sources(vehicle_id: int) -> int:
+    """
+    Legacy function - use get_vehicle_current_mileage() instead.
+    Returns just the mileage number for backward compatibility.
+    """
+    mileage_info = get_vehicle_current_mileage(vehicle_id)
+    return mileage_info['current_mileage']
 
 def get_oil_change_interval_from_record(record: MaintenanceRecord) -> int:
     """Get oil change interval from the record, with fallback to default"""
@@ -517,11 +611,14 @@ def get_oil_change_interval_from_record(record: MaintenanceRecord) -> int:
     return 3000  # Default 3,000 miles
 
 def get_home_dashboard_summary() -> Dict[str, Any]:
-    """Get enhanced summary statistics for home page dashboard"""
+    """Get enhanced summary statistics for home page dashboard using centralized mileage tracking"""
     try:
         # Get basic data
         vehicles = get_all_vehicles()
         records = get_all_maintenance_records()
+        
+        # Get current mileage for all vehicles using centralized function
+        vehicles_current_mileage = get_all_vehicles_current_mileage()
         
         # Calculate date range for last 30 days
         from datetime import datetime, timedelta
@@ -534,49 +631,119 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
             if record.date and record.date >= thirty_days_ago
         ]
         
-        # Calculate collective miles this year
+        # Enhanced Miles This Year calculation using centralized mileage data
         current_year = today.year
         year_records = [
             record for record in records 
             if record.date and record.date.year == current_year
         ]
         
-        # Calculate total miles driven this year using enhanced mileage tracking
+        # Calculate miles this year with detailed breakdown
         total_miles_this_year = 0
-        if year_records:
-            # Group records by vehicle to calculate miles per vehicle
-            vehicle_miles = {}
-            for record in year_records:
-                if record.vehicle_id not in vehicle_miles:
-                    vehicle_miles[record.vehicle_id] = []
-                vehicle_miles[record.vehicle_id].append(record)
+        vehicle_miles_breakdown = []
+        
+        for vehicle in vehicles:
+            vehicle_id = vehicle.id
+            current_mileage_info = vehicles_current_mileage.get(vehicle_id, {})
+            current_mileage = current_mileage_info.get('current_mileage', 0)
             
-            # Calculate miles for each vehicle this year
-            for vehicle_id, vehicle_records in vehicle_miles.items():
-                if len(vehicle_records) >= 2:
-                    # Sort by date to get chronological order
-                    vehicle_records.sort(key=lambda x: x.date)
-                    
-                    # Calculate miles driven for this vehicle
-                    first_mileage = vehicle_records[0].mileage or 0
-                    last_mileage = vehicle_records[-1].mileage or 0
+            if current_mileage > 0:
+                # Get all records for this vehicle this year
+                vehicle_year_records = [
+                    record for record in year_records 
+                    if record.vehicle_id == vehicle_id
+                ]
+                
+                # Get fuel entries for this vehicle this year
+                from models import FuelEntry
+                session = SessionLocal()
+                try:
+                    vehicle_fuel_entries = session.execute(
+                        select(FuelEntry).where(
+                            FuelEntry.vehicle_id == vehicle_id,
+                            FuelEntry.date >= datetime(current_year, 1, 1).date()
+                        ).order_by(FuelEntry.date)
+                    ).scalars().all()
+                finally:
+                    session.close()
+                
+                # Combine maintenance and fuel records for this vehicle
+                all_vehicle_records = []
+                
+                # Add maintenance records
+                for record in vehicle_year_records:
+                    all_vehicle_records.append({
+                        'date': record.date,
+                        'mileage': record.mileage,
+                        'source': 'maintenance',
+                        'description': record.description
+                    })
+                
+                # Add fuel entries
+                for fuel in vehicle_fuel_entries:
+                    all_vehicle_records.append({
+                        'date': fuel.date,
+                        'mileage': fuel.mileage,
+                        'source': 'fuel',
+                        'description': f'Fuel fill-up ({fuel.fuel_amount} gal)'
+                    })
+                
+                # Sort by date to get chronological order
+                all_vehicle_records.sort(key=lambda x: x['date'])
+                
+                if len(all_vehicle_records) >= 2:
+                    # Calculate miles driven for this vehicle this year
+                    first_mileage = all_vehicle_records[0]['mileage']
+                    last_mileage = all_vehicle_records[-1]['mileage']
                     vehicle_miles_driven = last_mileage - first_mileage
                     
                     # Only add positive miles (handle odometer resets/errors)
                     if vehicle_miles_driven > 0:
                         total_miles_this_year += vehicle_miles_driven
+                        
+                        # Add to breakdown
+                        vehicle_miles_breakdown.append({
+                            'vehicle_name': vehicle.name,
+                            'vehicle_id': vehicle.id,
+                            'miles_driven': vehicle_miles_driven,
+                            'first_mileage': first_mileage,
+                            'last_mileage': last_mileage,
+                            'first_date': all_vehicle_records[0]['date'],
+                            'last_date': all_vehicle_records[-1]['date'],
+                            'record_count': len(all_vehicle_records),
+                            'current_mileage': current_mileage,
+                            'mileage_source': current_mileage_info.get('source', 'unknown'),
+                            'mileage_confidence': current_mileage_info.get('confidence', 'low')
+                        })
+                else:
+                    # Not enough records to calculate miles driven, but we have current mileage
+                    vehicle_miles_breakdown.append({
+                        'vehicle_name': vehicle.name,
+                        'vehicle_id': vehicle.id,
+                        'miles_driven': 0,
+                        'first_mileage': None,
+                        'last_mileage': None,
+                        'first_date': None,
+                        'last_date': None,
+                        'record_count': len(all_vehicle_records),
+                        'current_mileage': current_mileage,
+                        'mileage_source': current_mileage_info.get('source', 'unknown'),
+                        'mileage_confidence': current_mileage_info.get('confidence', 'low'),
+                        'note': 'Insufficient records to calculate miles driven this year'
+                    })
         
         # Enhanced oil change reminders with dynamic intervals
         oil_change_reminders = []
         for vehicle in vehicles:
-            # Get current mileage from ALL sources (maintenance, fuel, etc.)
-            current_mileage = get_current_mileage_from_all_sources(vehicle.id)
+            vehicle_id = vehicle.id
+            current_mileage_info = vehicles_current_mileage.get(vehicle_id, {})
+            current_mileage = current_mileage_info.get('current_mileage', 0)
             
             if current_mileage > 0:
                 # Find last oil change for this vehicle
                 oil_changes = [
                     record for record in records 
-                    if record.vehicle_id == vehicle.id and 'oil' in record.description.lower()
+                    if record.vehicle_id == vehicle_id and 'oil' in record.description.lower()
                 ]
                 
                 if oil_changes:
@@ -593,11 +760,15 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
                     if miles_until_next <= 500:
                         oil_change_reminders.append({
                             "vehicle_name": vehicle.name,
+                            "vehicle_id": vehicle.id,
                             "miles_until_due": miles_until_next,
                             "current_mileage": current_mileage,
                             "last_oil_change_mileage": last_oil_change.mileage,
                             "oil_change_interval": oil_change_interval,
-                            "status": "overdue" if miles_until_next < 0 else "due_soon"
+                            "status": "overdue" if miles_until_next < 0 else "due_soon",
+                            "last_oil_change_date": last_oil_change.date,
+                            "mileage_source": current_mileage_info.get('source', 'unknown'),
+                            "mileage_confidence": current_mileage_info.get('confidence', 'low')
                         })
                 else:
                     # No oil change records, estimate based on current mileage
@@ -607,19 +778,31 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
                     if miles_until_next <= 500:
                         oil_change_reminders.append({
                             "vehicle_name": vehicle.name,
+                            "vehicle_id": vehicle.id,
                             "miles_until_due": miles_until_next,
                             "current_mileage": current_mileage,
                             "last_oil_change_mileage": None,
                             "oil_change_interval": default_interval,
-                            "status": "due_soon"
+                            "status": "due_soon",
+                            "last_oil_change_date": None,
+                            "mileage_source": current_mileage_info.get('source', 'unknown'),
+                            "mileage_confidence": current_mileage_info.get('confidence', 'low'),
+                            "note": "No oil change records found, using default interval"
                         })
         
         return {
             "recent_activity_count": len(recent_records),
             "recent_records": recent_records,
             "total_miles_this_year": total_miles_this_year,
+            "vehicle_miles_breakdown": vehicle_miles_breakdown,
             "oil_change_reminders": oil_change_reminders,
-            "total_vehicles": len(vehicles)
+            "total_vehicles": len(vehicles),
+            "mileage_data_quality": {
+                "total_vehicles_with_mileage": len([v for v in vehicles_current_mileage.values() if v.get('current_mileage', 0) > 0]),
+                "high_confidence_mileage": len([v for v in vehicles_current_mileage.values() if v.get('confidence') == 'high']),
+                "medium_confidence_mileage": len([v for v in vehicles_current_mileage.values() if v.get('confidence') == 'medium']),
+                "low_confidence_mileage": len([v for v in vehicles_current_mileage.values() if v.get('confidence') == 'low'])
+            }
         }
     except Exception as e:
         print(f"Error getting home dashboard summary: {e}")
@@ -629,6 +812,93 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
             "recent_activity_count": 0,
             "recent_records": [],
             "total_miles_this_year": 0,
+            "vehicle_miles_breakdown": [],
             "oil_change_reminders": [],
-            "total_vehicles": 0
+            "total_vehicles": 0,
+            "mileage_data_quality": {
+                "total_vehicles_with_mileage": 0,
+                "high_confidence_mileage": 0,
+                "medium_confidence_mileage": 0,
+                "low_confidence_mileage": 0
+            }
         }
+
+# ============================================================================
+# FUEL TRACKING OPERATIONS
+# ============================================================================
+
+def get_fuel_entries_for_vehicle(vehicle_id: int) -> List[Dict[str, Any]]:
+    """Get all fuel entries for a specific vehicle"""
+    try:
+        session = SessionLocal()
+        from models import FuelEntry
+        
+        fuel_entries = session.execute(
+            select(FuelEntry).where(FuelEntry.vehicle_id == vehicle_id).order_by(FuelEntry.date.desc(), FuelEntry.mileage.desc())
+        ).scalars().all()
+        
+        # Convert to dictionaries for easier handling
+        entries = []
+        for entry in fuel_entries:
+            entries.append({
+                'id': entry.id,
+                'date': entry.date,
+                'mileage': entry.mileage,
+                'fuel_amount': entry.fuel_amount,
+                'fuel_cost': entry.fuel_cost,
+                'fuel_type': entry.fuel_type,
+                'driving_pattern': entry.driving_pattern,
+                'notes': entry.notes,
+                'odometer_photo': entry.odometer_photo,
+                'created_at': entry.created_at,
+                'updated_at': entry.updated_at
+            })
+        
+        return entries
+        
+    except Exception as e:
+        print(f"Error getting fuel entries for vehicle {vehicle_id}: {e}")
+        return []
+    finally:
+        session.close()
+
+def get_all_fuel_entries() -> List[Dict[str, Any]]:
+    """Get all fuel entries across all vehicles"""
+    try:
+        session = SessionLocal()
+        from models import FuelEntry
+        
+        fuel_entries = session.execute(
+            select(FuelEntry).order_by(FuelEntry.date.desc(), FuelEntry.mileage.desc())
+        ).scalars().all()
+        
+        # Convert to dictionaries with vehicle info
+        entries = []
+        for entry in fuel_entries:
+            vehicle = session.execute(
+                select(Vehicle).where(Vehicle.id == entry.vehicle_id)
+            ).scalar_one_or_none()
+            
+            entries.append({
+                'id': entry.id,
+                'vehicle_id': entry.vehicle_id,
+                'vehicle_name': vehicle.name if vehicle else 'Unknown Vehicle',
+                'date': entry.date,
+                'mileage': entry.mileage,
+                'fuel_amount': entry.fuel_amount,
+                'fuel_cost': entry.fuel_cost,
+                'fuel_type': entry.fuel_type,
+                'driving_pattern': entry.driving_pattern,
+                'notes': entry.notes,
+                'odometer_photo': entry.odometer_photo,
+                'created_at': entry.created_at,
+                'updated_at': entry.updated_at
+            })
+        
+        return entries
+        
+    except Exception as e:
+        print(f"Error getting all fuel entries: {e}")
+        return []
+    finally:
+        session.close()
