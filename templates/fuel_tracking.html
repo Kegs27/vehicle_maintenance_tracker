@@ -243,35 +243,10 @@
                                         <a href="/vehicles/new" class="btn btn-primary">
                                             <i class="fas fa-plus me-2"></i>Add Your First Vehicle
                                         </a>
-                                        <br><br>
-                                        <small class="text-muted">Or try the demo mode below to see the fuel tracking interface.</small>
                                     </div>
                                 </div>
                             {% endif %}
                         </div>
-                        
-                        <!-- Demo Mode Section -->
-                        {% if not vehicles %}
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <div class="card border-warning">
-                                    <div class="card-header bg-warning text-dark">
-                                        <h6 class="mb-0">
-                                            <i class="fas fa-flask me-2"></i>Demo Mode - Try Fuel Tracking Interface
-                                        </h6>
-                                    </div>
-                                    <div class="card-body text-center">
-                                        <p class="text-muted mb-3">
-                                            Experience the fuel tracking interface with demo data
-                                        </p>
-                                        <button class="btn btn-warning btn-lg" onclick="startDemoMode()">
-                                            <i class="fas fa-play me-2"></i>Start Demo Mode
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -1186,29 +1161,6 @@
         // Navigation functions
         function showOilChangeMenu() {
             window.location.href = '/vehicles';
-        }
-        
-        // Demo mode function
-        function startDemoMode() {
-            // Hide vehicle selection and show demo form
-            document.getElementById('vehicleSelection').style.display = 'none';
-            document.getElementById('fuelEntryForm').style.display = 'block';
-            
-            // Set demo vehicle data
-            document.getElementById('vehicleId').value = 'demo';
-            document.getElementById('selectedVehicleName').textContent = 'Demo Vehicle (2020 Test Car)';
-            
-            // Pre-fill some demo data
-            document.getElementById('drivingPattern').value = 'mixed';
-            document.getElementById('fuelType').value = '87';
-            document.getElementById('mileage').value = '45678';
-            document.getElementById('fuelAmount').value = '12.5';
-            document.getElementById('fuelCost').value = '45.75';
-            document.getElementById('notes').value = 'Demo fuel entry - testing the interface';
-            
-            // Update cost per gallon
-            const costPerGallon = (45.75 / 12.5).toFixed(2);
-            document.getElementById('costPerGallon').innerHTML = `<span class="text-success fw-bold">$${costPerGallon}</span>`;
         }
     </script>
 </body>
