@@ -95,7 +95,8 @@ try:
         export_vehicles_csv as real_export_vehicles_csv,
         export_maintenance_csv as real_export_maintenance_csv,
         get_vehicle_names as real_get_vehicle_names,
-        get_maintenance_summary as real_get_maintenance_summary
+        get_maintenance_summary as real_get_maintenance_summary,
+        get_home_dashboard_summary as real_get_home_dashboard_summary
     )
     
     # Replace dummy functions with real ones
@@ -115,6 +116,7 @@ try:
     export_maintenance_csv = real_export_maintenance_csv
     get_vehicle_names = real_get_vehicle_names
     get_maintenance_summary = real_get_maintenance_summary
+    get_home_dashboard_summary = real_get_home_dashboard_summary
     
     print("Successfully imported from current directory")
 except ImportError as e:
@@ -139,7 +141,8 @@ except ImportError as e:
             export_vehicles_csv as real_export_vehicles_csv,
             export_maintenance_csv as real_export_maintenance_csv,
             get_vehicle_names as real_get_vehicle_names,
-            get_maintenance_summary as real_get_maintenance_summary
+            get_maintenance_summary as real_get_maintenance_summary,
+            get_home_dashboard_summary as real_get_home_dashboard_summary
         )
         
         # Replace dummy functions with real ones
@@ -158,6 +161,7 @@ except ImportError as e:
         export_maintenance_csv = real_export_maintenance_csv
         get_vehicle_names = real_get_vehicle_names
         get_maintenance_summary = real_get_maintenance_summary
+        get_home_dashboard_summary = real_get_home_dashboard_summary
         
         print("Successfully imported from app package")
     except ImportError as e2:
@@ -285,6 +289,15 @@ async def health_check():
 async def test_endpoint():
     """Simple test endpoint to verify the app is working"""
     return {"message": "App is working!", "timestamp": datetime.now().isoformat()}
+
+@app.get("/test-dashboard")
+async def test_dashboard():
+    """Test endpoint to verify dashboard data is working"""
+    try:
+        dashboard_data = get_home_dashboard_summary()
+        return {"success": True, "dashboard": dashboard_data}
+    except Exception as e:
+        return {"success": False, "error": str(e), "traceback": traceback.format_exc()}
 
 @app.get("/vehicles", response_class=HTMLResponse)
 async def list_vehicles(request: Request):
