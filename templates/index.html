@@ -791,54 +791,82 @@
         function displayOilChangeReminders(reminders) {
             const content = document.getElementById('oilChangeRemindersContent');
             
-            let html = '<div class="alert alert-warning mb-3">';
-            html += '<i class="fas fa-exclamation-triangle me-2"></i>';
-            html += '<strong>Oil Change Due Soon</strong><br>';
-            html += '<small>The following vehicles need oil changes within 500 miles:</small>';
-            html += '</div>';
+            // Separate overdue and due soon reminders
+            const overdue = reminders.filter(r => r.status === 'overdue');
+            const dueSoon = reminders.filter(r => r.status === 'due_soon');
             
-            html += '<div class="row g-3">';
+            let html = '';
             
-            reminders.forEach(reminder => {
-                const urgencyClass = reminder.miles_until_due <= 100 ? 'danger' : 'warning';
-                const urgencyIcon = reminder.miles_until_due <= 100 ? 'exclamation-triangle' : 'clock';
+            // Show overdue reminders first
+            if (overdue.length > 0) {
+                html += '<div class="alert alert-danger mb-3">';
+                html += '<i class="fas fa-exclamation-triangle me-2"></i>';
+                html += '<strong>Oil Change OVERDUE!</strong><br>';
+                html += '<small>The following vehicles are overdue for oil changes:</small>';
+                html += '</div>';
                 
-                html += `
-                    <div class="col-12">
-                        <div class="card border-${urgencyClass}">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h6 class="card-title text-${urgencyClass}">
-                                            <i class="fas fa-${urgencyIcon} me-2"></i>${reminder.vehicle_name}
-                                        </h6>
-                                        <p class="mb-1">
-                                            <strong>Miles until due:</strong> 
-                                            <span class="text-${urgencyClass}">${reminder.miles_until_due.toLocaleString()}</span>
-                                        </p>
-                                        <p class="mb-1">
-                                            <strong>Current mileage:</strong> 
-                                            ${reminder.current_mileage.toLocaleString()}
-                                        </p>
-                                        ${reminder.last_oil_change_mileage ? 
-                                            `<p class="mb-0"><strong>Last oil change:</strong> ${reminder.last_oil_change_mileage.toLocaleString()}</p>` : 
-                                            '<p class="mb-0 text-muted"><em>No previous oil change records found</em></p>'
-                                        }
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="badge bg-${urgencyClass} fs-6">
-                                            ${reminder.miles_until_due <= 100 ? 'URGENT' : 'DUE SOON'}
-                                        </span>
-                                    </div>
+                html += '<div class="row g-3 mb-4">';
+                overdue.forEach(reminder => {
+                    html += createReminderCard(reminder, 'danger', 'exclamation-triangle', 'OVERDUE');
+                });
+                html += '</div>';
+            }
+            
+            // Show due soon reminders
+            if (dueSoon.length > 0) {
+                html += '<div class="alert alert-warning mb-3">';
+                html += '<i class="fas fa-clock me-2"></i>';
+                html += '<strong>Oil Change Due Soon</strong><br>';
+                html += '<small>The following vehicles need oil changes within 500 miles:</small>';
+                html += '</div>';
+                
+                html += '<div class="row g-3">';
+                dueSoon.forEach(reminder => {
+                    html += createReminderCard(reminder, 'warning', 'clock', 'DUE SOON');
+                });
+                html += '</div>';
+            }
+            
+            content.innerHTML = html;
+        }
+        
+        function createReminderCard(reminder, urgencyClass, icon, statusText) {
+            const milesText = reminder.miles_until_due < 0 ? 
+                `Overdue by ${Math.abs(reminder.miles_until_due).toLocaleString()} miles` :
+                `${reminder.miles_until_due.toLocaleString()} miles until due`;
+            
+            return `
+                <div class="col-12">
+                    <div class="card border-${urgencyClass}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title text-${urgencyClass}">
+                                        <i class="fas fa-${icon} me-2"></i>${reminder.vehicle_name}
+                                    </h6>
+                                    <p class="mb-1">
+                                        <strong>Status:</strong> 
+                                        <span class="text-${urgencyClass}">${milesText}</span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Current mileage:</strong> 
+                                        ${reminder.current_mileage.toLocaleString()}
+                                    </p>
+                                    ${reminder.last_oil_change_mileage ? 
+                                        `<p class="mb-0"><strong>Last oil change:</strong> ${reminder.last_oil_change_mileage.toLocaleString()}</p>` : 
+                                        '<p class="mb-0 text-muted"><em>No previous oil change records found</em></p>'
+                                    }
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-${urgencyClass} fs-6">
+                                        ${statusText}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                `;
-            });
-            
-            html += '</div>';
-            content.innerHTML = html;
+                </div>
+            `;
         }
 
     </script>

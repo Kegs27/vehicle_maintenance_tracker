@@ -520,12 +520,14 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
                     miles_since_oil_change = current_mileage - last_oil_change.mileage
                     miles_until_next = 3000 - miles_since_oil_change
                     
-                    if miles_until_next <= 500:  # Show if due within 500 miles
+                    # Show reminder if due within 500 miles OR overdue
+                    if miles_until_next <= 500:
                         oil_change_reminders.append({
                             "vehicle_name": vehicle.name,
                             "miles_until_due": miles_until_next,
                             "current_mileage": current_mileage,
-                            "last_oil_change_mileage": last_oil_change.mileage
+                            "last_oil_change_mileage": last_oil_change.mileage,
+                            "status": "overdue" if miles_until_next < 0 else "due_soon"
                         })
                 else:
                     # No oil change records, estimate based on current mileage
@@ -535,7 +537,8 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
                             "vehicle_name": vehicle.name,
                             "miles_until_due": miles_until_next,
                             "current_mileage": current_mileage,
-                            "last_oil_change_mileage": None
+                            "last_oil_change_mileage": None,
+                            "status": "due_soon"
                         })
         
         return {
