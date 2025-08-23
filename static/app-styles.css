@@ -224,10 +224,18 @@ body::before {
 /* Button group styling */
 .btn-group .btn {
     margin-right: 0.25rem;
+    border-radius: 0.375rem;
+}
+
+.btn-group .btn:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .btn-group .btn:last-child {
     margin-right: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
 }
 
 /* Badge styling */
