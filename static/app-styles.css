@@ -95,12 +95,12 @@ body::before {
 .btn-primary {
     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     border: none;
-    border-radius: 25px;
-    padding: 12px 30px;
+    border-radius: 8px;
+    padding: 8px 16px;
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -116,7 +116,7 @@ body::before {
 }
 
 .btn-sm {
-    border-radius: 20px;
+    border-radius: 8px;
     padding: 6px 16px;
 }
 
@@ -233,6 +233,29 @@ body::before {
 /* Badge styling */
 .badge.bg-purple-600 {
     background-color: #9333ea !important;
+}
+
+/* Ghost/Outlined button styling */
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-danger,
+.btn-outline-warning,
+.btn-outline-info {
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-success:hover,
+.btn-outline-danger:hover,
+.btn-outline-warning:hover,
+.btn-outline-info:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================================================
