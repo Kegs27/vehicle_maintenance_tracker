@@ -139,6 +139,24 @@
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
         }
+        
+        /* MPG Metrics styling */
+        .card.shadow-sm {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        
+        .card.shadow-sm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+        
+        .bg-primary, .bg-success, .bg-info {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .bg-primary h4, .bg-success h4, .bg-info h6 {
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
@@ -456,6 +474,24 @@
             </div>
         </div>
 
+        <!-- Vehicle MPG Metrics -->
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>Vehicle Fuel Efficiency Metrics
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="vehicleMPGMetrics">
+                            <!-- MPG metrics will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Recent Fuel Entries -->
         <div class="row justify-content-center mt-5">
             <div class="col-md-10">
@@ -491,6 +527,9 @@
             
             // Load recent fuel entries
             loadRecentFuelEntries();
+            
+            // Load MPG metrics
+            loadVehicleMPGMetrics();
             
             // Set up form validation
             setupFormValidation();
@@ -773,6 +812,7 @@
                     alert('Fuel entry saved successfully!');
                     resetForm();
                     loadRecentFuelEntries();
+                    loadVehicleMPGMetrics();
                     showVehicleSelection();
                 } else {
                     alert('Error saving fuel entry: ' + data.error);
@@ -784,6 +824,7 @@
                 alert('Fuel entry saved locally! (API connection failed)');
                 resetForm();
                 loadRecentFuelEntries();
+                loadVehicleMPGMetrics();
                 showVehicleSelection();
             });
         }
@@ -804,6 +845,191 @@
             document.getElementById('fuelTime').value = now.toTimeString().slice(0, 5);
         }
 
+        // Calculate MPG for a vehicle based on fuel entries
+        function calculateVehicleMPG(vehicleId) {
+            const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
+            const vehicleEntries = fuelEntries.filter(entry => entry.vehicleId === vehicleId);
+            
+            if (vehicleEntries.length < 2) return null;
+            
+            // Sort by date and calculate MPG between consecutive entries
+            vehicleEntries.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+            
+            let totalMPG = 0;
+            let validCalculations = 0;
+            
+            for (let i = 1; i < vehicleEntries.length; i++) {
+                const current = vehicleEntries[i];
+                const previous = vehicleEntries[i - 1];
+                
+                const mileageDiff = current.mileage - previous.mileage;
+                const fuelUsed = previous.fuel_amount;
+                
+                if (mileageDiff > 0 && fuelUsed > 0) {
+                    const mpg = mileageDiff / fuelUsed;
+                    totalMPG += mpg;
+                    validCalculations++;
+                }
+            }
+            
+            if (validCalculations === 0) return null;
+            
+            return {
+                averageMPG: (totalMPG / validCalculations).toFixed(1),
+                totalMPG: totalMPG.toFixed(1),
+                calculations: validCalculations,
+                lastCalculated: vehicleEntries[vehicleEntries.length - 1].date
+            };
+        }
+        
+        // Calculate cost per mile for a vehicle
+        function calculateCostPerMile(vehicleId) {
+            const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
+            const vehicleEntries = fuelEntries.filter(entry => entry.vehicleId === vehicleId);
+            
+            if (vehicleEntries.length === 0) return null;
+            
+            const totalCost = vehicleEntries.reduce((sum, entry) => sum + entry.fuel_cost, 0);
+            const totalMiles = vehicleEntries[vehicleEntries.length - 1].mileage - vehicleEntries[0].mileage;
+            
+            if (totalMiles <= 0) return null;
+            
+            return {
+                costPerMile: (totalCost / totalMiles).toFixed(3),
+                totalCost: totalCost.toFixed(2),
+                totalMiles: totalMiles.toLocaleString()
+            };
+        }
+        
+        // Get MPG trend for a vehicle (last 5 entries)
+        function getMPGTrend(vehicleId) {
+            const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
+            const vehicleEntries = fuelEntries.filter(entry => entry.vehicleId === vehicleId);
+            
+            if (vehicleEntries.length < 4) return null;
+            
+            // Sort by date and get last 5 entries
+            vehicleEntries.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+            const recentEntries = vehicleEntries.slice(-5);
+            
+            let recentMPG = 0;
+            let olderMPG = 0;
+            let recentCount = 0;
+            let olderCount = 0;
+            
+            // Calculate MPG for recent vs older entries
+            for (let i = 1; i < recentEntries.length; i++) {
+                const current = recentEntries[i];
+                const previous = recentEntries[i - 1];
+                const mileageDiff = current.mileage - previous.mileage;
+                const fuelUsed = previous.fuel_amount;
+                
+                if (mileageDiff > 0 && fuelUsed > 0) {
+                    const mpg = mileageDiff / fuelUsed;
+                    if (i >= recentEntries.length - 2) {
+                        recentMPG += mpg;
+                        recentCount++;
+                    } else {
+                        olderMPG += mpg;
+                        olderCount++;
+                    }
+                }
+            }
+            
+            if (recentCount === 0 || olderCount === 0) return null;
+            
+            const recentAvg = recentMPG / recentCount;
+            const olderAvg = olderMPG / olderCount;
+            const difference = recentAvg - olderAvg;
+            
+            return {
+                recent: recentAvg.toFixed(1),
+                older: olderAvg.toFixed(1),
+                difference: difference.toFixed(1),
+                trend: difference > 0 ? 'improving' : difference < 0 ? 'declining' : 'stable',
+                percentage: ((difference / olderAvg) * 100).toFixed(1)
+            };
+        }
+        
+        // Load and display MPG metrics for all vehicles
+        function loadVehicleMPGMetrics() {
+            const vehicles = JSON.parse(localStorage.getItem('vehicles') || '[]');
+            const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
+            
+            if (vehicles.length === 0) {
+                document.getElementById('vehicleMPGMetrics').innerHTML = 
+                    '<div class="text-center text-muted py-4"><i class="fas fa-info-circle me-2"></i>No vehicles found. Add vehicles to see MPG metrics.</div>';
+                return;
+            }
+            
+            let html = '<div class="row">';
+            
+            vehicles.forEach(vehicle => {
+                const mpgData = calculateVehicleMPG(vehicle.id);
+                const costData = calculateCostPerMile(vehicle.id);
+                const trendData = getMPGTrend(vehicle.id);
+                
+                html += '<div class="col-lg-6 col-md-12 mb-4">';
+                html += '<div class="card h-100 border-0 shadow-sm">';
+                html += '<div class="card-header bg-light">';
+                html += `<h6 class="mb-0 text-center"><i class="fas fa-car text-purple-600 me-2"></i>${vehicle.name}</h6>`;
+                html += '</div>';
+                html += '<div class="card-body">';
+                
+                if (mpgData) {
+                    html += '<div class="row text-center mb-3">';
+                    html += '<div class="col-6">';
+                    html += '<div class="bg-primary text-white rounded p-3">';
+                    html += '<h4 class="mb-1">' + mpgData.averageMPG + '</h4>';
+                    html += '<small>Avg MPG</small>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div class="col-6">';
+                    html += '<div class="bg-success text-white rounded p-3">';
+                    html += '<h4 class="mb-1">' + mpgData.calculations + '</h4>';
+                    html += '<small>Calculations</small>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    if (trendData) {
+                        const trendIcon = trendData.trend === 'improving' ? 'fa-arrow-up text-success' : 
+                                        trendData.trend === 'declining' ? 'fa-arrow-down text-danger' : 'fa-minus text-muted';
+                        const trendColor = trendData.trend === 'improving' ? 'text-success' : 
+                                         trendData.trend === 'declining' ? 'text-danger' : 'text-muted';
+                        
+                        html += '<div class="text-center mb-3">';
+                        html += '<div class="d-inline-block bg-light rounded p-2">';
+                        html += `<i class="fas ${trendIcon} me-2"></i>`;
+                        html += `<span class="${trendColor}">${trendData.trend} (${trendData.percentage}%)</span>`;
+                        html += '</div>';
+                        html += '</div>';
+                    }
+                } else {
+                    html += '<div class="text-center text-muted py-3">';
+                    html += '<i class="fas fa-info-circle me-2"></i>Need at least 2 fuel entries to calculate MPG';
+                    html += '</div>';
+                }
+                
+                if (costData) {
+                    html += '<div class="text-center">';
+                    html += '<div class="bg-info text-white rounded p-2">';
+                    html += '<h6 class="mb-1">$' + costData.costPerMile + '</h6>';
+                    html += '<small>Cost per Mile</small>';
+                    html += '</div>';
+                    html += '</div>';
+                }
+                
+                html += '</div>'; // card-body
+                html += '</div>'; // card
+                html += '</div>'; // col
+            });
+            
+            html += '</div>'; // row
+            
+            document.getElementById('vehicleMPGMetrics').innerHTML = html;
+        }
+        
         function loadRecentFuelEntries() {
             // Load fuel entries from local storage
             const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
@@ -893,6 +1119,7 @@
             localStorage.setItem('fuelEntries', JSON.stringify(fuelEntries));
             
             loadRecentFuelEntries();
+            loadVehicleMPGMetrics();
             alert('Fuel entry deleted successfully!');
         }
         
