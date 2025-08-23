@@ -189,7 +189,7 @@
                             <i class="fas fa-bolt me-2 text-warning"></i>Quick Access
                         </h5>
                         <div class="text-center">
-                            <button class="btn btn-primary btn-lg" onclick="showVehicleSelection()">
+                            <button class="btn btn-primary btn-lg" onclick="showVehicleSelectionForFuel()">
                                 <i class="fas fa-plus me-2"></i>New Fuel Entry
                             </button>
                         </div>
@@ -1161,6 +1161,100 @@
         // Navigation functions
         function showOilChangeMenu() {
             window.location.href = '/vehicles';
+        }
+
+        // Vehicle selection for fuel entry
+        function showVehicleSelectionForFuel() {
+            // Create vehicle selection modal
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'vehicleSelectionModal';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-car me-2"></i>Select Vehicle for Fuel Entry
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted mb-3">Choose a vehicle to add a fuel entry:</p>
+                            <div id="vehicleSelectionList">
+                                <!-- Vehicles will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Load vehicles for selection
+            loadVehiclesForSelection();
+            
+            // Show the modal
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+            
+            // Remove modal from DOM when hidden
+            modal.addEventListener('hidden.bs.modal', function() {
+                modal.remove();
+            });
+        }
+
+        function loadVehiclesForSelection() {
+            const vehicleList = document.getElementById('vehicleSelectionList');
+            const vehicles = {{ vehicles | tojson }};
+            
+            if (!vehicles || vehicles.length === 0) {
+                vehicleList.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>No vehicles found.</strong> 
+                        <br>You need to add a vehicle first to use fuel tracking.
+                        <br><br>
+                        <a href="/vehicles/new" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Your First Vehicle
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="row g-3">';
+            vehicles.forEach(vehicle => {
+                html += `
+                    <div class="col-md-6">
+                        <div class="card border-primary h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-car fa-2x text-primary mb-3"></i>
+                                <h6 class="card-title fw-bold">${vehicle.name}</h6>
+                                <p class="card-text small text-muted mb-3">
+                                    ${vehicle.year} ${vehicle.make} ${vehicle.model}
+                                </p>
+                                <button class="btn btn-primary btn-sm" onclick="selectVehicleForFuel(${vehicle.id}, '${vehicle.name}')">
+                                    <i class="fas fa-plus me-1"></i>Select Vehicle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            vehicleList.innerHTML = html;
+        }
+
+        function selectVehicleForFuel(vehicleId, vehicleName) {
+            // Close the vehicle selection modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('vehicleSelectionModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Open the fuel entry modal for the selected vehicle
+            openFuelEntryModal(vehicleId, vehicleName);
         }
     </script>
 </body>
