@@ -203,7 +203,7 @@ def get_maintenance_by_id(record_id: int) -> Optional[MaintenanceRecord]:
     finally:
         session.close()
 
-def create_maintenance_record(vehicle_id: int, date: str, description: str, cost: float, mileage: int, oil_change_interval: Optional[int] = None) -> Dict[str, Any]:
+def create_maintenance_record(vehicle_id: int, date: str, description: str, cost: float, mileage: Optional[int], oil_change_interval: Optional[int] = None) -> Dict[str, Any]:
     """Create a new maintenance record"""
     session = SessionLocal()
     try:
@@ -218,6 +218,13 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
         except ValueError:
             return {"success": False, "error": "Invalid date format. Use YYYY-MM-DD"}
         
+        # Handle missing mileage - use placeholder and mark date as estimated for sorting
+        if mileage is None:
+            mileage = 0  # Placeholder mileage
+            date_estimated = True
+        else:
+            date_estimated = False
+        
         # Create maintenance record
         record = MaintenanceRecord(
             vehicle_id=vehicle_id,
@@ -225,6 +232,7 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
             description=description,
             cost=cost,
             mileage=mileage,
+            date_estimated=date_estimated,
             oil_change_interval=oil_change_interval
         )
         
@@ -240,7 +248,7 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
     finally:
         session.close()
 
-def update_maintenance_record(record_id: int, vehicle_id: int, date: str, description: str, cost: float, mileage: int, oil_change_interval: Optional[int] = None) -> Dict[str, Any]:
+def update_maintenance_record(record_id: int, vehicle_id: int, date: str, description: str, cost: float, mileage: Optional[int], oil_change_interval: Optional[int] = None) -> Dict[str, Any]:
     """Update an existing maintenance record"""
     session = SessionLocal()
     try:
@@ -261,12 +269,20 @@ def update_maintenance_record(record_id: int, vehicle_id: int, date: str, descri
         except ValueError:
             return {"success": False, "error": "Invalid date format. Use YYYY-MM-DD"}
         
+        # Handle missing mileage - use placeholder and mark date as estimated for sorting
+        if mileage is None:
+            mileage = 0  # Placeholder mileage
+            date_estimated = True
+        else:
+            date_estimated = False
+        
         # Update record
         record.vehicle_id = vehicle_id
         record.date = parsed_date
         record.description = description
         record.cost = cost
         record.mileage = mileage
+        record.date_estimated = date_estimated
         record.oil_change_interval = oil_change_interval
         
         session.commit()

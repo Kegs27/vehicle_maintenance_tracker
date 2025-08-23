@@ -101,13 +101,13 @@
                             {% endif %}
 
                             <div class="mb-3">
-                                <label for="mileage" class="form-label fw-bold">Mileage *</label>
+                                <label for="mileage" class="form-label fw-bold">Mileage</label>
                                 <input type="number" class="form-control" id="mileage" name="mileage" 
                                        value="{{ record.mileage if record else '' }}" 
-                                       min="0" step="1" required>
+                                       min="0" step="1">
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    Mileage is required for proper maintenance tracking and oil change calculations
+                                    Leave blank if mileage is unknown - record will use placeholder mileage (0) and be sorted by date
                                 </div>
                             </div>
 

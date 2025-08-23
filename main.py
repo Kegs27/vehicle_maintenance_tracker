@@ -464,7 +464,7 @@ async def new_maintenance_form(request: Request):
 async def create_maintenance_route(
     vehicle_id: int = Form(...),
     date_str: str = Form(...),
-    mileage: int = Form(...),
+    mileage: Optional[int] = Form(None),
     description: str = Form(...),
     cost: Optional[float] = Form(None),
     oil_change_interval: Optional[int] = Form(None)
@@ -559,7 +559,7 @@ async def update_maintenance_route(
     record_id: int,
     vehicle_id: int = Form(...),
     date_str: str = Form(...),
-    mileage: int = Form(...),
+    mileage: Optional[int] = Form(None),
     description: str = Form(...),
     cost: Optional[float] = Form(None),
     oil_change_interval: Optional[int] = Form(None)
