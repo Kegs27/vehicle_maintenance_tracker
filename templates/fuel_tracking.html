@@ -165,22 +165,31 @@
                         <h5 class="card-title mb-3">
                             <i class="fas fa-bolt me-2 text-warning"></i>Quick Access
                         </h5>
-                        {% if last_fuel_entry %}
-                        <div class="mb-3">
-                            <p class="text-muted mb-2">Continue from last fill-up:</p>
-                            <div class="d-flex justify-content-center align-items-center">
-                                <i class="fas fa-car me-2 text-primary"></i>
-                                <strong>{{ last_fuel_entry.vehicle.name }}</strong>
-                                <span class="text-muted ms-2">({{ last_fuel_entry.mileage }} mi)</span>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <button class="btn btn-primary btn-lg w-100" onclick="showVehicleSelection()">
+                                    <i class="fas fa-plus me-2"></i>New Fuel Entry
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-success btn-lg w-100" onclick="showQuickFillUp()">
+                                    <i class="fas fa-bolt me-2"></i>Quick Fill-Up
+                                </button>
                             </div>
                         </div>
-                        <button class="btn btn-success btn-lg me-2" onclick="continueLastFillUp()">
-                            <i class="fas fa-play me-2"></i>Continue
-                        </button>
-                        {% endif %}
-                        <button class="btn btn-primary btn-lg" onclick="showVehicleSelection()">
-                            <i class="fas fa-plus me-2"></i>New Fuel Entry
-                        </button>
+                        
+                        <!-- Quick Fill-Up Info -->
+                        <div id="quickFillInfo" class="mt-3" style="display: none;">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading mb-2">
+                                    <i class="fas fa-info-circle me-2"></i>Quick Fill-Up Mode
+                                </h6>
+                                <p class="mb-2">This will pre-fill the form with your last used settings:</p>
+                                <div id="lastUsedSettings" class="small">
+                                    <!-- Last used settings will appear here -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -393,6 +402,9 @@
                                 <button type="submit" class="btn btn-success btn-lg">
                                     <i class="fas fa-save me-2"></i>Save Fuel Entry
                                 </button>
+                                <button type="button" class="btn btn-warning btn-lg" onclick="prepareQuickFillUp()">
+                                    <i class="fas fa-bolt me-2"></i>Quick Fill-Up Next
+                                </button>
                                 <button type="button" class="btn btn-outline-secondary btn-lg" onclick="resetForm()">
                                     <i class="fas fa-undo me-2"></i>Reset Form
                                 </button>
@@ -467,6 +479,100 @@
             loadVehicleDefaults(vehicleId);
         }
 
+        function showQuickFillUp() {
+            // Check for saved quick fill template first
+            const savedTemplate = JSON.parse(localStorage.getItem('quickFillTemplate') || 'null');
+            
+            if (savedTemplate) {
+                // Use saved template
+                const quickFillInfo = document.getElementById('quickFillInfo');
+                const lastUsedSettings = document.getElementById('lastUsedSettings');
+                
+                lastUsedSettings.innerHTML = `
+                    <strong>Vehicle:</strong> ${savedTemplate.vehicleName}<br>
+                    <strong>Fuel Type:</strong> ${savedTemplate.fuel_type}<br>
+                    <strong>Driving Pattern:</strong> ${savedTemplate.driving_pattern}<br>
+                    <strong>Last Mileage:</strong> ${savedTemplate.mileage.toLocaleString()}<br>
+                    <strong>Notes:</strong> ${savedTemplate.notes || 'None'}<br>
+                    <span class="text-success"><i class="fas fa-check me-1"></i>Using saved template</span>
+                `;
+                
+                quickFillInfo.style.display = 'block';
+                
+                // Auto-fill the form with saved template
+                document.getElementById('vehicleId').value = savedTemplate.vehicleId || 'demo';
+                document.getElementById('selectedVehicleName').textContent = savedTemplate.vehicleName;
+                
+                // Set current date/time
+                const now = new Date();
+                document.getElementById('fuelDate').value = now.toISOString().split('T')[0];
+                document.getElementById('fuelTime').value = now.toTimeString().slice(0, 5);
+                
+                // Pre-fill with saved template
+                document.getElementById('drivingPattern').value = savedTemplate.driving_pattern;
+                document.getElementById('fuelType').value = savedTemplate.fuel_type;
+                document.getElementById('notes').value = savedTemplate.notes || '';
+                
+                // Estimate new mileage (add 300 miles as a reasonable guess)
+                const estimatedMileage = savedTemplate.mileage + 300;
+                document.getElementById('mileage').value = estimatedMileage;
+                
+            } else {
+                // Fall back to last fuel entry
+                const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
+                
+                if (fuelEntries.length === 0) {
+                    alert('No previous fuel entries found. Please add your first fuel entry to enable Quick Fill-Up mode.');
+                    return;
+                }
+                
+                // Get the most recent entry
+                const lastEntry = fuelEntries[0]; // Already sorted by date in loadRecentFuelEntries
+                
+                // Show quick fill info
+                const quickFillInfo = document.getElementById('quickFillInfo');
+                const lastUsedSettings = document.getElementById('lastUsedSettings');
+                
+                lastUsedSettings.innerHTML = `
+                    <strong>Vehicle:</strong> ${lastEntry.vehicleName}<br>
+                    <strong>Fuel Type:</strong> ${lastEntry.fuel_type}<br>
+                    <strong>Driving Pattern:</strong> ${lastEntry.driving_pattern}<br>
+                    <strong>Last Mileage:</strong> ${lastEntry.mileage.toLocaleString()}<br>
+                    <strong>Notes:</strong> ${lastEntry.notes || 'None'}<br>
+                    <span class="text-muted"><i class="fas fa-info-circle me-1"></i>Using last entry data</span>
+                `;
+                
+                quickFillInfo.style.display = 'block';
+                
+                // Auto-fill the form with last used settings
+                document.getElementById('vehicleId').value = lastEntry.vehicleId || 'demo';
+                document.getElementById('selectedVehicleName').textContent = lastEntry.vehicleName;
+                
+                // Set current date/time
+                const now = new Date();
+                document.getElementById('fuelDate').value = now.toISOString().split('T')[0];
+                document.getElementById('fuelTime').value = now.toTimeString().slice(0, 5);
+                
+                // Pre-fill with last used settings
+                document.getElementById('drivingPattern').value = lastEntry.driving_pattern;
+                document.getElementById('fuelType').value = lastEntry.fuel_type;
+                document.getElementById('notes').value = lastEntry.notes || '';
+                
+                // Estimate new mileage (add 300 miles as a reasonable guess)
+                const estimatedMileage = lastEntry.mileage + 300;
+                document.getElementById('mileage').value = estimatedMileage;
+            }
+            
+            // Show the form
+            document.getElementById('vehicleSelection').style.display = 'none';
+            document.getElementById('fuelEntryForm').style.display = 'block';
+            
+            // Focus on fuel amount for quick entry
+            setTimeout(() => {
+                document.getElementById('fuelAmount').focus();
+            }, 100);
+        }
+        
         function continueLastFillUp() {
             // This will be implemented to continue from the last fuel entry
             alert('Continue from last fill-up feature coming soon!');
@@ -690,6 +796,45 @@
             
             loadRecentFuelEntries();
             alert('Fuel entry deleted successfully!');
+        }
+        
+        function prepareQuickFillUp() {
+            // Save current form data as quick fill template
+            const quickFillTemplate = {
+                vehicleId: document.getElementById('vehicleId').value,
+                vehicleName: document.getElementById('selectedVehicleName').textContent,
+                fuel_type: document.getElementById('fuelType').value,
+                driving_pattern: document.getElementById('drivingPattern').value,
+                notes: document.getElementById('notes').value,
+                mileage: parseInt(document.getElementById('mileage').value) || 0
+            };
+            
+            localStorage.setItem('quickFillTemplate', JSON.stringify(quickFillTemplate));
+            
+            alert('Quick Fill-Up template saved! Your next fuel entry will use these settings.');
+            
+            // Reset form for next entry
+            resetForm();
+            
+            // Pre-fill with the saved template
+            if (quickFillTemplate.vehicleId) {
+                document.getElementById('vehicleId').value = quickFillTemplate.vehicleId;
+                document.getElementById('selectedVehicleName').textContent = quickFillTemplate.vehicleName;
+            }
+            if (quickFillTemplate.fuel_type) {
+                document.getElementById('fuelType').value = quickFillTemplate.fuel_type;
+            }
+            if (quickFillTemplate.driving_pattern) {
+                document.getElementById('drivingPattern').value = quickFillTemplate.driving_pattern;
+            }
+            if (quickFillTemplate.notes) {
+                document.getElementById('notes').value = quickFillTemplate.notes;
+            }
+            
+            // Focus on fuel amount for quick entry
+            setTimeout(() => {
+                document.getElementById('fuelAmount').focus();
+            }, 100);
         }
 
         // Navigation functions
