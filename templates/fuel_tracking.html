@@ -847,10 +847,23 @@
             const formData = new FormData(event.target);
             formData.append('odometer_photo', currentPhoto || '');
             
-            // Create fuel entry object
+            // Debug: Log what's being sent
+            console.log('Form data being sent:', {
+                vehicle_id: formData.get('vehicle_id'),
+                date: formData.get('date'),
+                time: formData.get('time'),
+                mileage: formData.get('mileage'),
+                fuel_amount: formData.get('fuel_amount'),
+                fuel_cost: formData.get('fuel_cost'),
+                fuel_type: formData.get('fuel_type'),
+                driving_pattern: formData.get('driving_pattern'),
+                notes: formData.get('notes')
+            });
+            
+            // Create fuel entry object for local storage
             const fuelEntry = {
-                vehicleId: formData.get('vehicle_id'),
-                vehicleName: selectedVehicleName || 'Demo Vehicle',
+                vehicleId: parseInt(formData.get('vehicle_id')),
+                vehicleName: selectedVehicleName || 'Vehicle',
                 date: formData.get('date'),
                 time: formData.get('time'),
                 mileage: parseInt(formData.get('mileage')),
@@ -863,20 +876,24 @@
                 created_at: new Date().toISOString()
             };
             
-            // Save to local storage
+            // Save to local storage first
             const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
             fuelEntries.push(fuelEntry);
             localStorage.setItem('fuelEntries', JSON.stringify(fuelEntries));
             
-            // Also submit to API (for future database integration)
+            // Submit to API
             fetch('/api/fuel/entry', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('API Response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('API Response data:', data);
                 if (data.success) {
-                    alert('Fuel entry saved successfully!');
+                    alert('Fuel entry saved successfully to database!');
                     resetForm();
                     loadRecentFuelEntries();
                     loadMPGSummary();
@@ -889,7 +906,7 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('API Error:', error);
                 // Even if API fails, we still have the data locally
                 alert('Fuel entry saved locally! (API connection failed)');
                 resetForm();
