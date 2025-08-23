@@ -37,6 +37,7 @@ class MaintenanceRecord(SQLModel, table=True):
     description: str = Field(max_length=500)
     cost: Optional[float] = Field(default=None, nullable=True)
     date_estimated: bool = Field(default=False)
+    oil_change_interval: Optional[int] = Field(default=None, description="Miles until next oil change (for oil change records)")
     
     # Relationship to vehicle
     vehicle: Vehicle = Relationship(back_populates="maintenance_records")

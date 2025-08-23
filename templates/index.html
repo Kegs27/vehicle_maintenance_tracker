@@ -853,9 +853,13 @@
                                         ${reminder.current_mileage.toLocaleString()}
                                     </p>
                                     ${reminder.last_oil_change_mileage ? 
-                                        `<p class="mb-0"><strong>Last oil change:</strong> ${reminder.last_oil_change_mileage.toLocaleString()}</p>` : 
-                                        '<p class="mb-0 text-muted"><em>No previous oil change records found</em></p>'
+                                        `<p class="mb-1"><strong>Last oil change:</strong> ${reminder.last_oil_change_mileage.toLocaleString()}</p>` : 
+                                        '<p class="mb-1 text-muted"><em>No previous oil change records found</em></p>'
                                     }
+                                    <p class="mb-0">
+                                        <strong>Oil change interval:</strong> 
+                                        <span class="text-info">${reminder.oil_change_interval ? reminder.oil_change_interval.toLocaleString() : '3,000'} miles</span>
+                                    </p>
                                 </div>
                                 <div class="text-end">
                                     <span class="badge bg-${urgencyClass} fs-6">

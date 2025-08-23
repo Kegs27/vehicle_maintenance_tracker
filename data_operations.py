@@ -448,6 +448,72 @@ def get_maintenance_summary() -> Dict[str, Any]:
             "average_cost_per_record": 0
         }
 
+def get_current_mileage_from_all_sources(vehicle_id: int) -> int:
+    """Get current mileage from all sources (maintenance, oil change, fuel) - use highest/most recent"""
+    try:
+        # Get all records for this vehicle
+        records = get_all_maintenance_records()
+        vehicle_records = [record for record in records if record.vehicle_id == vehicle_id]
+        
+        # Get fuel entries for this vehicle
+        from database import SessionLocal
+        session = SessionLocal()
+        try:
+            from models import FuelEntry
+            fuel_entries = session.execute(
+                select(FuelEntry).where(FuelEntry.vehicle_id == vehicle_id)
+            ).scalars().all()
+        finally:
+            session.close()
+        
+        # Collect all mileage data with dates
+        mileage_data = []
+        
+        # Add maintenance records
+        for record in vehicle_records:
+            mileage_data.append({
+                'mileage': record.mileage,
+                'date': record.date,
+                'source': 'maintenance',
+                'description': record.description
+            })
+        
+        # Add fuel entries
+        for fuel in fuel_entries:
+            mileage_data.append({
+                'mileage': fuel.mileage,
+                'date': fuel.date,
+                'source': 'fuel',
+                'description': f'Fuel fill-up'
+            })
+        
+        if not mileage_data:
+            return 0
+        
+        # Sort by date (most recent first) and mileage (highest first)
+        mileage_data.sort(key=lambda x: (x['date'], x['mileage']), reverse=True)
+        
+        # Get the highest mileage from the most recent date
+        latest_date = mileage_data[0]['date']
+        latest_mileages = [m for m in mileage_data if m['date'] == latest_date]
+        current_mileage = max(m['mileage'] for m in latest_mileages)
+        
+        print(f"Vehicle {vehicle_id} current mileage: {current_mileage:,} from {latest_mileages[0]['source']} on {latest_date}")
+        return current_mileage
+        
+    except Exception as e:
+        print(f"Error getting current mileage for vehicle {vehicle_id}: {e}")
+        return 0
+
+def get_oil_change_interval_from_record(record: MaintenanceRecord) -> int:
+    """Get oil change interval from the record, with fallback to default"""
+    if record.oil_change_interval and record.oil_change_interval > 0:
+        return record.oil_change_interval
+    
+    # Fallback to default intervals based on vehicle type/age
+    # This could be enhanced with vehicle-specific logic
+    return 3000  # Default 3,000 miles
+
 def get_home_dashboard_summary() -> Dict[str, Any]:
     """Get enhanced summary statistics for home page dashboard"""
     try:
@@ -473,7 +539,7 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
             if record.date and record.date.year == current_year
         ]
         
-        # Calculate total miles driven this year
+        # Calculate total miles driven this year using enhanced mileage tracking
         total_miles_this_year = 0
         if year_records:
             # Group records by vehicle to calculate miles per vehicle
@@ -498,27 +564,28 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
                     if vehicle_miles_driven > 0:
                         total_miles_this_year += vehicle_miles_driven
         
-        # Oil change reminders (assuming 3,000 mile intervals)
+        # Enhanced oil change reminders with dynamic intervals
         oil_change_reminders = []
         for vehicle in vehicles:
-            # Get current mileage from most recent maintenance record
-            vehicle_records = [record for record in records if record.vehicle_id == vehicle.id]
-            if vehicle_records:
-                # Sort by date to get most recent
-                vehicle_records.sort(key=lambda x: x.date, reverse=True)
-                current_mileage = vehicle_records[0].mileage
-                
+            # Get current mileage from ALL sources (maintenance, fuel, etc.)
+            current_mileage = get_current_mileage_from_all_sources(vehicle.id)
+            
+            if current_mileage > 0:
                 # Find last oil change for this vehicle
                 oil_changes = [
-                    record for record in vehicle_records 
-                    if 'oil' in record.description.lower()
+                    record for record in records 
+                    if record.vehicle_id == vehicle.id and 'oil' in record.description.lower()
                 ]
                 
                 if oil_changes:
                     # Get most recent oil change
                     last_oil_change = max(oil_changes, key=lambda x: x.date)
+                    
+                    # Get the oil change interval from the record
+                    oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
+                    
                     miles_since_oil_change = current_mileage - last_oil_change.mileage
-                    miles_until_next = 3000 - miles_since_oil_change
+                    miles_until_next = oil_change_interval - miles_since_oil_change
                     
                     # Show reminder if due within 500 miles OR overdue
                     if miles_until_next <= 500:
@@ -527,17 +594,21 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
                             "miles_until_due": miles_until_next,
                             "current_mileage": current_mileage,
                             "last_oil_change_mileage": last_oil_change.mileage,
+                            "oil_change_interval": oil_change_interval,
                             "status": "overdue" if miles_until_next < 0 else "due_soon"
                         })
                 else:
                     # No oil change records, estimate based on current mileage
-                    miles_until_next = 3000 - current_mileage % 3000
+                    # Use default interval for estimation
+                    default_interval = 3000
+                    miles_until_next = default_interval - current_mileage % default_interval
                     if miles_until_next <= 500:
                         oil_change_reminders.append({
                             "vehicle_name": vehicle.name,
                             "miles_until_due": miles_until_next,
                             "current_mileage": current_mileage,
                             "last_oil_change_mileage": None,
+                            "oil_change_interval": default_interval,
                             "status": "due_soon"
                         })
         
