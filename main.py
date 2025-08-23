@@ -447,12 +447,13 @@ async def create_maintenance_route(
     date_str: str = Form(...),
     mileage: int = Form(...),
     description: str = Form(...),
-    cost: Optional[float] = Form(None)
+    cost: Optional[float] = Form(None),
+    oil_change_interval: Optional[int] = Form(None)
 ):
     """Create a new maintenance record using centralized data operations"""
     try:
         # Use centralized function with validation
-        result = create_maintenance_record(vehicle_id, date_str, description, cost or 0.0, mileage)
+        result = create_maintenance_record(vehicle_id, date_str, description, cost or 0.0, mileage, oil_change_interval)
         
         if result["success"]:
             return RedirectResponse(url="/maintenance", status_code=303)
@@ -538,17 +539,18 @@ async def update_maintenance_route(
     date_str: str = Form(...),
     mileage: int = Form(...),
     description: str = Form(...),
-    cost: Optional[float] = Form(None)
+    cost: Optional[float] = Form(None),
+    oil_change_interval: Optional[int] = Form(None)
 ):
     """Update an existing maintenance record using centralized data operations"""
     try:
         # Use centralized function with validation
-        result = update_maintenance_record(record_id, vehicle_id, date_str, description, cost or 0.0, mileage)
+        result = update_maintenance_record(record_id, vehicle_id, date_str, description, cost or 0.0, mileage, oil_change_interval)
         
         if result["success"]:
             return RedirectResponse(url="/maintenance", status_code=303)
         else:
-            raise HTTPException(status_code=400, detail=result["error"])
+            raise HTTPException(status_code=500, detail=result["error"])
     except HTTPException:
         raise
     except Exception as e:

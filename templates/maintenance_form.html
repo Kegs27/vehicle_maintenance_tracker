@@ -130,6 +130,18 @@
                                 </div>
                             </div>
 
+                            <!-- Oil Change Interval Field (shown only for oil change records) -->
+                            <div class="mb-4" id="oilChangeIntervalField" style="display: none;">
+                                <label for="oil_change_interval" class="form-label fw-bold">Oil Change Interval (Miles)</label>
+                                <input type="number" class="form-control" id="oil_change_interval" name="oil_change_interval" 
+                                       value="{{ record.oil_change_interval if record and record.oil_change_interval else '3000' }}" 
+                                       min="1000" max="10000" step="100" placeholder="3000">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Set the mileage interval for the next oil change. Default is 3,000 miles.
+                                </div>
+                            </div>
+
                             <div class="d-flex gap-2 justify-content-center">
                                 <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-save me-2"></i>
@@ -153,6 +165,28 @@
             // Redirect to vehicles page for oil change management
             window.location.href = '/vehicles';
         }
+
+        // Show/hide oil change interval field based on description
+        function toggleOilChangeInterval() {
+            const description = document.getElementById('description').value.toLowerCase();
+            const intervalField = document.getElementById('oilChangeIntervalField');
+            
+            if (description.includes('oil')) {
+                intervalField.style.display = 'block';
+            } else {
+                intervalField.style.display = 'none';
+            }
+        }
+
+        // Add event listener to description field
+        document.addEventListener('DOMContentLoaded', function() {
+            const descriptionField = document.getElementById('description');
+            if (descriptionField) {
+                descriptionField.addEventListener('input', toggleOilChangeInterval);
+                // Check on page load for existing records
+                toggleOilChangeInterval();
+            }
+        });
     </script>
 </body>
 </html>

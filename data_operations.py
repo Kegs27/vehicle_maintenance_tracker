@@ -203,7 +203,7 @@ def get_maintenance_by_id(record_id: int) -> Optional[MaintenanceRecord]:
     finally:
         session.close()
 
-def create_maintenance_record(vehicle_id: int, date: str, description: str, cost: float, mileage: int) -> Dict[str, Any]:
+def create_maintenance_record(vehicle_id: int, date: str, description: str, cost: float, mileage: int, oil_change_interval: Optional[int] = None) -> Dict[str, Any]:
     """Create a new maintenance record"""
     session = SessionLocal()
     try:
@@ -224,7 +224,8 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
             date=parsed_date,
             description=description,
             cost=cost,
-            mileage=mileage
+            mileage=mileage,
+            oil_change_interval=oil_change_interval
         )
         
         session.add(record)
@@ -239,7 +240,7 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
     finally:
         session.close()
 
-def update_maintenance_record(record_id: int, vehicle_id: int, date: str, description: str, cost: float, mileage: int) -> Dict[str, Any]:
+def update_maintenance_record(record_id: int, vehicle_id: int, date: str, description: str, cost: float, mileage: int, oil_change_interval: Optional[int] = None) -> Dict[str, Any]:
     """Update an existing maintenance record"""
     session = SessionLocal()
     try:
@@ -266,6 +267,7 @@ def update_maintenance_record(record_id: int, vehicle_id: int, date: str, descri
         record.description = description
         record.cost = cost
         record.mileage = mileage
+        record.oil_change_interval = oil_change_interval
         
         session.commit()
         session.refresh(record)
