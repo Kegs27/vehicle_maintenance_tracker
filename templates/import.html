@@ -63,48 +63,7 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="fas fa-car me-2"></i>Vehicle Maintenance Tracker
-            </a>
-            <div class="navbar-nav ms-auto">
-                <div class="dropdown">
-                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-bars me-2"></i>Menu
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mainNavDropdown">
-                        <li><a class="dropdown-item" href="/vehicles">
-                            <i class="fas fa-car me-2 text-purple-600"></i>Vehicles
-                        </a></li>
-                        <li><a class="dropdown-item" href="/maintenance">
-                            <i class="fas fa-tools me-2 text-purple-600"></i>Maintenance
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="showOilChangeMenu()">
-                            <i class="fas fa-oil-can me-2 text-purple-600"></i>Oil Change
-                        </a></li>
-                        <li><a class="dropdown-item" href="/fuel">
-                            <i class="fas fa-gas-pump me-2 text-purple-600"></i>Fuel Tracking
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/import">
-                            <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
-                            <i class="fas fa-file-csv me-2 text-success"></i>Export All to CSV
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportToPDF()">
-                            <i class="fas fa-file-pdf me-2 text-danger"></i>Export All to PDF
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
-                            <i class="fas fa-car me-2 text-purple-600"></i>Export Single Vehicle
-                        </a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
+    {% include 'nav.html' %}
 
     <div class="container py-5">
         <div class="row justify-content-center">
