@@ -400,11 +400,15 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
             vehicle = None
             vehicle_name = None
         
+        # Get summary data for the maintenance page
+        summary = get_maintenance_summary()
+        
         return templates.TemplateResponse("maintenance_list.html", {
             "request": request, 
             "records": records, 
             "vehicle": vehicle,
-            "vehicle_name": vehicle_name
+            "vehicle_name": vehicle_name,
+            "summary": summary
         })
     except Exception as e:
         return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
