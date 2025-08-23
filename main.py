@@ -673,6 +673,26 @@ async def fuel_tracking(request: Request):
         vehicle_list = []
         for vehicle in vehicles:
             fuel_entries = get_fuel_entries_for_vehicle(vehicle.id)
+            
+            # Convert date objects to strings for JSON serialization
+            serialized_fuel_entries = []
+            for entry in fuel_entries:
+                serialized_entry = {
+                    'id': entry.id,
+                    'vehicle_id': entry.vehicle_id,
+                    'date': entry.date.isoformat() if entry.date else None,
+                    'mileage': entry.mileage,
+                    'fuel_amount': entry.fuel_amount,
+                    'fuel_cost': entry.fuel_cost,
+                    'fuel_type': entry.fuel_type,
+                    'driving_pattern': entry.driving_pattern,
+                    'notes': entry.notes,
+                    'odometer_photo': entry.odometer_photo,
+                    'created_at': entry.created_at.isoformat() if entry.created_at else None,
+                    'updated_at': entry.updated_at.isoformat() if entry.updated_at else None
+                }
+                serialized_fuel_entries.append(serialized_entry)
+            
             vehicle_dict = {
                 'id': vehicle.id,
                 'name': vehicle.name,
@@ -680,13 +700,29 @@ async def fuel_tracking(request: Request):
                 'make': vehicle.make,
                 'model': vehicle.model,
                 'vin': vehicle.vin,
-                'fuel_entries': fuel_entries
+                'fuel_entries': serialized_fuel_entries
             }
             vehicle_list.append(vehicle_dict)
         
         # Get the most recent fuel entry across all vehicles
         all_fuel_entries = get_all_fuel_entries()
-        last_fuel_entry = all_fuel_entries[0] if all_fuel_entries else None
+        last_fuel_entry = None
+        if all_fuel_entries:
+            last_entry = all_fuel_entries[0]
+            last_fuel_entry = {
+                'id': last_entry.id,
+                'vehicle_id': last_entry.vehicle_id,
+                'date': last_entry.date.isoformat() if last_entry.date else None,
+                'mileage': last_entry.mileage,
+                'fuel_amount': last_entry.fuel_amount,
+                'fuel_cost': last_entry.fuel_cost,
+                'fuel_type': last_entry.fuel_type,
+                'driving_pattern': last_entry.driving_pattern,
+                'notes': last_entry.notes,
+                'odometer_photo': last_entry.odometer_photo,
+                'created_at': last_entry.created_at.isoformat() if last_entry.created_at else None,
+                'updated_at': last_entry.updated_at.isoformat() if last_entry.updated_at else None
+            }
         
         return templates.TemplateResponse("fuel_tracking.html", {
             "request": request, 
