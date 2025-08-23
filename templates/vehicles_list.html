@@ -6,7 +6,7 @@
     <title>Vehicles - Vehicle Maintenance Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/icon-styles.css" rel="stylesheet">
+    <link href="/static/app-styles.css" rel="stylesheet">
     <style>
         .table-card {
             border: none;
@@ -163,49 +163,7 @@
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="fas fa-car me-2"></i>Vehicle Maintenance Tracker
-            </a>
-            <div class="navbar-nav ms-auto">
-                <div class="dropdown">
-                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-bars me-2"></i>Menu
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mainNavDropdown">
-                        <li><a class="dropdown-item" href="/vehicles">
-                            <i class="fas fa-car me-2 text-purple-600"></i>Vehicles
-                        </a></li>
-                        <li><a class="dropdown-item" href="/maintenance">
-                            <i class="fas fa-tools me-2 text-purple-600"></i>Maintenance
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="showOilChangeMenu()">
-                            <i class="fas fa-oil-can me-2 text-purple-600"></i>Oil Change
-                        </a></li>
-                        <li><a class="dropdown-item" href="/fuel">
-                            <i class="fas fa-gas-pump me-2 text-purple-600"></i>Fuel Tracking
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/import">
-                            <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
-                            <i class="fas fa-file-csv me-2 text-success"></i>Export All to CSV
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportToPDF()">
-                            <i class="fas fa-file-pdf me-2 text-danger"></i>Export All to PDF
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
-                            <i class="fas fa-car me-2 text-purple-600"></i>Export Single Vehicle
-                        </a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
+    {% include 'nav.html' %}
 
     <div class="container py-5">
         <!-- Header -->
@@ -1039,6 +997,7 @@ function openOilChangeForVehicle(vehicleId, vehicleName) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="/static/app-functions.js"></script>
     <script src="/static/import-data.js"></script>
     <script src="/static/export-data.js?v=3"></script>
 </body>
