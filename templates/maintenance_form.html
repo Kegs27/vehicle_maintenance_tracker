@@ -134,8 +134,8 @@
                             <div class="mb-4" id="oilChangeIntervalField" style="display: none;">
                                 <label for="oil_change_interval" class="form-label fw-bold">Oil Change Interval (Miles)</label>
                                 <input type="number" class="form-control" id="oil_change_interval" name="oil_change_interval" 
-                                       value="{{ record.oil_change_interval if record and record.oil_change_interval else '3000' }}" 
-                                       min="1000" max="10000" step="100" placeholder="3000">
+                                                       value="{{ record.oil_change_interval if record and record.oil_change_interval else '5000' }}"
+                min="1000" max="10000" step="100" placeholder="5000">
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Set the mileage interval for the next oil change. Default is 3,000 miles.

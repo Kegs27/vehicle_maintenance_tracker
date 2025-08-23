@@ -33,9 +33,9 @@ def update_oil_change_intervals():
         
         # Update each oil change record with appropriate interval
         for record in oil_changes:
-            # Set interval based on vehicle type/age (this could be enhanced)
-            # For now, use 3,000 miles as default
-            record.oil_change_interval = 3000
+                          # Set interval based on vehicle type/age (this could be enhanced)
+              # For now, use 5,000 miles as default
+            record.oil_change_interval = 5000
             
             print(f"✅ Updated {record.description} for vehicle {record.vehicle_id} with {record.oil_change_interval:,} mile interval")
         

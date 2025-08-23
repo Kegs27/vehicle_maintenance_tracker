@@ -608,7 +608,7 @@ def get_oil_change_interval_from_record(record: MaintenanceRecord) -> int:
     
     # Fallback to default intervals based on vehicle type/age
     # This could be enhanced with vehicle-specific logic
-    return 3000  # Default 3,000 miles
+    return 5000  # Default 5,000 miles
 
 def get_home_dashboard_summary() -> Dict[str, Any]:
     """Get enhanced summary statistics for home page dashboard using centralized mileage tracking"""
@@ -773,7 +773,7 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
                 else:
                     # No oil change records, estimate based on current mileage
                     # Use default interval for estimation
-                    default_interval = 3000
+                    default_interval = 5000
                     miles_until_next = default_interval - current_mileage % default_interval
                     if miles_until_next <= 500:
                         oil_change_reminders.append({
