@@ -222,6 +222,17 @@ async def startup_event():
         print(f"App directory contents: {os.listdir('.') if os.path.exists('.') else 'No current dir'}")
         
         init_db()
+        
+        # Run PostgreSQL migration if needed
+        database_url = os.getenv("DATABASE_URL")
+        if database_url and database_url.startswith("postgresql"):
+            print("🔄 Running PostgreSQL migration...")
+            try:
+                from migrate_postgresql_oil_change_interval import migrate_postgresql
+                migrate_postgresql()
+            except Exception as e:
+                print(f"⚠️ Migration warning (non-critical): {e}")
+        
         print("Startup completed successfully!")
     except Exception as e:
         print(f"Startup warning (non-critical): {e}")
