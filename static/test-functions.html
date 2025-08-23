@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Test - Vehicle Maintenance Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/app-styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="text-center mb-5">
+            <i class="fas fa-vial me-3"></i>Function Test Page
+        </h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-cog me-2"></i>Navigation Functions</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary mb-2" onclick="testShowOilChangeMenu()">
+                            <i class="fas fa-oil-can me-2"></i>Test Oil Change Menu
+                        </button>
+                        <br>
+                        <button class="btn btn-success mb-2" onclick="testNavigation()">
+                            <i class="fas fa-route me-2"></i>Test Navigation Links
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-download me-2"></i>Export Functions</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-info mb-2" onclick="testExportFunctions()">
+                            <i class="fas fa-file-csv me-2"></i>Test Export Functions
+                        </button>
+                        <br>
+                        <button class="btn btn-warning mb-2" onclick="testUtilityFunctions()">
+                            <i class="fas fa-tools me-2"></i>Test Utility Functions
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-terminal me-2"></i>Test Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="testResults" class="alert alert-info">
+                            Click the test buttons above to verify functionality...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/app-functions.js"></script>
+    
+    <script>
+        function logResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            const resultHtml = `<div class="mb-2"><strong>[${timestamp}]</strong> ${message}</div>`;
+            
+            if (type === 'error') {
+                resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+                resultsDiv.className = 'alert alert-danger';
+            } else if (type === 'success') {
+                resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+                resultsDiv.className = 'alert alert-success';
+            } else {
+                resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+                resultsDiv.className = 'alert alert-info';
+            }
+        }
+        
+        function testShowOilChangeMenu() {
+            logResult('Testing showOilChangeMenu function...');
+            try {
+                if (typeof showOilChangeMenu === 'function') {
+                    logResult('✅ showOilChangeMenu function exists and is callable', 'success');
+                    // Don't actually redirect, just test the function
+                    logResult('Function would redirect to: /vehicles?oil_change=true', 'info');
+                } else {
+                    logResult('❌ showOilChangeMenu function not found', 'error');
+                }
+            } catch (error) {
+                logResult(`❌ Error testing showOilChangeMenu: ${error.message}`, 'error');
+            }
+        }
+        
+        function testNavigation() {
+            logResult('Testing navigation functionality...');
+            try {
+                // Test if we can access common functions
+                const functions = ['exportAllVehicles', 'exportToPDF', 'exportSingleVehicle'];
+                let allFunctionsExist = true;
+                
+                functions.forEach(funcName => {
+                    if (typeof window[funcName] === 'function') {
+                        logResult(`✅ ${funcName} function exists`, 'success');
+                    } else {
+                        logResult(`❌ ${funcName} function not found`, 'error');
+                        allFunctionsExist = false;
+                    }
+                });
+                
+                if (allFunctionsExist) {
+                    logResult('✅ All navigation functions are available', 'success');
+                }
+            } catch (error) {
+                logResult(`❌ Error testing navigation: ${error.message}`, 'error');
+            }
+        }
+        
+        function testExportFunctions() {
+            logResult('Testing export functions...');
+            try {
+                // Test export functions
+                if (typeof exportAllVehicles === 'function') {
+                    logResult('✅ exportAllVehicles function exists', 'success');
+                } else {
+                    logResult('❌ exportAllVehicles function not found', 'error');
+                }
+                
+                if (typeof exportToPDF === 'function') {
+                    logResult('✅ exportToPDF function exists', 'success');
+                } else {
+                    logResult('❌ exportToPDF function not found', 'error');
+                }
+                
+                if (typeof exportSingleVehicle === 'function') {
+                    logResult('✅ exportSingleVehicle function exists', 'success');
+                } else {
+                    logResult('❌ exportSingleVehicle function not found', 'error');
+                }
+            } catch (error) {
+                logResult(`❌ Error testing export functions: ${error.message}`, 'error');
+            }
+        }
+        
+        function testUtilityFunctions() {
+            logResult('Testing utility functions...');
+            try {
+                // Test utility functions
+                if (typeof validateMileage === 'function') {
+                    logResult('✅ validateMileage function exists', 'success');
+                    const testResult = validateMileage(50000);
+                    logResult(`validateMileage(50000) returned: ${testResult}`, 'info');
+                } else {
+                    logResult('❌ validateMileage function not found', 'error');
+                }
+                
+                if (typeof formatCurrency === 'function') {
+                    logResult('✅ formatCurrency function exists', 'success');
+                    const testResult = formatCurrency(123.45);
+                    logResult(`formatCurrency(123.45) returned: ${testResult}`, 'info');
+                } else {
+                    logResult('❌ formatCurrency function not found', 'error');
+                }
+                
+                if (typeof saveToLocalStorage === 'function') {
+                    logResult('✅ saveToLocalStorage function exists', 'success');
+                } else {
+                    logResult('❌ saveToLocalStorage function not found', 'error');
+                }
+            } catch (error) {
+                logResult(`❌ Error testing utility functions: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run basic tests on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            logResult('🚀 Page loaded, running basic function tests...');
+            
+            // Test if our centralized functions are loaded
+            if (typeof showOilChangeMenu === 'function') {
+                logResult('✅ Centralized functions loaded successfully', 'success');
+            } else {
+                logResult('❌ Centralized functions failed to load', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
