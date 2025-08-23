@@ -471,6 +471,8 @@ async def create_maintenance_route(
 ):
     """Create a new maintenance record using centralized data operations"""
     try:
+        print(f"🔍 Debug: Received form data - vehicle_id: {vehicle_id}, date_str: {date_str}, mileage: {mileage}, description: {description}")
+        
         # Use centralized function with validation
         result = create_maintenance_record(vehicle_id, date_str, description, cost or 0.0, mileage, oil_change_interval)
         
@@ -481,6 +483,7 @@ async def create_maintenance_route(
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ Error creating maintenance record: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create maintenance record: {str(e)}")
 
 @app.get("/maintenance/{record_id}/edit", response_class=HTMLResponse)
