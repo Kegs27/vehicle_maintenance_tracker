@@ -456,10 +456,15 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
         return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
 
 @app.get("/maintenance/new", response_class=HTMLResponse)
-async def new_maintenance_form(request: Request):
+async def new_maintenance_form(request: Request, return_url: Optional[str] = Query(None)):
     """Form to add new maintenance record using centralized data operations"""
     vehicles = get_vehicle_names()
-    return templates.TemplateResponse("maintenance_form.html", {"request": request, "vehicles": vehicles, "record": None})
+    return templates.TemplateResponse("maintenance_form.html", {
+        "request": request, 
+        "vehicles": vehicles, 
+        "record": None,
+        "return_url": return_url or "/maintenance"
+    })
 
 @app.post("/maintenance")
 async def create_maintenance_route(
@@ -488,7 +493,7 @@ async def create_maintenance_route(
         raise HTTPException(status_code=500, detail=f"Failed to create maintenance record: {str(e)}")
 
 @app.get("/maintenance/{record_id}/edit", response_class=HTMLResponse)
-async def edit_maintenance_form(request: Request, record_id: int):
+async def edit_maintenance_form(request: Request, record_id: int, return_url: Optional[str] = Query(None)):
     """Form to edit existing maintenance record using centralized data operations"""
     try:
         record = get_maintenance_by_id(record_id)
@@ -496,7 +501,12 @@ async def edit_maintenance_form(request: Request, record_id: int):
             raise HTTPException(status_code=404, detail="Maintenance record not found")
         
         vehicles = get_vehicle_names()
-        return templates.TemplateResponse("maintenance_form.html", {"request": request, "vehicles": vehicles, "record": record})
+        return templates.TemplateResponse("maintenance_form.html", {
+            "request": request, 
+            "vehicles": vehicles, 
+            "record": record,
+            "return_url": return_url or "/maintenance"
+        })
     except HTTPException:
         raise
     except Exception as e:
