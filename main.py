@@ -96,7 +96,9 @@ try:
         export_maintenance_csv as real_export_maintenance_csv,
         get_vehicle_names as real_get_vehicle_names,
         get_maintenance_summary as real_get_maintenance_summary,
-        get_home_dashboard_summary as real_get_home_dashboard_summary
+        get_home_dashboard_summary as real_get_home_dashboard_summary,
+        get_current_mileage_from_all_sources as real_get_current_mileage_from_all_sources,
+        get_oil_change_interval_from_record as real_get_oil_change_interval_from_record
     )
     
     # Replace dummy functions with real ones
@@ -117,6 +119,8 @@ try:
     get_vehicle_names = real_get_vehicle_names
     get_maintenance_summary = real_get_maintenance_summary
     get_home_dashboard_summary = real_get_home_dashboard_summary
+    get_current_mileage_from_all_sources = real_get_current_mileage_from_all_sources
+    get_oil_change_interval_from_record = real_get_oil_change_interval_from_record
     
     print("Successfully imported from current directory")
 except ImportError as e:
@@ -142,7 +146,9 @@ except ImportError as e:
             export_maintenance_csv as real_export_maintenance_csv,
             get_vehicle_names as real_get_vehicle_names,
             get_maintenance_summary as real_get_maintenance_summary,
-            get_home_dashboard_summary as real_get_home_dashboard_summary
+            get_home_dashboard_summary as real_get_home_dashboard_summary,
+            get_current_mileage_from_all_sources as real_get_current_mileage_from_all_sources,
+            get_oil_change_interval_from_record as real_get_oil_change_interval_from_record
         )
         
         # Replace dummy functions with real ones
@@ -162,6 +168,8 @@ except ImportError as e:
         get_vehicle_names = real_get_vehicle_names
         get_maintenance_summary = real_get_maintenance_summary
         get_home_dashboard_summary = real_get_home_dashboard_summary
+        get_current_mileage_from_all_sources = real_get_current_mileage_from_all_sources
+        get_oil_change_interval_from_record = real_get_oil_change_interval_from_record
         
         print("Successfully imported from app package")
     except ImportError as e2:
@@ -469,6 +477,59 @@ async def edit_maintenance_form(request: Request, record_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load maintenance record: {str(e)}")
+
+@app.get("/oil-changes", response_class=HTMLResponse)
+async def oil_changes_page(request: Request):
+    """Oil change management page showing all oil change records and due dates"""
+    try:
+        # Get all vehicles and their oil change data
+        vehicles = get_all_vehicles()
+        records = get_all_maintenance_records()
+        
+        # Organize oil change data by vehicle
+        vehicle_oil_data = []
+        
+        for vehicle in vehicles:
+            # Get current mileage from all sources
+            current_mileage = get_current_mileage_from_all_sources(vehicle.id)
+            
+            # Get oil change records for this vehicle
+            oil_changes = [
+                record for record in records 
+                if record.vehicle_id == vehicle.id and 'oil' in record.description.lower()
+            ]
+            
+            # Sort oil changes by date (most recent first)
+            oil_changes.sort(key=lambda x: x.date, reverse=True)
+            
+            # Calculate next due date if we have oil change records
+            next_due_info = None
+            if oil_changes and current_mileage > 0:
+                last_oil_change = oil_changes[0]  # Most recent
+                oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
+                miles_since_oil_change = current_mileage - last_oil_change.mileage
+                miles_until_next = oil_change_interval - miles_since_oil_change
+                
+                next_due_info = {
+                    "miles_until_due": miles_until_next,
+                    "miles_since_last": miles_since_oil_change,
+                    "interval": oil_change_interval,
+                    "status": "overdue" if miles_until_next < 0 else "due_soon" if miles_until_next <= 500 else "good"
+                }
+            
+            vehicle_oil_data.append({
+                "vehicle": vehicle,
+                "current_mileage": current_mileage,
+                "oil_changes": oil_changes,
+                "next_due_info": next_due_info
+            })
+        
+        return templates.TemplateResponse("oil_changes.html", {
+            "request": request,
+            "vehicle_oil_data": vehicle_oil_data
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load oil change data: {str(e)}")
 
 @app.post("/maintenance/{record_id}")
 async def update_maintenance_route(

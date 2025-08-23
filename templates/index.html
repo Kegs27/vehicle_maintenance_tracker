@@ -239,9 +239,9 @@
                             {% if dashboard.oil_change_reminders %}
                                 <h3 class="text-warning mb-2">{{ dashboard.oil_change_reminders|length }}</h3>
                                 <p class="text-muted mb-3">Vehicle(s) Need Service</p>
-                                <button class="btn btn-outline-warning btn-sm" onclick="showOilChangeReminders()">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>View Details
-                                </button>
+                                                                   <a href="/oil-changes" class="btn btn-outline-warning btn-sm">
+                                       <i class="fas fa-exclamation-triangle me-2"></i>View Details
+                                   </a>
                             {% else %}
                                 <h3 class="text-success mb-2">0</h3>
                                 <p class="text-muted mb-3">All Good!</p>
@@ -619,42 +619,7 @@
             });
         }
 
-        function showOilChangeReminders() {
-            const modal = document.createElement('div');
-            modal.className = 'modal fade';
-            modal.id = 'oilChangeRemindersModal';
-            modal.innerHTML = `
-                <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <i class="fas fa-oil-can me-2"></i>Oil Change Reminders
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div id="oilChangeRemindersContent">
-                                <!-- Oil change reminders will be loaded here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // Load oil change reminders data
-            loadOilChangeRemindersData();
-            
-            // Show the modal
-            const bootstrapModal = new bootstrap.Modal(modal);
-            bootstrapModal.show();
-            
-            // Remove modal from DOM after it's hidden
-            modal.addEventListener('hidden.bs.modal', function () {
-                document.body.removeChild(modal);
-            });
-        }
+
 
         function loadRecentActivityData() {
             const content = document.getElementById('recentActivityContent');
@@ -757,121 +722,11 @@
             content.innerHTML = html;
         }
 
-        function loadOilChangeRemindersData() {
-            const content = document.getElementById('oilChangeRemindersContent');
-            content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-            
-            // Fetch oil change reminders data from the dashboard
-            fetch('/test-dashboard')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.dashboard.oil_change_reminders.length > 0) {
-                        displayOilChangeReminders(data.dashboard.oil_change_reminders);
-                    } else {
-                        content.innerHTML = `
-                            <div class="text-center text-success">
-                                <i class="fas fa-check-circle me-2"></i>
-                                All vehicles are up to date with oil changes!
-                                <br><small>No oil changes due within 500 miles.</small>
-                            </div>
-                        `;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading oil change reminders:', error);
-                    content.innerHTML = `
-                        <div class="text-center text-danger">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Error loading oil change reminder data.
-                        </div>
-                    `;
-                });
-        }
 
-        function displayOilChangeReminders(reminders) {
-            const content = document.getElementById('oilChangeRemindersContent');
-            
-            // Separate overdue and due soon reminders
-            const overdue = reminders.filter(r => r.status === 'overdue');
-            const dueSoon = reminders.filter(r => r.status === 'due_soon');
-            
-            let html = '';
-            
-            // Show overdue reminders first
-            if (overdue.length > 0) {
-                html += '<div class="alert alert-danger mb-3">';
-                html += '<i class="fas fa-exclamation-triangle me-2"></i>';
-                html += '<strong>Oil Change OVERDUE!</strong><br>';
-                html += '<small>The following vehicles are overdue for oil changes:</small>';
-                html += '</div>';
-                
-                html += '<div class="row g-3 mb-4">';
-                overdue.forEach(reminder => {
-                    html += createReminderCard(reminder, 'danger', 'exclamation-triangle', 'OVERDUE');
-                });
-                html += '</div>';
-            }
-            
-            // Show due soon reminders
-            if (dueSoon.length > 0) {
-                html += '<div class="alert alert-warning mb-3">';
-                html += '<i class="fas fa-clock me-2"></i>';
-                html += '<strong>Oil Change Due Soon</strong><br>';
-                html += '<small>The following vehicles need oil changes within 500 miles:</small>';
-                html += '</div>';
-                
-                html += '<div class="row g-3">';
-                dueSoon.forEach(reminder => {
-                    html += createReminderCard(reminder, 'warning', 'clock', 'DUE SOON');
-                });
-                html += '</div>';
-            }
-            
-            content.innerHTML = html;
-        }
+
+
         
-        function createReminderCard(reminder, urgencyClass, icon, statusText) {
-            const milesText = reminder.miles_until_due < 0 ? 
-                `Overdue by ${Math.abs(reminder.miles_until_due).toLocaleString()} miles` :
-                `${reminder.miles_until_due.toLocaleString()} miles until due`;
-            
-            return `
-                <div class="col-12">
-                    <div class="card border-${urgencyClass}">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="card-title text-${urgencyClass}">
-                                        <i class="fas fa-${icon} me-2"></i>${reminder.vehicle_name}
-                                    </h6>
-                                    <p class="mb-1">
-                                        <strong>Status:</strong> 
-                                        <span class="text-${urgencyClass}">${milesText}</span>
-                                    </p>
-                                    <p class="mb-1">
-                                        <strong>Current mileage:</strong> 
-                                        ${reminder.current_mileage.toLocaleString()}
-                                    </p>
-                                    ${reminder.last_oil_change_mileage ? 
-                                        `<p class="mb-1"><strong>Last oil change:</strong> ${reminder.last_oil_change_mileage.toLocaleString()}</p>` : 
-                                        '<p class="mb-1 text-muted"><em>No previous oil change records found</em></p>'
-                                    }
-                                    <p class="mb-0">
-                                        <strong>Oil change interval:</strong> 
-                                        <span class="text-info">${reminder.oil_change_interval ? reminder.oil_change_interval.toLocaleString() : '3,000'} miles</span>
-                                    </p>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge bg-${urgencyClass} fs-6">
-                                        ${statusText}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+
 
     </script>
 </body>
