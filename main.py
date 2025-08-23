@@ -331,7 +331,8 @@ async def list_vehicles(request: Request):
     """List all vehicles using centralized data operations"""
     try:
         vehicles = get_all_vehicles()
-        return templates.TemplateResponse("vehicles_list.html", {"request": request, "vehicles": vehicles})
+        vehicle_health = get_vehicle_health_status()
+        return templates.TemplateResponse("vehicles_list.html", {"request": request, "vehicles": vehicles, "vehicle_health": vehicle_health})
     except Exception as e:
         return HTMLResponse(content=f"""
         <h1>Database Error</h1>

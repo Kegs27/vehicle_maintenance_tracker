@@ -918,3 +918,87 @@ def get_all_fuel_entries() -> List[Dict[str, Any]]:
         return []
     finally:
         session.close()
+
+def get_vehicle_health_status() -> List[Dict[str, Any]]:
+    """Get health status for all vehicles including mileage, cost, and maintenance status"""
+    try:
+        vehicles = get_all_vehicles()
+        records = get_all_maintenance_records()
+        
+        # Get current mileage for all vehicles
+        vehicles_current_mileage = get_all_vehicles_current_mileage()
+        
+        # Calculate current year
+        from datetime import datetime
+        current_year = datetime.now().year
+        
+        vehicle_health = []
+        
+        for vehicle in vehicles:
+            vehicle_id = vehicle.id
+            current_mileage_info = vehicles_current_mileage.get(vehicle_id, {})
+            current_mileage = current_mileage_info.get('current_mileage', 0)
+            
+            # Get maintenance records for this vehicle this year
+            vehicle_records = [r for r in records if r.vehicle_id == vehicle_id]
+            vehicle_year_records = [r for r in vehicle_records if r.date and r.date.year == current_year]
+            
+            # Calculate cost this year
+            cost_this_year = sum(r.cost or 0 for r in vehicle_year_records)
+            
+            # Get oil change status
+            oil_changes = [r for r in vehicle_records if 'oil' in r.description.lower()]
+            oil_change_status = "unknown"
+            
+            if oil_changes and current_mileage > 0:
+                # Sort by date (most recent first)
+                oil_changes.sort(key=lambda x: x.date, reverse=True)
+                last_oil_change = oil_changes[0]
+                
+                # Get oil change interval
+                oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
+                miles_since_oil_change = current_mileage - last_oil_change.mileage
+                miles_until_next = oil_change_interval - miles_since_oil_change
+                
+                if miles_until_next < 0:
+                    oil_change_status = "overdue"
+                elif miles_until_next <= 500:
+                    oil_change_status = "due_soon"
+                else:
+                    oil_change_status = "good"
+            
+            # Determine overall health indicator
+            if oil_change_status == "overdue":
+                health_indicator = "🔴"
+                health_text = "Overdue"
+                health_class = "text-danger"
+            elif oil_change_status == "due_soon":
+                health_indicator = "🟡"
+                health_text = "Due Soon"
+                health_class = "text-warning"
+            elif oil_change_status == "good":
+                health_indicator = "🟢"
+                health_text = "Good"
+                health_class = "text-success"
+            else:
+                health_indicator = "⚪"
+                health_text = "Unknown"
+                health_class = "text-muted"
+            
+            vehicle_health.append({
+                "vehicle": vehicle,
+                "current_mileage": current_mileage,
+                "cost_this_year": cost_this_year,
+                "health_indicator": health_indicator,
+                "health_text": health_text,
+                "health_class": health_class,
+                "oil_change_status": oil_change_status,
+                "maintenance_count": len(vehicle_records),
+                "year_records_count": len(vehicle_year_records)
+            })
+        
+        return vehicle_health
+        
+    except Exception as e:
+        print(f"Error getting vehicle health status: {e}")
+        return []
