@@ -194,10 +194,66 @@
         </div>
     </section>
 
-    <!-- Quick Actions Section -->
+    <!-- Dashboard Section -->
     <section class="py-4 bg-light">
         <div class="container">
-            <div class="row justify-content-center">
+            <div class="row g-4">
+                <!-- Recent Activity Card -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-chart-line text-primary mb-3" style="font-size: 2rem;"></i>
+                            <h5 class="card-title text-primary mb-2">Recent Activity</h5>
+                            <h3 class="text-success mb-2">{{ dashboard.recent_activity_count }}</h3>
+                            <p class="text-muted mb-3">Records (Last 30 Days)</p>
+                            {% if dashboard.recent_activity_count > 0 %}
+                                <button class="btn btn-outline-primary btn-sm" onclick="showRecentActivityModal()">
+                                    <i class="fas fa-eye me-2"></i>View Details
+                                </button>
+                            {% else %}
+                                <span class="text-muted">No recent activity</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Miles Tracker Card -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-tachometer-alt text-success mb-3" style="font-size: 2rem;"></i>
+                            <h5 class="card-title text-success mb-2">Miles This Year</h5>
+                            <h3 class="text-success mb-2">{{ "{:,}".format(dashboard.total_miles_this_year) }}</h3>
+                            <p class="text-muted mb-3">Collective Fleet Miles</p>
+                            <small class="text-muted">Year to Date</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Oil Change Reminders Card -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-oil-can text-warning mb-3" style="font-size: 2rem;"></i>
+                            <h5 class="card-title text-warning mb-2">Oil Change Due</h5>
+                            {% if dashboard.oil_change_reminders %}
+                                <h3 class="text-warning mb-2">{{ dashboard.oil_change_reminders|length }}</h3>
+                                <p class="text-muted mb-3">Vehicle(s) Need Service</p>
+                                <button class="btn btn-outline-warning btn-sm" onclick="showOilChangeReminders()">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>View Details
+                                </button>
+                            {% else %}
+                                <h3 class="text-success mb-2">0</h3>
+                                <p class="text-muted mb-3">All Good!</p>
+                                <span class="text-success">No oil changes due</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Row -->
+            <div class="row justify-content-center mt-4">
                 <div class="col-lg-8">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center p-4">
@@ -523,6 +579,113 @@
             
             // Redirect to vehicles page with oil change modal trigger
             window.location.href = `/vehicles?oil_change=${vehicleId}`;
+        }
+
+        // Dashboard Modal Functions
+        function showRecentActivityModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'recentActivityModal';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-chart-line me-2"></i>Recent Activity (Last 30 Days)
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="recentActivityContent">
+                                <!-- Recent records will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Load recent activity data
+            loadRecentActivityData();
+            
+            // Show the modal
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+            
+            // Remove modal from DOM after it's hidden
+            modal.addEventListener('hidden.bs.modal', function () {
+                document.body.removeChild(modal);
+            });
+        }
+
+        function showOilChangeReminders() {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'oilChangeRemindersModal';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-oil-can me-2"></i>Oil Change Reminders
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="oilChangeRemindersContent">
+                                <!-- Oil change reminders will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Load oil change reminders data
+            loadOilChangeRemindersData();
+            
+            // Show the modal
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+            
+            // Remove modal from DOM after it's hidden
+            modal.addEventListener('hidden.bs.modal', function () {
+                document.body.removeChild(modal);
+            });
+        }
+
+        function loadRecentActivityData() {
+            const content = document.getElementById('recentActivityContent');
+            content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            
+            // For now, show a message - we'll implement the actual data loading later
+            setTimeout(() => {
+                content.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Recent activity details will be displayed here.
+                        <br><small>This feature is coming soon!</small>
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        function loadOilChangeRemindersData() {
+            const content = document.getElementById('oilChangeRemindersContent');
+            content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            
+            // For now, show a message - we'll implement the actual data loading later
+            setTimeout(() => {
+                content.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Oil change reminder details will be displayed here.
+                        <br><small>This feature is coming soon!</small>
+                    </div>
+                `;
+            }, 1000);
         }
 
     </script>

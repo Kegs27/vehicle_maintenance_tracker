@@ -216,23 +216,24 @@ async def home(request: Request):
         print(f"Templates directory exists: {os.path.exists('./templates')}")
         print(f"Index.html exists: {os.path.exists('./templates/index.html')}")
         
-        # Get summary data using centralized function
-        summary = get_maintenance_summary()
-        print(f"Summary data: {summary}")
+        # Get enhanced dashboard data using centralized function
+        dashboard_data = get_home_dashboard_summary()
+        print(f"Dashboard data: {dashboard_data}")
         
-        return templates.TemplateResponse("index.html", {"request": request, "summary": summary})
+        return templates.TemplateResponse("index.html", {"request": request, "dashboard": dashboard_data})
     except Exception as e:
         print(f"Template error: {e}")
         print(f"Exception type: {type(e)}")
         import traceback
         traceback.print_exc()
         
-        # Create a default summary for the error fallback
-        default_summary = {
-            'total_vehicles': 0,
-            'total_records': 0,
-            'total_cost': 0,
-            'average_cost_per_record': 0
+        # Create a default dashboard for the error fallback
+        default_dashboard = {
+            'recent_activity_count': 0,
+            'recent_records': [],
+            'total_miles_this_year': 0,
+            'oil_change_reminders': [],
+            'total_vehicles': 0
         }
         
         return HTMLResponse(content=f"""
@@ -255,10 +256,10 @@ async def home(request: Request):
                 <h1>Vehicle Maintenance Tracker</h1>
                 <div class="status">✅ App is running successfully!</div>
                 <div class="summary">
-                    <h3>Summary</h3>
-                    <p>Total Vehicles: {default_summary['total_vehicles']}</p>
-                    <p>Total Maintenance Records: {default_summary['total_records']}</p>
-                    <p>Total Cost: ${default_summary['total_cost']:.2f}</p>
+                    <h3>Dashboard</h3>
+                    <p>Total Vehicles: {default_dashboard['total_vehicles']}</p>
+                    <p>Recent Activity (30 days): {default_dashboard['recent_activity_count']} records</p>
+                    <p>Total Miles This Year: {default_dashboard['total_miles_this_year']:,} miles</p>
                 </div>
                 <div class="nav">
                     <a href="/vehicles">View Vehicles</a>

@@ -424,7 +424,7 @@ def get_vehicle_names() -> List[Dict[str, Any]]:
         return []
 
 def get_maintenance_summary() -> Dict[str, Any]:
-    """Get summary statistics for dashboard"""
+    """Get summary statistics for maintenance page"""
     try:
         vehicles = get_all_vehicles()
         records = get_all_maintenance_records()
@@ -446,4 +446,92 @@ def get_maintenance_summary() -> Dict[str, Any]:
             "total_records": 0,
             "total_cost": 0,
             "average_cost_per_record": 0
+        }
+
+def get_home_dashboard_summary() -> Dict[str, Any]:
+    """Get enhanced summary statistics for home page dashboard"""
+    try:
+        from datetime import datetime, timedelta
+        vehicles = get_all_vehicles()
+        records = get_all_maintenance_records()
+        
+        # Calculate date range for last 30 days
+        today = datetime.now()
+        thirty_days_ago = today - timedelta(days=30)
+        
+        # Get recent activity (last 30 days)
+        recent_records = [
+            record for record in records 
+            if record.date and record.date >= thirty_days_ago
+        ]
+        
+        # Calculate collective miles this year
+        current_year = today.year
+        year_records = [
+            record for record in records 
+            if record.date and record.date.year == current_year
+        ]
+        
+        # Calculate total miles driven this year
+        total_miles_this_year = 0
+        if year_records:
+            # Sort by date to get chronological order
+            year_records.sort(key=lambda x: x.date)
+            
+            # Calculate miles between first and last record of the year
+            if len(year_records) >= 2:
+                first_mileage = year_records[0].mileage or 0
+                last_mileage = year_records[-1].mileage or 0
+                total_miles_this_year = last_mileage - first_mileage
+        
+        # Oil change reminders (assuming 3,000 mile intervals)
+        oil_change_reminders = []
+        for vehicle in vehicles:
+            if vehicle.current_mileage:
+                # Find last oil change for this vehicle
+                oil_changes = [
+                    record for record in records 
+                    if record.vehicle_id == vehicle.id 
+                    and 'oil' in record.description.lower()
+                ]
+                
+                if oil_changes:
+                    # Get most recent oil change
+                    last_oil_change = max(oil_changes, key=lambda x: x.date)
+                    miles_since_oil_change = (vehicle.current_mileage or 0) - (last_oil_change.mileage or 0)
+                    miles_until_next = 3000 - miles_since_oil_change
+                    
+                    if miles_until_next <= 500:  # Show if due within 500 miles
+                        oil_change_reminders.append({
+                            "vehicle_name": vehicle.name,
+                            "miles_until_due": miles_until_next,
+                            "current_mileage": vehicle.current_mileage,
+                            "last_oil_change_mileage": last_oil_change.mileage
+                        })
+                else:
+                    # No oil change records, estimate based on current mileage
+                    miles_until_next = 3000 - (vehicle.current_mileage or 0) % 3000
+                    if miles_until_next <= 500:
+                        oil_change_reminders.append({
+                            "vehicle_name": vehicle.name,
+                            "miles_until_due": miles_until_next,
+                            "current_mileage": vehicle.current_mileage,
+                            "last_oil_change_mileage": None
+                        })
+        
+        return {
+            "recent_activity_count": len(recent_records),
+            "recent_records": recent_records,
+            "total_miles_this_year": total_miles_this_year,
+            "oil_change_reminders": oil_change_reminders,
+            "total_vehicles": len(vehicles)
+        }
+    except Exception as e:
+        print(f"Error getting home dashboard summary: {e}")
+        return {
+            "recent_activity_count": 0,
+            "recent_records": [],
+            "total_miles_this_year": 0,
+            "oil_change_reminders": [],
+            "total_vehicles": 0
         }
