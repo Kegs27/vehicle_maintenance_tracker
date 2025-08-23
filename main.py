@@ -709,19 +709,20 @@ async def fuel_tracking(request: Request):
         last_fuel_entry = None
         if all_fuel_entries:
             last_entry = all_fuel_entries[0]
+            # Access the database model attributes first, then create the dictionary
             last_fuel_entry = {
-                'id': last_entry.id,
-                'vehicle_id': last_entry.vehicle_id,
-                'date': last_entry.date.isoformat() if last_entry.date else None,
-                'mileage': last_entry.mileage,
-                'fuel_amount': last_entry.fuel_amount,
-                'fuel_cost': last_entry.fuel_cost,
-                'fuel_type': last_entry.fuel_type,
-                'driving_pattern': last_entry.driving_pattern,
-                'notes': last_entry.notes,
-                'odometer_photo': last_entry.odometer_photo,
-                'created_at': last_entry.created_at.isoformat() if last_entry.created_at else None,
-                'updated_at': last_entry.updated_at.isoformat() if last_entry.updated_at else None
+                'id': getattr(last_entry, 'id', None),
+                'vehicle_id': getattr(last_entry, 'vehicle_id', None),
+                'date': last_entry.date.isoformat() if hasattr(last_entry, 'date') and last_entry.date else None,
+                'mileage': getattr(last_entry, 'mileage', None),
+                'fuel_amount': getattr(last_entry, 'fuel_amount', None),
+                'fuel_cost': getattr(last_entry, 'fuel_cost', None),
+                'fuel_type': getattr(last_entry, 'fuel_type', None),
+                'driving_pattern': getattr(last_entry, 'driving_pattern', None),
+                'notes': getattr(last_entry, 'notes', None),
+                'odometer_photo': getattr(last_entry, 'odometer_photo', None),
+                'created_at': last_entry.created_at.isoformat() if hasattr(last_entry, 'created_at') and last_entry.created_at else None,
+                'updated_at': last_entry.updated_at.isoformat() if hasattr(last_entry, 'updated_at') and last_entry.updated_at else None
             }
         
         return templates.TemplateResponse("fuel_tracking.html", {
