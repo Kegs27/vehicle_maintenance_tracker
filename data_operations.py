@@ -476,14 +476,27 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
         # Calculate total miles driven this year
         total_miles_this_year = 0
         if year_records:
-            # Sort by date to get chronological order
-            year_records.sort(key=lambda x: x.date)
+            # Group records by vehicle to calculate miles per vehicle
+            vehicle_miles = {}
+            for record in year_records:
+                if record.vehicle_id not in vehicle_miles:
+                    vehicle_miles[record.vehicle_id] = []
+                vehicle_miles[record.vehicle_id].append(record)
             
-            # Calculate miles between first and last record of the year
-            if len(year_records) >= 2:
-                first_mileage = year_records[0].mileage or 0
-                last_mileage = year_records[-1].mileage or 0
-                total_miles_this_year = last_mileage - first_mileage
+            # Calculate miles for each vehicle this year
+            for vehicle_id, vehicle_records in vehicle_miles.items():
+                if len(vehicle_records) >= 2:
+                    # Sort by date to get chronological order
+                    vehicle_records.sort(key=lambda x: x.date)
+                    
+                    # Calculate miles driven for this vehicle
+                    first_mileage = vehicle_records[0].mileage or 0
+                    last_mileage = vehicle_records[-1].mileage or 0
+                    vehicle_miles_driven = last_mileage - first_mileage
+                    
+                    # Only add positive miles (handle odometer resets/errors)
+                    if vehicle_miles_driven > 0:
+                        total_miles_this_year += vehicle_miles_driven
         
         # Oil change reminders (assuming 3,000 mile intervals)
         oil_change_reminders = []
