@@ -123,6 +123,8 @@ try:
     get_home_dashboard_summary = real_get_home_dashboard_summary
     get_current_mileage_from_all_sources = real_get_current_mileage_from_all_sources
     get_oil_change_interval_from_record = real_get_oil_change_interval_from_record
+    get_fuel_entries_for_vehicle = real_get_fuel_entries_for_vehicle
+    get_all_fuel_entries = real_get_all_fuel_entries
     
     print("Successfully imported from current directory")
 except ImportError as e:
@@ -174,6 +176,8 @@ except ImportError as e:
         get_home_dashboard_summary = real_get_home_dashboard_summary
         get_current_mileage_from_all_sources = real_get_current_mileage_from_all_sources
         get_oil_change_interval_from_record = real_get_oil_change_interval_from_record
+        get_fuel_entries_for_vehicle = real_get_fuel_entries_for_vehicle
+        get_all_fuel_entries = real_get_all_fuel_entries
         
         print("Successfully imported from app package")
     except ImportError as e2:
