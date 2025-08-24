@@ -237,24 +237,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Driving Conditions -->
-                                <div class="mb-3">
-                                    <label for="driving_conditions" class="form-label">Driving Conditions</label>
-                                    <select class="form-select" id="driving_conditions" name="driving_conditions">
-                                        <option value="">Select conditions...</option>
-                                        <option value="normal" {% if record and record.driving_conditions == 'normal' %}selected{% endif %}>Normal driving</option>
-                                        <option value="severe" {% if record and record.driving_conditions == 'severe' %}selected{% endif %}>Severe service (towing, extreme temps, short trips)</option>
-                                        <option value="towing" {% if record and record.driving_conditions == 'towing' %}selected{% endif %}>Towing/hauling</option>
-                                        <option value="racing" {% if record and record.driving_conditions == 'racing' %}selected{% endif %}>Racing/high performance</option>
-                                    </select>
-                                </div>
 
-                                <!-- Oil Consumption Notes -->
-                                <div class="mb-3">
-                                    <label for="oil_consumption_notes" class="form-label">Oil Consumption Notes</label>
-                                    <textarea class="form-control" id="oil_consumption_notes" name="oil_consumption_notes" rows="2" 
-                                              placeholder="Any notes about oil consumption between changes...">{{ record.oil_consumption_notes if record and record.oil_consumption_notes else '' }}</textarea>
-                                </div>
 
                                 <!-- Oil Analysis Section -->
                                 <hr class="my-4">
@@ -298,57 +281,9 @@
                                     </div>
                                 </div>
 
-                                <!-- Oil Analysis Metrics Row 1 -->
-                                <div class="row mb-3">
-                                    <div class="col-md-3">
-                                        <label for="iron_level" class="form-label">Iron (ppm)</label>
-                                        <input type="number" class="form-control" id="iron_level" name="iron_level" 
-                                               value="{{ record.iron_level if record and record.iron_level else '' }}"
-                                               step="0.1" min="0" placeholder="0.0">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="aluminum_level" class="form-label">Aluminum (ppm)</label>
-                                        <input type="number" class="form-control" id="aluminum_level" name="aluminum_level" 
-                                               value="{{ record.aluminum_level if record and record.aluminum_level else '' }}"
-                                               step="0.1" min="0" placeholder="0.0">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="copper_level" class="form-label">Copper (ppm)</label>
-                                        <input type="number" class="form-control" id="copper_level" name="copper_level" 
-                                               value="{{ record.copper_level if record and record.copper_level else '' }}"
-                                               step="0.1" min="0" placeholder="0.0">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label for="viscosity" class="form-label">Viscosity</label>
-                                        <input type="number" class="form-control" id="viscosity" name="viscosity" 
-                                               value="{{ record.viscosity if record and record.viscosity else '' }}"
-                                               step="0.1" min="0" placeholder="0.0">
-                                    </div>
-                                </div>
 
-                                <!-- Oil Analysis Metrics Row 2 -->
-                                <div class="row mb-3">
-                                    <div class="col-md-4">
-                                        <label for="tbn" class="form-label">TBN</label>
-                                        <input type="number" class="form-control" id="tbn" name="tbn" 
-                                               value="{{ record.tbn if record and record.tbn else '' }}"
-                                               step="0.1" min="0" placeholder="0.0">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="fuel_dilution" class="form-label">Fuel Dilution (%)</label>
-                                        <input type="number" class="form-control" id="fuel_dilution" name="fuel_dilution" 
-                                               value="{{ record.fuel_dilution if record and record.fuel_dilution else '' }}"
-                                               step="0.1" min="0" max="100" placeholder="0.0">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="coolant_contamination" class="form-label">Coolant Contamination</label>
-                                        <select class="form-select" id="coolant_contamination" name="coolant_contamination">
-                                            <option value="">Select...</option>
-                                            <option value="false" {% if record and record.coolant_contamination == False %}selected{% endif %}>None detected</option>
-                                            <option value="true" {% if record and record.coolant_contamination == True %}selected{% endif %}>Detected</option>
-                                        </select>
-                                    </div>
-                                </div>
+
+
                             </div>
 
                             <div class="d-flex gap-2 justify-content-center">
