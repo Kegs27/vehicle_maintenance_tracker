@@ -91,6 +91,29 @@
             color: #9333ea !important;
         }
         
+        /* Sortable header styles */
+        .sortable-header {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sortable-header:hover {
+            background-color: #e9ecef !important;
+        }
+        
+        .sort-icon {
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        
+        .sort-icon.active {
+            color: #9333ea !important;
+        }
+        
+        .sortable-header:hover .sort-icon {
+            color: #6c757d !important;
+        }
+        
         /* Table header icon styling */
         .table th i {
             font-size: 0.875rem;
@@ -189,23 +212,26 @@
                         <thead>
                             <tr>
                                 {% if not vehicle %}
-                                    <th class="text-center">
+                                    <th class="text-center sortable-header" data-sort="vehicle">
                                         <div class="d-flex flex-column align-items-center">
                                             <i class="fas fa-car text-purple-600 small mb-2"></i>
                                             <span class="small fw-semibold">Vehicle</span>
+                                            <i class="fas fa-sort text-muted small sort-icon"></i>
                                         </div>
                                     </th>
                                 {% endif %}
-                                <th class="text-center">
+                                <th class="text-center sortable-header" data-sort="date">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class="fas fa-calendar-alt text-purple-600 small mb-2"></i>
                                         <span class="small fw-semibold">Date</span>
+                                        <i class="fas fa-sort-down text-purple-600 small sort-icon active"></i>
                                     </div>
                                 </th>
-                                <th class="text-center">
+                                <th class="text-center sortable-header" data-sort="mileage">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class="fas fa-tachometer-alt text-purple-600 small mb-2"></i>
                                         <span class="small fw-semibold">Mileage</span>
+                                        <i class="fas fa-sort text-muted small sort-icon"></i>
                                     </div>
                                 </th>
                                 <th class="text-center">
@@ -393,8 +419,14 @@
     <script src="/static/export-data.js?v=3"></script>
     
     <script>
+        // Sorting functionality
+        let currentSort = { column: 'date', direction: 'desc' };
+        
         // Handle description modal
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize sorting functionality
+            initializeSorting();
+            
             const descriptionModal = document.getElementById('descriptionModal');
             if (descriptionModal) {
                 const modal = new bootstrap.Modal(descriptionModal);
@@ -472,6 +504,72 @@
         function showOilChangeMenu() {
             // Redirect to vehicles page for oil change management
             window.location.href = '/vehicles';
+        }
+        
+        function initializeSorting() {
+            // Add click handlers to sortable headers
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const sortColumn = this.getAttribute('data-sort');
+                    handleSort(sortColumn);
+                });
+            });
+        }
+        
+        function handleSort(column) {
+            const tbody = document.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Toggle direction if same column
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'desc'; // Default to desc for new columns
+            }
+            
+            // Sort the rows
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                if (column === 'vehicle') {
+                    aValue = a.querySelector('td:first-child')?.textContent?.trim() || '';
+                    bValue = b.querySelector('td:first-child')?.textContent?.trim() || '';
+                } else if (column === 'date') {
+                    aValue = new Date(a.querySelector('td:nth-child(2)')?.textContent?.trim() || '');
+                    bValue = new Date(b.querySelector('td:nth-child(2)')?.textContent?.trim() || '');
+                } else if (column === 'mileage') {
+                    aValue = parseInt(a.querySelector('td:nth-child(3)')?.textContent?.replace(/,/g, '') || '0');
+                    bValue = parseInt(b.querySelector('td:nth-child(3)')?.textContent?.replace(/,/g, '') || '0');
+                } else {
+                    return 0;
+                }
+                
+                if (currentSort.direction === 'asc') {
+                    return aValue > bValue ? 1 : -1;
+                } else {
+                    return aValue < bValue ? 1 : -1;
+                }
+            });
+            
+            // Reorder the DOM
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update sort indicators
+            updateSortIndicators(column, currentSort.direction);
+        }
+        
+        function updateSortIndicators(activeColumn, direction) {
+            // Reset all sort icons
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.className = 'fas fa-sort text-muted small sort-icon';
+            });
+            
+            // Update active column icon
+            const activeHeader = document.querySelector(`[data-sort="${activeColumn}"] .sort-icon`);
+            if (activeHeader) {
+                activeHeader.className = `fas fa-sort-${direction === 'asc' ? 'up' : 'down'} text-purple-600 small sort-icon active`;
+            }
         }
 
     </script>
