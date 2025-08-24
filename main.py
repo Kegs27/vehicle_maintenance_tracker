@@ -810,64 +810,7 @@ async def export_maintenance_csv():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
-@app.get("/fuel", response_class=HTMLResponse)
-async def fuel_tracking(request: Request):
-    """Fuel tracking page with vehicle selection and entry form"""
-    try:
-        vehicles = get_all_vehicles()
-        
-        # Get fuel entries for each vehicle from the database
-        from data_operations import get_fuel_entries_for_vehicle
-        
-        vehicle_list = []
-        for vehicle in vehicles:
-            fuel_entries = get_fuel_entries_for_vehicle(vehicle.id)
-            
-            # Convert date objects to strings for JSON serialization (entries are already dicts)
-            serialized_fuel_entries = []
-            for entry in fuel_entries:
-                serialized_entry = entry.copy()  # Copy the existing dictionary
-                # Convert date objects to strings for JSON serialization
-                if entry.get('date'):
-                    serialized_entry['date'] = entry['date'].isoformat() if hasattr(entry['date'], 'isoformat') else str(entry['date'])
-                if entry.get('created_at'):
-                    serialized_entry['created_at'] = entry['created_at'].isoformat() if hasattr(entry['created_at'], 'isoformat') else str(entry['created_at'])
-                if entry.get('updated_at'):
-                    serialized_entry['updated_at'] = entry['updated_at'].isoformat() if hasattr(entry['updated_at'], 'isoformat') else str(entry['updated_at'])
-                serialized_fuel_entries.append(serialized_entry)
-            
-            vehicle_dict = {
-                'id': vehicle.id,
-                'name': vehicle.name,
-                'year': vehicle.year,
-                'make': vehicle.make,
-                'model': vehicle.model,
-                'vin': vehicle.vin,
-                'fuel_entries': serialized_fuel_entries
-            }
-            vehicle_list.append(vehicle_dict)
-        
-        # Get the most recent fuel entry across all vehicles
-        all_fuel_entries = get_all_fuel_entries()
-        last_fuel_entry = None
-        if all_fuel_entries:
-            last_entry = all_fuel_entries[0]
-            # Convert date objects to strings for JSON serialization
-            last_fuel_entry = last_entry.copy()  # Copy the existing dictionary
-            if last_entry.get('date'):
-                last_fuel_entry['date'] = last_entry['date'].isoformat() if hasattr(last_entry['date'], 'isoformat') else str(last_entry['date'])
-            if last_entry.get('created_at'):
-                last_fuel_entry['created_at'] = last_entry['created_at'].isoformat() if hasattr(last_entry['created_at'], 'isoformat') else str(last_entry['created_at'])
-            if last_entry.get('updated_at'):
-                last_fuel_entry['updated_at'] = last_entry['updated_at'].isoformat() if hasattr(last_entry['updated_at'], 'isoformat') else str(last_entry['updated_at'])
-        
-        return templates.TemplateResponse("fuel_tracking.html", {
-            "request": request, 
-            "vehicles": vehicle_list,
-            "last_fuel_entry": last_fuel_entry
-        })
-    except Exception as e:
-        return HTMLResponse(content=f"<h1>Fuel Tracking Error</h1><p>{str(e)}</p>")
+# Old fuel route removed - use /fuel-new instead
 
 @app.get("/fuel-new", response_class=HTMLResponse)
 async def fuel_tracking_new(request: Request):
