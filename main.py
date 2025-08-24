@@ -678,23 +678,17 @@ async def fuel_tracking(request: Request):
         for vehicle in vehicles:
             fuel_entries = get_fuel_entries_for_vehicle(vehicle.id)
             
-            # Convert date objects to strings for JSON serialization
+            # Fuel entries are already dictionaries from data_operations, just convert dates to strings
             serialized_fuel_entries = []
             for entry in fuel_entries:
-                serialized_entry = {
-                    'id': entry.id,
-                    'vehicle_id': entry.vehicle_id,
-                    'date': entry.date.isoformat() if entry.date else None,
-                    'mileage': entry.mileage,
-                    'fuel_amount': entry.fuel_amount,
-                    'fuel_cost': entry.fuel_cost,
-                    'fuel_type': entry.fuel_type,
-                    'driving_pattern': entry.driving_pattern,
-                    'notes': entry.notes,
-                    'odometer_photo': entry.odometer_photo,
-                    'created_at': entry.created_at.isoformat() if entry.created_at else None,
-                    'updated_at': entry.updated_at.isoformat() if entry.updated_at else None
-                }
+                serialized_entry = entry.copy()  # Copy the existing dictionary
+                # Convert date objects to strings for JSON serialization
+                if entry.get('date'):
+                    serialized_entry['date'] = entry['date'].isoformat() if hasattr(entry['date'], 'isoformat') else str(entry['date'])
+                if entry.get('created_at'):
+                    serialized_entry['created_at'] = entry['created_at'].isoformat() if hasattr(entry['created_at'], 'isoformat') else str(entry['created_at'])
+                if entry.get('updated_at'):
+                    serialized_entry['updated_at'] = entry['updated_at'].isoformat() if hasattr(entry['updated_at'], 'isoformat') else str(entry['updated_at'])
                 serialized_fuel_entries.append(serialized_entry)
             
             vehicle_dict = {
