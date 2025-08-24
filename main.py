@@ -717,8 +717,8 @@ async def get_fuel_mpg_summary():
                 total_miles = 0
                 total_gallons = 0
                 
-                # Sort by date to get chronological order
-                sorted_entries = sorted(fuel_entries, key=lambda x: x['date'])
+                # Sort by date to get chronological order (ensure dates are comparable)
+                sorted_entries = sorted(fuel_entries, key=lambda x: x['date'] if isinstance(x['date'], str) else str(x['date']))
                 
                 for i in range(1, len(sorted_entries)):
                     miles_diff = sorted_entries[i]['mileage'] - sorted_entries[i-1]['mileage']
@@ -875,6 +875,7 @@ async def create_fuel_entry(
             fuel_entry = FuelEntry(
                 vehicle_id=vehicle_id,
                 date=parsed_date,
+                time=time,
                 mileage=mileage,
                 fuel_amount=fuel_amount,
                 fuel_cost=fuel_cost,

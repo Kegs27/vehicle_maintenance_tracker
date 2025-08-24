@@ -283,17 +283,22 @@
             fuelEntries.forEach(entry => {
                 const vehicle = vehicles.find(v => v.id === entry.vehicle_id);
                 const vehicleName = vehicle ? vehicle.name : 'Unknown Vehicle';
-                const date = new Date(entry.date).toLocaleDateString();
+                const date = entry.date ? new Date(entry.date).toLocaleDateString() : 'Unknown Date';
                 const time = entry.time || '';
+                const mileage = entry.mileage ? entry.mileage.toLocaleString() : 'Unknown';
+                const fuelAmount = entry.fuel_amount || 0;
+                const fuelType = entry.fuel_type || 'Unknown';
+                const fuelCost = entry.fuel_cost || 0;
+                const drivingPattern = entry.driving_pattern || 'Unknown';
                 
                 html += `
                     <tr>
                         <td><strong>${vehicleName}</strong></td>
                         <td>${date} ${time}</td>
-                        <td>${entry.mileage.toLocaleString()} miles</td>
-                        <td>${entry.fuel_amount} gal (${entry.fuel_type})</td>
-                        <td>$${entry.fuel_cost.toFixed(2)}</td>
-                        <td><span class="badge bg-secondary">${entry.driving_pattern}</span></td>
+                        <td>${mileage} miles</td>
+                        <td>${fuelAmount} gal (${fuelType})</td>
+                        <td>$${fuelCost.toFixed(2)}</td>
+                        <td><span class="badge bg-secondary">${drivingPattern}</span></td>
                         <td>
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteFuelEntry(${entry.id})" title="Delete Entry">
                                 <i class="fas fa-trash"></i>

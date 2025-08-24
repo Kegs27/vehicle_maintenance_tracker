@@ -49,6 +49,7 @@ class FuelEntry(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     vehicle_id: int = Field(foreign_key="vehicle.id")
     date: date_type = Field()
+    time: Optional[str] = Field(default=None, max_length=10, description="Time of fuel entry (HH:MM)")
     mileage: int
     fuel_amount: float = Field(description="Fuel amount in gallons")
     fuel_cost: float = Field(description="Total fuel cost")
