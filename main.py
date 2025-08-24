@@ -624,24 +624,33 @@ async def delete_fuel_entry(entry_id: int):
         from database import SessionLocal
         from models import FuelEntry
         
+        print(f"DEBUG: Starting DELETE for fuel entry {entry_id}")
+        
         session = SessionLocal()
         try:
             # Find and delete the fuel entry
+            print(f"DEBUG: Searching for fuel entry {entry_id} in database")
             fuel_entry = session.execute(
                 select(FuelEntry).where(FuelEntry.id == entry_id)
             ).scalar_one_or_none()
             
             if not fuel_entry:
+                print(f"DEBUG: Fuel entry {entry_id} not found in database")
                 raise HTTPException(status_code=404, detail="Fuel entry not found")
+            
+            print(f"DEBUG: Found fuel entry {entry_id} for vehicle {fuel_entry.vehicle_id}")
             
             # Store vehicle ID for response
             vehicle_id = fuel_entry.vehicle_id
             
             # Delete the entry
+            print(f"DEBUG: Deleting fuel entry {entry_id} from database")
             session.delete(fuel_entry)
+            
+            print(f"DEBUG: Committing deletion to database")
             session.commit()
             
-            print(f"Fuel entry {entry_id} deleted successfully for vehicle {vehicle_id}")
+            print(f"DEBUG: Fuel entry {entry_id} deleted successfully for vehicle {vehicle_id}")
             
             return {
                 "success": True, 
@@ -649,13 +658,17 @@ async def delete_fuel_entry(entry_id: int):
                 "vehicle_id": vehicle_id
             }
             
+        except Exception as e:
+            print(f"DEBUG: Error during deletion: {e}")
+            session.rollback()
+            raise
         finally:
             session.close()
             
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error deleting fuel entry {entry_id}: {e}")
+        print(f"DEBUG: Error deleting fuel entry {entry_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete fuel entry: {str(e)}")
 
 @app.get("/import", response_class=HTMLResponse)
