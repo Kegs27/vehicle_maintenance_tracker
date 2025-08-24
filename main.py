@@ -939,6 +939,56 @@ async def migrate_database():
     except Exception as e:
         return {"success": False, "error": f"Migration failed: {str(e)}"}
 
+@app.get("/debug-database")
+async def debug_database():
+    """Debug endpoint to check database status and content"""
+    try:
+        from database import SessionLocal
+        from sqlalchemy import text
+        
+        session = SessionLocal()
+        try:
+            # Check table counts
+            vehicle_count = session.execute(text("SELECT COUNT(*) FROM vehicle")).scalar()
+            maintenance_count = session.execute(text("SELECT COUNT(*) FROM maintenancerecord")).scalar()
+            fuel_count = session.execute(text("SELECT COUNT(*) FROM fuelentry")).scalar()
+            
+            # Check if tables exist
+            tables_result = session.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+                ORDER BY table_name
+            """))
+            tables = [row[0] for row in tables_result.fetchall()]
+            
+            # Check sample data
+            sample_vehicle = session.execute(text("SELECT * FROM vehicle LIMIT 1")).fetchone()
+            sample_maintenance = session.execute(text("SELECT * FROM maintenancerecord LIMIT 1")).fetchone()
+            
+            return {
+                "success": True,
+                "database_info": {
+                    "tables": tables,
+                    "counts": {
+                        "vehicles": vehicle_count,
+                        "maintenance_records": maintenance_count,
+                        "fuel_entries": fuel_count
+                    },
+                    "sample_vehicle": str(sample_vehicle) if sample_vehicle else None,
+                    "sample_maintenance": str(sample_maintenance) if sample_maintenance else None
+                }
+            }
+                
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+            
+    except Exception as e:
+        return {"success": False, "error": f"Debug failed: {str(e)}"}
+
 @app.post("/api/fuel/entry")
 async def create_fuel_entry(
     vehicle_id: int = Form(...),
