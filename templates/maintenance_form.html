@@ -343,6 +343,37 @@
             }
         }
 
+        // Validate cost breakdown matches total cost
+        function validateCostBreakdown() {
+            const totalCost = parseFloat(document.getElementById('cost').value) || 0;
+            const oilCost = parseFloat(document.getElementById('oil_cost').value) || 0;
+            const filterCost = parseFloat(document.getElementById('filter_cost').value) || 0;
+            const laborCost = parseFloat(document.getElementById('labor_cost').value) || 0;
+            
+            const breakdownTotal = oilCost + filterCost + laborCost;
+            
+            // If any breakdown fields are filled, they must match total
+            if ((oilCost > 0 || filterCost > 0 || laborCost > 0) && Math.abs(breakdownTotal - totalCost) > 0.01) {
+                alert(`Cost breakdown doesn't match total cost.\n\nBreakdown total: $${breakdownTotal.toFixed(2)}\nTotal cost: $${totalCost.toFixed(2)}\n\nPlease either:\n- Make the breakdown equal the total cost, OR\n- Just enter the total cost and add additional details in the description/notes section.`);
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Auto-calculate total cost from breakdown
+        function updateTotalCost() {
+            const oilCost = parseFloat(document.getElementById('oil_cost').value) || 0;
+            const filterCost = parseFloat(document.getElementById('filter_cost').value) || 0;
+            const laborCost = parseFloat(document.getElementById('labor_cost').value) || 0;
+            
+            const breakdownTotal = oilCost + filterCost + laborCost;
+            
+            if (breakdownTotal > 0) {
+                document.getElementById('cost').value = breakdownTotal.toFixed(2);
+            }
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             // Check if this is an existing oil change record
@@ -361,6 +392,26 @@
                             isOilChangeCheckbox.checked = true;
                             toggleOilChangeFields();
                         }
+                    }
+                });
+            }
+
+            // Add event listeners to breakdown cost fields
+            const oilCostField = document.getElementById('oil_cost');
+            const filterCostField = document.getElementById('filter_cost');
+            const laborCostField = document.getElementById('labor_cost');
+            
+            if (oilCostField) oilCostField.addEventListener('input', updateTotalCost);
+            if (filterCostField) filterCostField.addEventListener('input', updateTotalCost);
+            if (laborCostField) laborCostField.addEventListener('input', updateTotalCost);
+
+            // Add form validation
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (!validateCostBreakdown()) {
+                        e.preventDefault();
+                        return false;
                     }
                 });
             }
