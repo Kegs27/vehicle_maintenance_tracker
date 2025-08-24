@@ -93,12 +93,13 @@
         
         /* Table header styling - ensure ALL headers have consistent heights and alignment */
         .table th {
-            min-height: 80px; /* Consistent height for all headers */
+            height: 80px; /* Fixed height for ALL headers */
             padding: 1rem 0.5rem;
             text-align: center;
-            display: flex; /* Make the header cell itself a flex container */
-            align-items: center; /* Center content vertically within the cell */
-            justify-content: center; /* Center content horizontally within the cell */
+            vertical-align: middle;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         /* All column headers use the same structure */
@@ -106,8 +107,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* Center content vertically */
-            width: 100%; /* Take full width of the header cell */
+            justify-content: center;
+            width: 100%;
+            height: 100%;
         }
         
         /* Icon styling for all headers */
@@ -124,6 +126,17 @@
             font-weight: 600;
             display: block;
             margin-bottom: 0.5rem;
+        }
+        
+        /* Add bottom spacing to non-sortable headers to match sortable header heights */
+        .table th:not(.sortable-header) .header-content {
+            justify-content: center;
+        }
+        
+        .table th:not(.sortable-header) .header-content::after {
+            content: '';
+            height: 1.5rem; /* Match the space taken by sort icons */
+            display: block;
         }
         
         /* Sortable header specific styles */
