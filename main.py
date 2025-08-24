@@ -989,6 +989,77 @@ async def debug_database():
     except Exception as e:
         return {"success": False, "error": f"Debug failed: {str(e)}"}
 
+@app.get("/migrate-oil-change-fields")
+async def migrate_oil_change_fields():
+    """Migration endpoint to add enhanced oil change fields to MaintenanceRecord table"""
+    try:
+        from database import SessionLocal
+        from sqlalchemy import text
+        
+        session = SessionLocal()
+        try:
+            # List of all the new columns we need to add
+            new_columns = [
+                ("is_oil_change", "BOOLEAN DEFAULT FALSE"),
+                ("oil_type", "VARCHAR(20)"),
+                ("oil_brand", "VARCHAR(50)"),
+                ("oil_filter_brand", "VARCHAR(50)"),
+                ("oil_filter_part_number", "VARCHAR(50)"),
+                ("oil_cost", "DECIMAL(10,2)"),
+                ("filter_cost", "DECIMAL(10,2)"),
+                ("labor_cost", "DECIMAL(10,2)"),
+                ("oil_analysis_report", "TEXT"),
+                ("oil_analysis_date", "DATE"),
+                ("next_oil_analysis_date", "DATE"),
+                ("oil_analysis_cost", "DECIMAL(10,2)"),
+                ("iron_level", "DECIMAL(8,2)"),
+                ("aluminum_level", "DECIMAL(8,2)"),
+                ("copper_level", "DECIMAL(8,2)"),
+                ("viscosity", "DECIMAL(8,2)"),
+                ("tbn", "DECIMAL(8,2)"),
+                ("fuel_dilution", "DECIMAL(5,2)"),
+                ("coolant_contamination", "BOOLEAN"),
+                ("driving_conditions", "VARCHAR(50)"),
+                ("oil_consumption_notes", "TEXT")
+            ]
+            
+            added_columns = []
+            existing_columns = []
+            
+            for column_name, column_type in new_columns:
+                # Check if column already exists
+                result = session.execute(text(f"""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'maintenancerecord' AND column_name = '{column_name}'
+                """))
+                
+                if not result.fetchone():
+                    # Add the column
+                    session.execute(text(f"ALTER TABLE maintenancerecord ADD COLUMN {column_name} {column_type}"))
+                    added_columns.append(column_name)
+                else:
+                    existing_columns.append(column_name)
+            
+            session.commit()
+            
+            return {
+                "success": True, 
+                "message": f"Migration completed successfully!",
+                "added_columns": added_columns,
+                "existing_columns": existing_columns,
+                "total_columns_processed": len(new_columns)
+            }
+                
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+            
+    except Exception as e:
+        return {"success": False, "error": f"Migration failed: {str(e)}"}
+
 @app.post("/api/fuel/entry")
 async def create_fuel_entry(
     vehicle_id: int = Form(...),
