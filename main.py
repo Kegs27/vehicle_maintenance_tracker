@@ -786,7 +786,8 @@ async def import_data(
 async def export_vehicles_csv():
     """Export vehicles to CSV using centralized data operations"""
     try:
-        csv_content = export_vehicles_csv()
+        from data_operations import export_vehicles_csv as export_vehicles_func
+        csv_content = export_vehicles_func()
         
         return Response(
             content=csv_content,
@@ -800,7 +801,8 @@ async def export_vehicles_csv():
 async def export_maintenance_csv():
     """Export maintenance records to CSV using centralized data operations"""
     try:
-        csv_content = export_maintenance_csv()
+        from data_operations import export_maintenance_csv as export_maintenance_func
+        csv_content = export_maintenance_func()
         
         return Response(
             content=csv_content,
@@ -809,6 +811,37 @@ async def export_maintenance_csv():
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+@app.get("/api/export/vehicles/pdf")
+async def export_vehicles_pdf():
+    """Export vehicles to PDF using centralized data operations"""
+    try:
+        from data_operations import export_vehicles_pdf
+        pdf_content = export_vehicles_pdf()
+        
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=vehicles_export.pdf"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF export failed: {str(e)}")
+
+@app.get("/api/export/maintenance/pdf")
+async def export_maintenance_pdf():
+    """Export maintenance records to PDF using centralized data operations"""
+    try:
+        from data_operations import export_maintenance_csv as export_maintenance_func
+        # For now, return CSV as PDF (you can implement actual PDF generation later)
+        csv_content = export_maintenance_func()
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=maintenance_export.pdf"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF export failed: {str(e)}")
 
 @app.get("/fuel", response_class=HTMLResponse)
 async def fuel_redirect():

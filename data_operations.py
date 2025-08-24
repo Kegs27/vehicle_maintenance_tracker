@@ -428,6 +428,16 @@ def export_maintenance_csv() -> str:
     finally:
         session.close()
 
+def export_vehicles_pdf() -> str:
+    """Export vehicles to PDF format (returns CSV for now)"""
+    try:
+        # For now, return CSV format as PDF
+        # You can implement actual PDF generation later using libraries like reportlab
+        return export_vehicles_csv()
+    except Exception as e:
+        print(f"Error exporting vehicles to PDF: {e}")
+        return ""
+
 # ============================================================================
 # UTILITY OPERATIONS
 # ============================================================================
