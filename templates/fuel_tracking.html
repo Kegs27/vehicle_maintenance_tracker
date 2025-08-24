@@ -1231,7 +1231,7 @@
 
         function loadVehiclesForSelection() {
             const vehicleList = document.getElementById('vehicleSelectionList');
-            const vehicles = {{ vehicles | tojson }};
+            const vehicles = window.vehiclesData || [];
             
             if (!vehicles || vehicles.length === 0) {
                 vehicleList.innerHTML = `
