@@ -39,6 +39,31 @@ class MaintenanceRecord(SQLModel, table=True):
     date_estimated: bool = Field(default=False)
     oil_change_interval: Optional[int] = Field(default=None, description="Miles until next oil change (for oil change records)")
     
+    # Enhanced Oil Change Fields
+    is_oil_change: bool = Field(default=False, description="Flag to identify oil change records")
+    oil_type: Optional[str] = Field(default=None, max_length=20, description="Oil type (e.g., 5W-30, 10W-40)")
+    oil_brand: Optional[str] = Field(default=None, max_length=50, description="Oil brand (e.g., Mobil 1, Castrol)")
+    oil_filter_brand: Optional[str] = Field(default=None, max_length=50, description="Oil filter brand")
+    oil_filter_part_number: Optional[str] = Field(default=None, max_length=50, description="Oil filter part number")
+    oil_cost: Optional[float] = Field(default=None, description="Cost of oil only")
+    filter_cost: Optional[float] = Field(default=None, description="Cost of filter only")
+    labor_cost: Optional[float] = Field(default=None, description="Cost of labor")
+    oil_analysis_report: Optional[str] = Field(default=None, description="Base64 encoded PDF or file path")
+    oil_analysis_date: Optional[date_type] = Field(default=None, description="Date of oil analysis")
+    next_oil_analysis_date: Optional[date_type] = Field(default=None, description="Next recommended oil analysis date")
+    oil_analysis_cost: Optional[float] = Field(default=None, description="Cost of oil analysis")
+    
+    # Oil Analysis Metrics
+    iron_level: Optional[float] = Field(default=None, description="Iron level from oil analysis (ppm)")
+    aluminum_level: Optional[float] = Field(default=None, description="Aluminum level from oil analysis (ppm)")
+    copper_level: Optional[float] = Field(default=None, description="Copper level from oil analysis (ppm)")
+    viscosity: Optional[float] = Field(default=None, description="Oil viscosity from analysis")
+    tbn: Optional[float] = Field(default=None, description="Total Base Number from oil analysis")
+    fuel_dilution: Optional[float] = Field(default=None, description="Fuel dilution percentage")
+    coolant_contamination: Optional[bool] = Field(default=None, description="Coolant contamination detected")
+    driving_conditions: Optional[str] = Field(default=None, max_length=50, description="Driving conditions (severe, normal, towing)")
+    oil_consumption_notes: Optional[str] = Field(default=None, max_length=500, description="Notes about oil consumption between changes")
+    
     # Relationship to vehicle
     vehicle: Vehicle = Relationship(back_populates="maintenance_records")
 

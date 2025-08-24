@@ -130,15 +130,224 @@
                                 </div>
                             </div>
 
-                            <!-- Oil Change Interval Field (shown only for oil change records) -->
-                            <div class="mb-4" id="oilChangeIntervalField" style="display: none;">
-                                <label for="oil_change_interval" class="form-label fw-bold">Oil Change Interval (Miles)</label>
-                                <input type="number" class="form-control" id="oil_change_interval" name="oil_change_interval" 
-                                                       value="{{ record.oil_change_interval if record and record.oil_change_interval else '5000' }}"
-                min="1000" max="10000" step="100" placeholder="5000">
-                                <div class="form-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Set the mileage interval for the next oil change. Default is 3,000 miles.
+                            <!-- Oil Change Checkbox -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_oil_change" name="is_oil_change" 
+                                           {% if record and record.is_oil_change %}checked{% endif %}
+                                           onchange="toggleOilChangeFields()">
+                                    <label class="form-check-label fw-bold" for="is_oil_change">
+                                        <i class="fas fa-oil-can me-2"></i>This is an oil change record
+                                    </label>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Check this box to show enhanced oil change fields and analysis options
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Enhanced Oil Change Fields (shown only when checkbox is checked) -->
+                            <div id="oilChangeFields" style="display: none;">
+                                <hr class="my-4">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-oil-can me-2"></i>Oil Change Details
+                                </h5>
+                                
+                                <!-- Oil Change Interval -->
+                                <div class="mb-3">
+                                    <label for="oil_change_interval" class="form-label fw-bold">Oil Change Interval (Miles)</label>
+                                    <input type="number" class="form-control" id="oil_change_interval" name="oil_change_interval" 
+                                           value="{{ record.oil_change_interval if record and record.oil_change_interval else '5000' }}"
+                                           min="1000" max="10000" step="100" placeholder="5000">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Set the mileage interval for the next oil change. Default is 5,000 miles.
+                                    </div>
+                                </div>
+
+                                <!-- Oil Information Row -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="oil_type" class="form-label">Oil Type</label>
+                                        <select class="form-select" id="oil_type" name="oil_type">
+                                            <option value="">Select oil type...</option>
+                                            <option value="0W-20" {% if record and record.oil_type == '0W-20' %}selected{% endif %}>0W-20</option>
+                                            <option value="0W-30" {% if record and record.oil_type == '0W-30' %}selected{% endif %}>0W-30</option>
+                                            <option value="5W-20" {% if record and record.oil_type == '5W-20' %}selected{% endif %}>5W-20</option>
+                                            <option value="5W-30" {% if record and record.oil_type == '5W-30' %}selected{% endif %}>5W-30</option>
+                                            <option value="5W-40" {% if record and record.oil_type == '5W-40' %}selected{% endif %}>5W-40</option>
+                                            <option value="10W-30" {% if record and record.oil_type == '10W-30' %}selected{% endif %}>10W-30</option>
+                                            <option value="10W-40" {% if record and record.oil_type == '10W-40' %}selected{% endif %}>10W-40</option>
+                                            <option value="15W-40" {% if record and record.oil_type == '15W-40' %}selected{% endif %}>15W-40</option>
+                                            <option value="20W-50" {% if record and record.oil_type == '20W-50' %}selected{% endif %}>20W-50</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="oil_brand" class="form-label">Oil Brand</label>
+                                        <input type="text" class="form-control" id="oil_brand" name="oil_brand" 
+                                               value="{{ record.oil_brand if record and record.oil_brand else '' }}"
+                                               placeholder="e.g., Mobil 1, Castrol, Valvoline">
+                                    </div>
+                                </div>
+
+                                <!-- Filter Information Row -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="oil_filter_brand" class="form-label">Filter Brand</label>
+                                        <input type="text" class="form-control" id="oil_filter_brand" name="oil_filter_brand" 
+                                               value="{{ record.oil_filter_brand if record and record.oil_filter_brand else '' }}"
+                                               placeholder="e.g., Fram, Mobil 1, K&N">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="oil_filter_part_number" class="form-label">Filter Part Number</label>
+                                        <input type="text" class="form-control" id="oil_filter_part_number" name="oil_filter_part_number" 
+                                               value="{{ record.oil_filter_part_number if record and record.oil_filter_part_number else '' }}"
+                                               placeholder="e.g., PH2870A">
+                                    </div>
+                                </div>
+
+                                <!-- Cost Breakdown Row -->
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="oil_cost" class="form-label">Oil Cost</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="oil_cost" name="oil_cost" 
+                                                   value="{{ record.oil_cost if record and record.oil_cost else '' }}"
+                                                   step="0.01" min="0" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="filter_cost" class="form-label">Filter Cost</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="filter_cost" name="filter_cost" 
+                                                   value="{{ record.filter_cost if record and record.filter_cost else '' }}"
+                                                   step="0.01" min="0" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="labor_cost" class="form-label">Labor Cost</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="labor_cost" name="labor_cost" 
+                                                   value="{{ record.labor_cost if record and record.labor_cost else '' }}"
+                                                   step="0.01" min="0" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Driving Conditions -->
+                                <div class="mb-3">
+                                    <label for="driving_conditions" class="form-label">Driving Conditions</label>
+                                    <select class="form-select" id="driving_conditions" name="driving_conditions">
+                                        <option value="">Select conditions...</option>
+                                        <option value="normal" {% if record and record.driving_conditions == 'normal' %}selected{% endif %}>Normal driving</option>
+                                        <option value="severe" {% if record and record.driving_conditions == 'severe' %}selected{% endif %}>Severe service (towing, extreme temps, short trips)</option>
+                                        <option value="towing" {% if record and record.driving_conditions == 'towing' %}selected{% endif %}>Towing/hauling</option>
+                                        <option value="racing" {% if record and record.driving_conditions == 'racing' %}selected{% endif %}>Racing/high performance</option>
+                                    </select>
+                                </div>
+
+                                <!-- Oil Consumption Notes -->
+                                <div class="mb-3">
+                                    <label for="oil_consumption_notes" class="form-label">Oil Consumption Notes</label>
+                                    <textarea class="form-control" id="oil_consumption_notes" name="oil_consumption_notes" rows="2" 
+                                              placeholder="Any notes about oil consumption between changes...">{{ record.oil_consumption_notes if record and record.oil_consumption_notes else '' }}</textarea>
+                                </div>
+
+                                <!-- Oil Analysis Section -->
+                                <hr class="my-4">
+                                <h6 class="text-info mb-3">
+                                    <i class="fas fa-microscope me-2"></i>Oil Analysis (Optional)
+                                </h6>
+                                
+                                <!-- Oil Analysis Report Upload -->
+                                <div class="mb-3">
+                                    <label for="oil_analysis_report" class="form-label">Oil Analysis Report (PDF)</label>
+                                    <input type="file" class="form-control" id="oil_analysis_report" name="oil_analysis_report" 
+                                           accept=".pdf" onchange="handleFileUpload(this)">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Upload your oil analysis report from Blackstone Labs or other testing facilities
+                                    </div>
+                                </div>
+
+                                <!-- Oil Analysis Dates Row -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="oil_analysis_date" class="form-label">Analysis Date</label>
+                                        <input type="date" class="form-control" id="oil_analysis_date" name="oil_analysis_date" 
+                                               value="{{ record.oil_analysis_date.strftime('%Y-%m-%d') if record and record.oil_analysis_date else '' }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="next_oil_analysis_date" class="form-label">Next Analysis Due</label>
+                                        <input type="date" class="form-control" id="next_oil_analysis_date" name="next_oil_analysis_date" 
+                                               value="{{ record.next_oil_analysis_date.strftime('%Y-%m-%d') if record and record.next_oil_analysis_date else '' }}">
+                                    </div>
+                                </div>
+
+                                <!-- Oil Analysis Cost -->
+                                <div class="mb-3">
+                                    <label for="oil_analysis_cost" class="form-label">Analysis Cost</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="oil_analysis_cost" name="oil_analysis_cost" 
+                                               value="{{ record.oil_analysis_cost if record and record.oil_analysis_cost else '' }}"
+                                               step="0.01" min="0" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <!-- Oil Analysis Metrics Row 1 -->
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <label for="iron_level" class="form-label">Iron (ppm)</label>
+                                        <input type="number" class="form-control" id="iron_level" name="iron_level" 
+                                               value="{{ record.iron_level if record and record.iron_level else '' }}"
+                                               step="0.1" min="0" placeholder="0.0">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="aluminum_level" class="form-label">Aluminum (ppm)</label>
+                                        <input type="number" class="form-control" id="aluminum_level" name="aluminum_level" 
+                                               value="{{ record.aluminum_level if record and record.aluminum_level else '' }}"
+                                               step="0.1" min="0" placeholder="0.0">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="copper_level" class="form-label">Copper (ppm)</label>
+                                        <input type="number" class="form-control" id="copper_level" name="copper_level" 
+                                               value="{{ record.copper_level if record and record.copper_level else '' }}"
+                                               step="0.1" min="0" placeholder="0.0">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="viscosity" class="form-label">Viscosity</label>
+                                        <input type="number" class="form-control" id="viscosity" name="viscosity" 
+                                               value="{{ record.viscosity if record and record.viscosity else '' }}"
+                                               step="0.1" min="0" placeholder="0.0">
+                                    </div>
+                                </div>
+
+                                <!-- Oil Analysis Metrics Row 2 -->
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="tbn" class="form-label">TBN</label>
+                                        <input type="number" class="form-control" id="tbn" name="tbn" 
+                                               value="{{ record.tbn if record and record.tbn else '' }}"
+                                               step="0.1" min="0" placeholder="0.0">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="fuel_dilution" class="form-label">Fuel Dilution (%)</label>
+                                        <input type="number" class="form-control" id="fuel_dilution" name="fuel_dilution" 
+                                               value="{{ record.fuel_dilution if record and record.fuel_dilution else '' }}"
+                                               step="0.1" min="0" max="100" placeholder="0.0">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="coolant_contamination" class="form-label">Coolant Contamination</label>
+                                        <select class="form-select" id="coolant_contamination" name="coolant_contamination">
+                                            <option value="">Select...</option>
+                                            <option value="false" {% if record and record.coolant_contamination == False %}selected{% endif %}>None detected</option>
+                                            <option value="true" {% if record and record.coolant_contamination == True %}selected{% endif %}>Detected</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
@@ -166,25 +375,59 @@
             window.location.href = '/vehicles';
         }
 
-        // Show/hide oil change interval field based on description
-        function toggleOilChangeInterval() {
-            const description = document.getElementById('description').value.toLowerCase();
-            const intervalField = document.getElementById('oilChangeIntervalField');
+        // Show/hide enhanced oil change fields based on checkbox
+        function toggleOilChangeFields() {
+            const isOilChange = document.getElementById('is_oil_change').checked;
+            const oilChangeFields = document.getElementById('oilChangeFields');
             
-            if (description.includes('oil')) {
-                intervalField.style.display = 'block';
+            if (isOilChange) {
+                oilChangeFields.style.display = 'block';
             } else {
-                intervalField.style.display = 'none';
+                oilChangeFields.style.display = 'none';
             }
         }
 
-        // Add event listener to description field
+        // Handle PDF file upload
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    alert('Please select a PDF file.');
+                    input.value = '';
+                    return;
+                }
+                
+                if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                    alert('File size must be less than 10MB.');
+                    input.value = '';
+                    return;
+                }
+                
+                console.log('PDF file selected:', file.name, 'Size:', file.size, 'bytes');
+                // TODO: Implement file upload to server
+            }
+        }
+
+        // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if this is an existing oil change record
+            toggleOilChangeFields();
+            
+            // Add event listener to description field for auto-detection
             const descriptionField = document.getElementById('description');
             if (descriptionField) {
-                descriptionField.addEventListener('input', toggleOilChangeInterval);
-                // Check on page load for existing records
-                toggleOilChangeInterval();
+                descriptionField.addEventListener('input', function() {
+                    const description = this.value.toLowerCase();
+                    const isOilChangeCheckbox = document.getElementById('is_oil_change');
+                    
+                    // Auto-check the oil change checkbox if description contains oil-related terms
+                    if (description.includes('oil') || description.includes('filter') || description.includes('lube')) {
+                        if (!isOilChangeCheckbox.checked) {
+                            isOilChangeCheckbox.checked = true;
+                            toggleOilChangeFields();
+                        }
+                    }
+                });
             }
         });
     </script>
