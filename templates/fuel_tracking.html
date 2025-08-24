@@ -1158,12 +1158,30 @@
             if (!confirm('Are you sure you want to delete this fuel entry?')) return;
             
             const fuelEntries = JSON.parse(localStorage.getItem('fuelEntries') || '[]');
-            fuelEntries.splice(index, 1);
-            localStorage.setItem('fuelEntries', JSON.stringify(fuelEntries));
+            const entryToDelete = fuelEntries[index];
             
-            loadRecentFuelEntries();
-            loadMPGSummary();
-            alert('Fuel entry deleted successfully!');
+            // Delete from database first
+            fetch(`/api/fuel/${entryToDelete.id}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Delete from localStorage after successful database deletion
+                    fuelEntries.splice(index, 1);
+                    localStorage.setItem('fuelEntries', JSON.stringify(fuelEntries));
+                    
+                    loadRecentFuelEntries();
+                    loadMPGSummary();
+                    alert('Fuel entry deleted successfully from database!');
+                } else {
+                    alert('Error deleting fuel entry: ' + data.detail);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting fuel entry:', error);
+                alert('Error deleting fuel entry. Please try again.');
+            });
         }
         
         function prepareQuickFillUp() {

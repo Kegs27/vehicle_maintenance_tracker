@@ -615,6 +615,47 @@ async def delete_maintenance(record_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete maintenance record: {str(e)}")
 
+@app.delete("/api/fuel/{entry_id}")
+async def delete_fuel_entry(entry_id: int):
+    """Delete a fuel entry from the database"""
+    try:
+        from database import SessionLocal
+        from models import FuelEntry
+        
+        session = SessionLocal()
+        try:
+            # Find and delete the fuel entry
+            fuel_entry = session.execute(
+                select(FuelEntry).where(FuelEntry.id == entry_id)
+            ).scalar_one_or_none()
+            
+            if not fuel_entry:
+                raise HTTPException(status_code=404, detail="Fuel entry not found")
+            
+            # Store vehicle ID for response
+            vehicle_id = fuel_entry.vehicle_id
+            
+            # Delete the entry
+            session.delete(fuel_entry)
+            session.commit()
+            
+            print(f"Fuel entry {entry_id} deleted successfully for vehicle {vehicle_id}")
+            
+            return {
+                "success": True, 
+                "message": "Fuel entry deleted successfully",
+                "vehicle_id": vehicle_id
+            }
+            
+        finally:
+            session.close()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting fuel entry {entry_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete fuel entry: {str(e)}")
+
 @app.get("/import", response_class=HTMLResponse)
 async def import_form(request: Request):
     """Form to import CSV data using centralized data operations"""
