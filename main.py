@@ -528,8 +528,10 @@ async def oil_changes_page(request: Request):
         vehicle_oil_data = []
         
         for vehicle in vehicles:
-            # Get current mileage from all sources
+            # Get current mileage from all sources with debug logging
+            print(f"DEBUG: Calculating mileage for vehicle {vehicle.id} ({vehicle.name})")
             current_mileage = get_current_mileage_from_all_sources(vehicle.id)
+            print(f"DEBUG: Vehicle {vehicle.name} current mileage: {current_mileage}")
             
             # Get oil change records for this vehicle
             oil_changes = [
