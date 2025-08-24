@@ -562,10 +562,17 @@ async def oil_changes_page(request: Request):
                 "next_due_info": next_due_info
             })
         
-        return templates.TemplateResponse("oil_changes.html", {
+        response = templates.TemplateResponse("oil_changes.html", {
             "request": request,
             "vehicle_oil_data": vehicle_oil_data
         })
+        
+        # Add anti-caching headers to ensure fresh data
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load oil change data: {str(e)}")
 
