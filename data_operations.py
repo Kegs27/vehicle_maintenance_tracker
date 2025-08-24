@@ -859,6 +859,7 @@ def get_fuel_entries_for_vehicle(vehicle_id: int) -> List[Dict[str, Any]]:
             entries.append({
                 'id': entry.id,
                 'date': entry.date,
+                'time': getattr(entry, 'time', None),  # Handle missing time column gracefully
                 'mileage': entry.mileage,
                 'fuel_amount': entry.fuel_amount,
                 'fuel_cost': entry.fuel_cost,
@@ -900,6 +901,7 @@ def get_all_fuel_entries() -> List[Dict[str, Any]]:
                 'vehicle_id': entry.vehicle_id,
                 'vehicle_name': vehicle.name if vehicle else 'Unknown Vehicle',
                 'date': entry.date,
+                'time': getattr(entry, 'time', None),  # Handle missing time column gracefully
                 'mileage': entry.mileage,
                 'fuel_amount': entry.fuel_amount,
                 'fuel_cost': entry.fuel_cost,
