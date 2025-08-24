@@ -95,6 +95,8 @@
         .sortable-header {
             cursor: pointer;
             transition: background-color 0.2s ease;
+            position: relative;
+            min-height: 80px; /* Ensure consistent height for all headers */
         }
         
         .sortable-header:hover {
@@ -104,6 +106,7 @@
         .sort-icon {
             font-size: 0.75rem;
             transition: all 0.2s ease;
+            margin-top: 4px; /* Space between text and icon */
         }
         
         .sort-icon.active {
@@ -114,15 +117,34 @@
             color: #6c757d !important;
         }
         
-        /* Table header icon styling */
+        /* Table header icon styling - ensure consistent heights */
+        .table th {
+            min-height: 80px; /* Match sortable header height */
+            vertical-align: top; /* Align content to top */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        
         .table th i {
             font-size: 0.875rem;
             opacity: 0.8;
+            display: block; /* Ensure icon is on its own line */
+            margin-bottom: 0.5rem; /* Space below icon */
         }
         
         .table th span {
             font-size: 0.875rem;
             font-weight: 600;
+            display: block; /* Ensure text is on its own line */
+        }
+        
+        /* Ensure all column headers have consistent structure */
+        .table th .header-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
         }
 
     </style>
@@ -210,45 +232,45 @@
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
-                            <tr>
+                                                        <tr>
                                 {% if not vehicle %}
-                                    <th class="text-center sortable-header" data-sort="vehicle">
-                                        <div class="d-flex flex-column align-items-center">
-                                            <i class="fas fa-car text-purple-600 small mb-2"></i>
-                                            <span class="small fw-semibold">Vehicle</span>
-                                            <i class="fas fa-sort text-muted small sort-icon"></i>
-                                        </div>
-                                    </th>
+                                <th class="text-center sortable-header" data-sort="vehicle">
+                                    <div class="header-content">
+                                        <i class="fas fa-car text-purple-600 small"></i>
+                                        <span class="small fw-semibold">Vehicle</span>
+                                        <i class="fas fa-sort text-muted small sort-icon"></i>
+                                    </div>
+                                </th>
                                 {% endif %}
                                 <th class="text-center sortable-header" data-sort="date">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-calendar-alt text-purple-600 small mb-2"></i>
+                                    <div class="header-content">
+                                        <i class="fas fa-calendar-alt text-purple-600 small"></i>
                                         <span class="small fw-semibold">Date</span>
                                         <i class="fas fa-sort-down text-purple-600 small sort-icon active"></i>
                                     </div>
                                 </th>
                                 <th class="text-center sortable-header" data-sort="mileage">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-tachometer-alt text-purple-600 small mb-2"></i>
+                                    <div class="header-content">
+                                        <i class="fas fa-tachometer-alt text-purple-600 small"></i>
                                         <span class="small fw-semibold">Mileage</span>
                                         <i class="fas fa-sort text-muted small sort-icon"></i>
                                     </div>
                                 </th>
                                 <th class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-clipboard-list text-purple-600 small mb-2"></i>
+                                    <div class="header-content">
+                                        <i class="fas fa-clipboard-list text-purple-600 small"></i>
                                         <span class="small fw-semibold">Description</span>
                                     </div>
                                 </th>
                                 <th class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-dollar-sign text-purple-600 small mb-2"></i>
+                                    <div class="header-content">
+                                        <i class="fas fa-dollar-sign text-purple-600 small"></i>
                                         <span class="small fw-semibold">Cost</span>
                                     </div>
                                 </th>
                                 <th class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-ellipsis-h text-purple-600 small mb-2"></i>
+                                    <div class="header-content">
+                                        <i class="fas fa-ellipsis-h text-purple-600 small"></i>
                                         <span class="small fw-semibold">Actions</span>
                                     </div>
                                 </th>
