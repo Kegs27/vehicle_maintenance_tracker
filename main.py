@@ -56,6 +56,9 @@ def dummy_get_maintenance_summary():
         "average_cost_per_record": 0
     }
 
+def dummy_sort_maintenance_records(*args, **kwargs):
+    return []
+
 # Initialize functions with dummy versions by default
 get_all_vehicles = dummy_get_all_vehicles
 get_vehicle_by_id = dummy_get_vehicle_by_id
@@ -73,6 +76,7 @@ export_vehicles_csv = dummy_export_vehicles_csv
 export_maintenance_csv = dummy_export_maintenance_csv
 get_vehicle_names = dummy_get_vehicle_names
 get_maintenance_summary = dummy_get_maintenance_summary
+sort_maintenance_records = dummy_sort_maintenance_records
 
 # Try to import from current directory first (for Render)
 try:
@@ -101,7 +105,8 @@ try:
         get_oil_change_interval_from_record as real_get_oil_change_interval_from_record,
         get_fuel_entries_for_vehicle as real_get_fuel_entries_for_vehicle,
         get_all_fuel_entries as real_get_all_fuel_entries,
-        get_vehicle_health_status as real_get_vehicle_health_status
+        get_vehicle_health_status as real_get_vehicle_health_status,
+        sort_maintenance_records as real_sort_maintenance_records
     )
     
     # Replace dummy functions with real ones
@@ -182,6 +187,7 @@ except ImportError as e:
         get_fuel_entries_for_vehicle = real_get_fuel_entries_for_vehicle
         get_all_fuel_entries = real_get_all_fuel_entries
         get_vehicle_health_status = real_get_vehicle_health_status
+        sort_maintenance_records = real_sort_maintenance_records
         
         print("Successfully imported from app package")
     except ImportError as e2:

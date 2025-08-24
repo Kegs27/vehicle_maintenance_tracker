@@ -203,6 +203,59 @@ def get_maintenance_by_id(record_id: int) -> Optional[MaintenanceRecord]:
     finally:
         session.close()
 
+def sort_maintenance_records(records: List[MaintenanceRecord], sort_by: str = 'date', direction: str = 'desc') -> List[MaintenanceRecord]:
+    """
+    Centralized function to sort maintenance records
+    
+    Args:
+        records: List of MaintenanceRecord objects
+        sort_by: 'vehicle', 'date', or 'mileage'
+        direction: 'asc' or 'desc'
+    
+    Returns:
+        Sorted list of maintenance records
+    """
+    try:
+        if not records:
+            return []
+        
+        # Create a copy to avoid modifying the original list
+        sorted_records = records.copy()
+        
+        if sort_by == 'vehicle':
+            # Sort by vehicle name first, then by mileage (desc) -> date (desc) within each vehicle
+            # If no mileage, sort by date within the vehicle group
+            sorted_records.sort(key=lambda x: (
+                x.vehicle.name if x.vehicle else 'Unknown',
+                -(x.mileage if x.mileage and x.mileage > 0 else 0),  # Negative for desc
+                -(x.date.toordinal() if x.date and x.date.year > 1900 else 0)  # Negative for desc
+            ))
+            
+        elif sort_by == 'date':
+            # Sort by date (handle placeholder dates)
+            sorted_records.sort(key=lambda x: (
+                x.date.toordinal() if x.date and x.date.year > 1900 else 0
+            ), reverse=(direction == 'desc'))
+            
+        elif sort_by == 'mileage':
+            # Sort by mileage (handle 0/None mileage)
+            sorted_records.sort(key=lambda x: (
+                x.mileage if x.mileage and x.mileage > 0 else 0
+            ), reverse=(direction == 'desc'))
+            
+        else:
+            # Default to date desc if invalid sort_by
+            sorted_records.sort(key=lambda x: (
+                x.date.toordinal() if x.date and x.date.year > 1900 else 0
+            ), reverse=True)
+        
+        return sorted_records
+        
+    except Exception as e:
+        print(f"Error sorting maintenance records: {e}")
+        # Return original list if sorting fails
+        return records
+
 def create_maintenance_record(vehicle_id: int, date: str, description: str, cost: float, mileage: Optional[int], oil_change_interval: Optional[int] = None) -> Dict[str, Any]:
     """Create a new maintenance record"""
     session = SessionLocal()
