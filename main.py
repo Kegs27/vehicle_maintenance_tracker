@@ -822,9 +822,21 @@ async def fuel_tracking_new(request: Request):
     try:
         vehicles = get_all_vehicles()
         
+        # Convert Vehicle objects to dictionaries for JSON serialization
+        vehicles_dict = []
+        for vehicle in vehicles:
+            vehicles_dict.append({
+                'id': vehicle.id,
+                'name': vehicle.name,
+                'year': vehicle.year,
+                'make': vehicle.make,
+                'model': vehicle.model,
+                'vin': vehicle.vin
+            })
+        
         return templates.TemplateResponse("fuel_tracking_new.html", {
             "request": request,
-            "vehicles": vehicles
+            "vehicles": vehicles_dict
         })
     except Exception as e:
         return HTMLResponse(content=f"<h1>Fuel Tracking Error</h1><p>{str(e)}</p>")
