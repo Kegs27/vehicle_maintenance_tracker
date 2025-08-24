@@ -783,31 +783,48 @@ async def import_data(
         return HTMLResponse(content=f"<h1>Import Error</h1><p>{str(e)}</p>")
 
 @app.get("/api/export/vehicles")
-async def export_vehicles_csv():
+async def export_vehicles_csv(vehicle_ids: Optional[str] = Query(None)):
     """Export vehicles to CSV using centralized data operations"""
     try:
         from data_operations import export_vehicles_csv as export_vehicles_func
-        csv_content = export_vehicles_func()
+        
+        if vehicle_ids:
+            # Export specific vehicles
+            vehicle_id_list = [int(id.strip()) for id in vehicle_ids.split(',')]
+            csv_content = export_vehicles_func(vehicle_ids=vehicle_id_list)
+            filename = f"vehicles_selected_export.csv"
+        else:
+            # Export all vehicles
+            csv_content = export_vehicles_func()
+            filename = "vehicles_export.csv"
         
         return Response(
             content=csv_content,
             media_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename=vehicles_export.csv"}
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 @app.get("/api/export/maintenance")
-async def export_maintenance_csv():
+async def export_maintenance_csv(vehicle_id: Optional[int] = Query(None)):
     """Export maintenance records to CSV using centralized data operations"""
     try:
         from data_operations import export_maintenance_csv as export_maintenance_func
-        csv_content = export_maintenance_func()
+        
+        if vehicle_id:
+            # Export single vehicle maintenance
+            csv_content = export_maintenance_func(vehicle_id=vehicle_id)
+            filename = f"maintenance_vehicle_{vehicle_id}_export.csv"
+        else:
+            # Export all maintenance
+            csv_content = export_maintenance_func()
+            filename = "maintenance_export.csv"
         
         return Response(
             content=csv_content,
             media_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename=maintenance_export.csv"}
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")

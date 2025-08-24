@@ -366,10 +366,15 @@ def import_csv_data(file_content: str, vehicle_id: int = None) -> ImportResult:
     finally:
         session.close()
 
-def export_vehicles_csv() -> str:
+def export_vehicles_csv(vehicle_ids: Optional[List[int]] = None) -> str:
     """Export vehicles to CSV format"""
     try:
-        vehicles = get_all_vehicles()
+        if vehicle_ids:
+            # Export specific vehicles
+            vehicles = [get_vehicle_by_id(vid) for vid in vehicle_ids if get_vehicle_by_id(vid)]
+        else:
+            # Export all vehicles
+            vehicles = get_all_vehicles()
         
         output = StringIO()
         writer = csv.writer(output)
@@ -392,17 +397,28 @@ def export_vehicles_csv() -> str:
         print(f"Error exporting vehicles: {e}")
         return ""
 
-def export_maintenance_csv() -> str:
+def export_maintenance_csv(vehicle_id: Optional[int] = None) -> str:
     """Export maintenance records to CSV format"""
     session = SessionLocal()
     try:
         # Get records with vehicle info while session is active
         from sqlalchemy.orm import selectinload
-        records = session.execute(
-            select(MaintenanceRecord)
-            .options(selectinload(MaintenanceRecord.vehicle))
-            .order_by(MaintenanceRecord.date.desc())
-        ).scalars().all()
+        
+        if vehicle_id:
+            # Export single vehicle maintenance
+            records = session.execute(
+                select(MaintenanceRecord)
+                .options(selectinload(MaintenanceRecord.vehicle))
+                .where(MaintenanceRecord.vehicle_id == vehicle_id)
+                .order_by(MaintenanceRecord.date.desc())
+            ).scalars().all()
+        else:
+            # Export all maintenance records
+            records = session.execute(
+                select(MaintenanceRecord)
+                .options(selectinload(MaintenanceRecord.vehicle))
+                .order_by(MaintenanceRecord.date.desc())
+            ).scalars().all()
         
         output = StringIO()
         writer = csv.writer(output)
