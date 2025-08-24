@@ -844,6 +844,16 @@ async def export_vehicles_pdf():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF export failed: {str(e)}")
 
+@app.get("/api/vehicles/names")
+async def get_vehicle_names_for_export():
+    """Get vehicle names and IDs for export selection"""
+    try:
+        from data_operations import get_vehicle_names
+        vehicles = get_vehicle_names()
+        return {"success": True, "vehicles": vehicles}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get vehicle names: {str(e)}")
+
 @app.get("/api/export/maintenance/pdf")
 async def export_maintenance_pdf():
     """Export maintenance records to PDF using centralized data operations"""

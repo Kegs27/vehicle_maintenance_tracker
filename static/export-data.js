@@ -83,44 +83,35 @@ function showVehicleSelectionModal(exportType) {
 }
 
 function loadVehiclesForExport(exportType) {
-    // Fetch vehicles from the API
-    fetch('/vehicles')
-        .then(response => response.text())
-        .then(html => {
-            // Parse HTML to extract vehicle data
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const vehicleRows = doc.querySelectorAll('[data-vehicle-id]');
+    // Fetch vehicles from the API instead of parsing HTML
+    fetch('/api/vehicles/names')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.detail || 'Failed to load vehicles');
+            }
             
             const vehicleList = document.getElementById('vehicleList');
             vehicleList.innerHTML = '';
             
-            vehicleRows.forEach((row, index) => {
-                const vehicleId = row.getAttribute('data-vehicle-id');
-                
-                // Find the vehicle name in the link within the first column
-                const firstTd = row.querySelector('td:first-child');
-                const vehicleNameLink = firstTd ? firstTd.querySelector('a') : null;
-                
-                let vehicleName = 'Unknown Vehicle';
-                if (vehicleNameLink) {
-                    // Clean up the text content - remove the external link icon text
-                    vehicleName = vehicleNameLink.textContent.trim();
-                    // Remove the external link icon text if present
-                    vehicleName = vehicleName.replace(/\s*<i.*?<\/i>\s*/g, '').trim();
+            // Create unique vehicle entries (no duplicates)
+            const uniqueVehicles = new Map();
+            data.vehicles.forEach(vehicle => {
+                if (!uniqueVehicles.has(vehicle.id)) {
+                    uniqueVehicles.set(vehicle.id, vehicle);
                 }
-                
-                // Debug logging
-                console.log(`Row ${index}: vehicleId=${vehicleId}, vehicleName="${vehicleName}"`);
-                console.log(`First TD:`, firstTd);
-                console.log(`Vehicle name link:`, vehicleNameLink);
+            });
+            
+            // Add each unique vehicle to the list
+            uniqueVehicles.forEach((vehicle, vehicleId) => {
+                console.log(`Adding vehicle: ID=${vehicleId}, Name="${vehicle.name}"`);
                 
                 const vehicleItem = document.createElement('div');
                 vehicleItem.className = 'form-check mb-2';
                 vehicleItem.innerHTML = `
                     <input class="form-check-input" type="radio" name="selectedVehicle" value="${vehicleId}" id="vehicle${vehicleId}">
                     <label class="form-check-label" for="vehicle${vehicleId}">
-                        ${vehicleName}
+                        ${vehicle.name}
                     </label>
                 `;
                 vehicleList.appendChild(vehicleItem);
