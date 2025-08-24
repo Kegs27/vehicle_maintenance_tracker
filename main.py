@@ -671,6 +671,88 @@ async def delete_fuel_entry(entry_id: int):
         print(f"DEBUG: Error deleting fuel entry {entry_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete fuel entry: {str(e)}")
 
+@app.get("/api/fuel/entries")
+async def get_fuel_entries():
+    """Get all fuel entries from the database"""
+    try:
+        from data_operations import get_all_fuel_entries
+        
+        entries = get_all_fuel_entries()
+        
+        # Convert date objects to strings for JSON serialization
+        serialized_entries = []
+        for entry in entries:
+            serialized_entry = entry.copy()
+            if entry.get('date'):
+                serialized_entry['date'] = entry['date'].isoformat() if hasattr(entry['date'], 'isoformat') else str(entry['date'])
+            if entry.get('created_at'):
+                serialized_entry['created_at'] = entry['created_at'].isoformat() if hasattr(entry['created_at'], 'isoformat') else str(entry['created_at'])
+            if entry.get('updated_at'):
+                serialized_entry['updated_at'] = entry['updated_at'].isoformat() if hasattr(entry['updated_at'], 'isoformat') else str(entry['updated_at'])
+            serialized_entries.append(serialized_entry)
+        
+        return {
+            "success": True,
+            "entries": serialized_entries
+        }
+        
+    except Exception as e:
+        print(f"Error getting fuel entries: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get fuel entries: {str(e)}")
+
+@app.get("/api/fuel/mpg-summary")
+async def get_fuel_mpg_summary():
+    """Get MPG summary for all vehicles"""
+    try:
+        from data_operations import get_all_vehicles, get_fuel_entries_for_vehicle
+        
+        vehicles = get_all_vehicles()
+        summary = []
+        
+        for vehicle in vehicles:
+            fuel_entries = get_fuel_entries_for_vehicle(vehicle.id)
+            
+            if len(fuel_entries) >= 2:
+                # Calculate MPG from fuel entries
+                total_miles = 0
+                total_gallons = 0
+                
+                # Sort by date to get chronological order
+                sorted_entries = sorted(fuel_entries, key=lambda x: x['date'])
+                
+                for i in range(1, len(sorted_entries)):
+                    miles_diff = sorted_entries[i]['mileage'] - sorted_entries[i-1]['mileage']
+                    gallons = sorted_entries[i]['fuel_amount']
+                    
+                    if miles_diff > 0 and gallons > 0:
+                        total_miles += miles_diff
+                        total_gallons += gallons
+                
+                mpg = total_miles / total_gallons if total_gallons > 0 else None
+                
+                summary.append({
+                    "vehicle_id": vehicle.id,
+                    "vehicle_name": vehicle.name,
+                    "mpg": mpg,
+                    "entries_count": len(fuel_entries)
+                })
+            else:
+                summary.append({
+                    "vehicle_id": vehicle.id,
+                    "vehicle_name": vehicle.name,
+                    "mpg": None,
+                    "entries_count": len(fuel_entries)
+                })
+        
+        return {
+            "success": True,
+            "summary": summary
+        }
+        
+    except Exception as e:
+        print(f"Error getting MPG summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get MPG summary: {str(e)}")
+
 @app.get("/import", response_class=HTMLResponse)
 async def import_form(request: Request):
     """Form to import CSV data using centralized data operations"""
@@ -783,6 +865,19 @@ async def fuel_tracking(request: Request):
             "request": request, 
             "vehicles": vehicle_list,
             "last_fuel_entry": last_fuel_entry
+        })
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Fuel Tracking Error</h1><p>{str(e)}</p>")
+
+@app.get("/fuel-new", response_class=HTMLResponse)
+async def fuel_tracking_new(request: Request):
+    """New, clean fuel tracking page"""
+    try:
+        vehicles = get_all_vehicles()
+        
+        return templates.TemplateResponse("fuel_tracking_new.html", {
+            "request": request,
+            "vehicles": vehicles
         })
     except Exception as e:
         return HTMLResponse(content=f"<h1>Fuel Tracking Error</h1><p>{str(e)}</p>")
