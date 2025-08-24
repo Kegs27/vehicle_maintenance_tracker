@@ -830,11 +830,16 @@ async def export_maintenance_csv(vehicle_id: Optional[int] = Query(None)):
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 @app.get("/api/export/vehicles/pdf")
-async def export_vehicles_pdf():
+async def export_vehicles_pdf(vehicle_ids: Optional[str] = Query(None)):
     """Export vehicles to PDF using centralized data operations"""
     try:
-        from data_operations import export_vehicles_pdf
-        pdf_content = export_vehicles_pdf()
+        from data_operations import export_vehicles_pdf as export_vehicles_pdf_func
+        
+        if vehicle_ids:
+            vehicle_id_list = [int(id.strip()) for id in vehicle_ids.split(',')]
+            pdf_content = export_vehicles_pdf_func(vehicle_ids=vehicle_id_list)
+        else:
+            pdf_content = export_vehicles_pdf_func()
         
         return Response(
             content=pdf_content,
@@ -855,16 +860,16 @@ async def get_vehicle_names_for_export():
         raise HTTPException(status_code=500, detail=f"Failed to get vehicle names: {str(e)}")
 
 @app.get("/api/export/maintenance/pdf")
-async def export_maintenance_pdf():
+async def export_maintenance_pdf(vehicle_id: Optional[int] = Query(None)):
     """Export maintenance records to PDF using centralized data operations"""
     try:
-        from data_operations import export_maintenance_csv as export_maintenance_func
-        # For now, return CSV as PDF (you can implement actual PDF generation later)
-        csv_content = export_maintenance_func()
+        from data_operations import export_maintenance_pdf as export_maintenance_pdf_func
+        
+        pdf_content = export_maintenance_pdf_func(vehicle_id=vehicle_id)
         
         return Response(
-            content=csv_content,
-            media_type="text/csv",
+            content=pdf_content,
+            media_type="application/pdf",
             headers={"Content-Disposition": "attachment; filename=maintenance_export.pdf"}
         )
     except Exception as e:

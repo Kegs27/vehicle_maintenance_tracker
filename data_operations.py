@@ -444,17 +444,167 @@ def export_maintenance_csv(vehicle_id: Optional[int] = None) -> str:
     finally:
         session.close()
 
-def export_vehicles_pdf() -> str:
-    """Export vehicles to PDF format (returns CSV for now)"""
+def export_vehicles_pdf(vehicle_ids: Optional[List[int]] = None) -> bytes:
+    """Export vehicles to PDF format using ReportLab"""
     try:
-        # For now, return CSV format as PDF
-        # You can implement actual PDF generation later using libraries like reportlab
-        return export_vehicles_csv()
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from io import BytesIO
+        
+        # Get vehicle data
+        if vehicle_ids:
+            vehicles = [get_vehicle_by_id(vid) for vid in vehicle_ids if get_vehicle_by_id(vid)]
+        else:
+            vehicles = get_all_vehicles()
+        
+        # Create PDF buffer
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+        
+        # Add title
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=30,
+            alignment=1  # Center alignment
+        )
+        title = Paragraph("Vehicle Export Report", title_style)
+        elements.append(title)
+        elements.append(Spacer(1, 20))
+        
+        # Create table data
+        data = [['Name', 'Make', 'Model', 'Year', 'VIN']]
+        for vehicle in vehicles:
+            data.append([
+                vehicle.name,
+                vehicle.make,
+                vehicle.model,
+                str(vehicle.year),
+                vehicle.vin or 'N/A'
+            ])
+        
+        # Create table
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        elements.append(table)
+        doc.build(elements)
+        
+        pdf_content = buffer.getvalue()
+        buffer.close()
+        return pdf_content
+        
     except Exception as e:
         print(f"Error exporting vehicles to PDF: {e}")
-        return ""
+        return b""
 
-# ============================================================================
+def export_maintenance_pdf(vehicle_id: Optional[int] = None) -> bytes:
+    """Export maintenance records to PDF format using ReportLab"""
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from io import BytesIO
+        
+        session = SessionLocal()
+        try:
+            # Get maintenance records
+            from sqlalchemy.orm import selectinload
+            
+            if vehicle_id:
+                records = session.execute(
+                    select(MaintenanceRecord)
+                    .options(selectinload(MaintenanceRecord.vehicle))
+                    .where(MaintenanceRecord.vehicle_id == vehicle_id)
+                    .order_by(MaintenanceRecord.date.desc())
+                ).scalars().all()
+            else:
+                records = session.execute(
+                    select(MaintenanceRecord)
+                    .options(selectinload(MaintenanceRecord.vehicle))
+                    .order_by(MaintenanceRecord.date.desc())
+                ).scalars().all()
+            
+            # Create PDF buffer
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            elements = []
+            
+            # Add title
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=16,
+                spaceAfter=30,
+                alignment=1  # Center alignment
+            )
+            
+            if vehicle_id:
+                vehicle = get_vehicle_by_id(vehicle_id)
+                title_text = f"Maintenance Records - {vehicle.name if vehicle else 'Vehicle'}"
+            else:
+                title_text = "All Maintenance Records"
+            
+            title = Paragraph(title_text, title_style)
+            elements.append(title)
+            elements.append(Spacer(1, 20))
+            
+            # Create table data
+            data = [['Vehicle', 'Date', 'Description', 'Cost', 'Mileage']]
+            for record in records:
+                vehicle_name = record.vehicle.name if record.vehicle else "Unknown"
+                data.append([
+                    vehicle_name,
+                    record.date.strftime("%Y-%m-%d"),
+                    record.description,
+                    f"${record.cost:.2f}" if record.cost else "$0.00",
+                    str(record.mileage)
+                ])
+            
+            # Create table
+            table = Table(data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            
+            elements.append(table)
+            doc.build(elements)
+            
+            pdf_content = buffer.getvalue()
+            buffer.close()
+            return pdf_content
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        print(f"Error exporting maintenance to PDF: {e}")
+        return b""
+        
+    # ============================================================================
 # UTILITY OPERATIONS
 # ============================================================================
 
