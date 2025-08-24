@@ -128,15 +128,18 @@
             margin-bottom: 0.5rem;
         }
         
-        /* Add bottom spacing to non-sortable headers to match sortable header heights */
-        .table th:not(.sortable-header) .header-content {
-            justify-content: center;
+        /* Side-by-side header layout for sortable columns */
+        .sortable-header .header-content {
+            flex-direction: row !important; /* Override column direction */
+            align-items: center;
+            gap: 0.5rem; /* Space between text and sort icon */
         }
         
-        .table th:not(.sortable-header) .header-content::after {
-            content: '';
-            height: 1.5rem; /* Match the space taken by sort icons */
-            display: block;
+        /* Sort icon styling for side-by-side layout */
+        .sort-icon {
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            margin-left: 0.25rem;
         }
         
         /* Sortable header specific styles */
@@ -277,23 +280,29 @@
                                 {% if not vehicle %}
                                 <th class="text-center sortable-header" data-sort="vehicle">
                                     <div class="header-content">
-                                        <i class="fas fa-car text-purple-600 small"></i>
-                                        <span class="small fw-semibold">Vehicle</span>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-car text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Vehicle</span>
+                                        </div>
                                         <i class="fas fa-sort text-muted small sort-icon"></i>
                                     </div>
                                 </th>
                                 {% endif %}
                                 <th class="text-center sortable-header" data-sort="date">
                                     <div class="header-content">
-                                        <i class="fas fa-calendar-alt text-purple-600 small"></i>
-                                        <span class="small fw-semibold">Date</span>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-calendar-alt text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Date</span>
+                                        </div>
                                         <i class="fas fa-sort-down text-purple-600 small sort-icon active"></i>
                                     </div>
                                 </th>
                                 <th class="text-center sortable-header" data-sort="mileage">
                                     <div class="header-content">
-                                        <i class="fas fa-tachometer-alt text-purple-600 small"></i>
-                                        <span class="small fw-semibold">Mileage</span>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-tachometer-alt text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Mileage</span>
+                                        </div>
                                         <i class="fas fa-sort text-muted small sort-icon"></i>
                                     </div>
                                 </th>
