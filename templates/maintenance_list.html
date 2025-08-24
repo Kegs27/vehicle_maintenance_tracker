@@ -91,58 +91,36 @@
             color: #9333ea !important;
         }
         
-        /* Table header styling - ensure ALL headers have consistent heights and alignment */
+        /* Simple, clean table header styling */
         .table th {
-            height: 80px; /* Fixed height for ALL headers */
-            padding: 1rem 0.5rem;
             text-align: center;
             vertical-align: middle;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 1rem 0.5rem;
         }
         
-        /* All column headers use the same structure */
-        .table th .header-content {
+        /* Header content wrapper */
+        .header-content {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            height: 100%;
         }
         
-        /* Icon styling for all headers */
+        /* Icon styling */
         .table th i {
             font-size: 0.875rem;
             opacity: 0.8;
-            display: block;
             margin-bottom: 0.5rem;
         }
         
-        /* Text styling for all headers */
+        /* Text styling */
         .table th span {
             font-size: 0.875rem;
             font-weight: 600;
-            display: block;
             margin-bottom: 0.5rem;
         }
         
-        /* All headers use the same vertical layout */
-        .table th .header-content {
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        /* Sort icon styling */
-        .sort-icon {
-            font-size: 0.75rem;
-            transition: all 0.2s ease;
-            margin-top: 0.25rem;
-        }
-        
-        /* Sortable header specific styles */
+        /* Sortable header styles */
         .sortable-header {
             cursor: pointer;
             transition: background-color 0.2s ease;
