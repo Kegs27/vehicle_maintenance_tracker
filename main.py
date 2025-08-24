@@ -810,7 +810,11 @@ async def export_maintenance_csv():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
-# Old fuel route removed - use /fuel-new instead
+@app.get("/fuel", response_class=HTMLResponse)
+async def fuel_redirect():
+    """Redirect old fuel route to new fuel system"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/fuel-new", status_code=301)
 
 @app.get("/fuel-new", response_class=HTMLResponse)
 async def fuel_tracking_new(request: Request):
