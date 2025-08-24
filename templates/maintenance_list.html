@@ -150,6 +150,30 @@
         .sortable-header:hover .sort-icon {
             color: #6c757d !important;
         }
+        
+        /* Center all table data cells to align with centered headers */
+        .table td {
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        /* Special handling for vehicle column to center the vehicle info */
+        .table td:first-child {
+            text-align: center;
+        }
+        
+        /* Ensure action buttons are centered */
+        .table td:last-child {
+            text-align: center;
+        }
+        
+        /* Center the vehicle info content */
+        .vehicle-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
 
     </style>
 </head>
@@ -285,8 +309,8 @@
                             <tr>
                                 {% if not vehicle %}
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-car text-primary me-2"></i>
+                                        <div class="vehicle-info">
+                                            <i class="fas fa-car text-primary mb-1"></i>
                                             <div>
                                                 <strong>{{ record.vehicle.name or 'Unnamed Vehicle' }}</strong>
                                                 <br>
