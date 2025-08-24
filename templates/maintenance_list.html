@@ -94,9 +94,11 @@
         /* Table header styling - ensure ALL headers have consistent heights and alignment */
         .table th {
             min-height: 80px; /* Consistent height for all headers */
-            vertical-align: middle; /* Center content vertically */
             padding: 1rem 0.5rem;
             text-align: center;
+            display: flex; /* Make the header cell itself a flex container */
+            align-items: center; /* Center content vertically within the cell */
+            justify-content: center; /* Center content horizontally within the cell */
         }
         
         /* All column headers use the same structure */
@@ -105,8 +107,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center; /* Center content vertically */
-            height: 100%;
-            min-height: 80px;
+            width: 100%; /* Take full width of the header cell */
         }
         
         /* Icon styling for all headers */
