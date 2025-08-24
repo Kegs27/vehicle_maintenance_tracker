@@ -449,6 +449,24 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Vehicle MPG Metrics Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>Detailed MPG Metrics
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="vehicleMPGMetrics" class="row g-3">
+                                <!-- Vehicle MPG metrics will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -477,6 +495,9 @@
             
             // Load MPG summary
             loadMPGSummary();
+            
+            // Load vehicle MPG metrics
+            loadVehicleMPGMetrics();
             
             // Set up form validation
             setupFormValidation();
