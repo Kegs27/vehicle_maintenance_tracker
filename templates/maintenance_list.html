@@ -229,6 +229,22 @@
             align-items: center;
             text-align: center;
         }
+        
+        /* Future maintenance table styling */
+        #futureMaintenanceContent .table-card {
+            margin-bottom: 2rem;
+        }
+        
+        #futureMaintenanceContent .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Ensure consistent spacing in future maintenance table */
+        #futureMaintenanceContent .table td {
+            padding: 1rem 0.5rem;
+            vertical-align: middle;
+        }
 
     </style>
 </head>
@@ -250,22 +266,26 @@
                     </p>
                 {% endif %}
             </div>
-                            <div class="d-flex flex-wrap gap-2 mb-4">
-                    {% if vehicle %}
-                        <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
-                            <i class="fas fa-plus me-2"></i>Add Maintenance
-                        </button>
-                    {% else %}
-                        <a href="/maintenance/new" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Add Maintenance
-                        </a>
-                    {% endif %}
-                    {% if vehicle %}
-                        <a href="/maintenance" class="btn btn-outline-secondary">
-                            <i class="fas fa-list me-2"></i>View All Records
-                        </a>
-                    {% endif %}
-                </div>
+            <div class="d-flex flex-wrap gap-2">
+                {% if vehicle %}
+                    <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
+                        <i class="fas fa-plus me-2"></i>Add Maintenance
+                    </button>
+                {% else %}
+                    <a href="/maintenance/new" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Maintenance
+                    </a>
+                {% endif %}
+                {% if vehicle %}
+                    <a href="/maintenance" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i>View All Records
+                    </a>
+                {% endif %}
+                <!-- Add Future Maintenance Button - Always Visible -->
+                <button type="button" class="btn btn-success" onclick="openFutureMaintenanceModal()">
+                    <i class="fas fa-calendar-plus me-2"></i>Add Future Maintenance
+                </button>
+            </div>
         </div>
 
         <!-- System Summary -->
@@ -323,10 +343,74 @@
             </div>
         </div>
 
+        <!-- Future Maintenance Content (Hidden by default) -->
+        <div id="futureMaintenanceContent" style="display: none;">
+            <div class="card table-card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <i class="fas fa-car text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Vehicle</span>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <i class="fas fa-tools text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Maintenance Type</span>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <i class="fas fa-tachometer-alt text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Target Mileage</span>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <i class="fas fa-calendar-alt text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Target Date</span>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <i class="fas fa-dollar-sign text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Est. Cost</span>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <i class="fas fa-ellipsis-h text-purple-600 small"></i>
+                                            <span class="small fw-semibold">Actions</span>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="futureMaintenanceTableBody">
+                                <!-- Future maintenance records will be loaded here dynamically -->
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-calendar-plus fa-2x mb-3"></i>
+                                            <h5>No Future Maintenance Records</h5>
+                                            <p>Click "Add Future Maintenance" to plan upcoming service.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         
         {% if records %}
         <!-- Maintenance Records Table -->
-        <div class="card table-card">
+        <div id="maintenanceRecordsTable" class="card table-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
@@ -750,18 +834,51 @@
                 return;
             }
             
-            // TODO: Send data to backend
-            console.log('Future maintenance data:', Object.fromEntries(formData));
+            // Check if this is an edit or create operation
+            const editRecordId = document.getElementById('edit_record_id');
+            const isEdit = editRecordId && editRecordId.value;
             
-            // Show success message
-            alert('Future maintenance plan saved successfully!');
+            // Determine API endpoint and method
+            const url = isEdit ? `/api/future-maintenance/${editRecordId.value}` : '/api/future-maintenance';
+            const method = isEdit ? 'PUT' : 'POST';
             
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('futureMaintenanceModal'));
-            modal.hide();
-            
-            // Reset form
-            form.reset();
+            // Send data to backend API
+            fetch(url, {
+                method: method,
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const message = isEdit ? 'Future maintenance plan updated successfully!' : 'Future maintenance plan saved successfully!';
+                    alert(message);
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('futureMaintenanceModal'));
+                    modal.hide();
+                    
+                    // Reset form and remove edit record ID
+                    form.reset();
+                    if (editRecordId) {
+                        editRecordId.remove();
+                    }
+                    
+                    // Refresh the future maintenance table if it's visible
+                    const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
+                    if (futureMaintenanceContent && futureMaintenanceContent.style.display !== 'none') {
+                        loadFutureMaintenanceRecords();
+                    }
+                    
+                    console.log(isEdit ? 'Future maintenance updated:' : 'Future maintenance created:', data);
+                } else {
+                    alert('Error saving future maintenance: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving future maintenance. Please try again.');
+            });
         }
         
         // Tab switching functionality
@@ -787,14 +904,254 @@
             if (tabType === 'all-records') {
                 // Show current maintenance records (default view)
                 console.log('Switched to All Records tab');
-                // Content is already visible by default
+                showAllRecordsTab();
             } else if (tabType === 'future-maintenance') {
-                // Show future maintenance modal
+                // Show future maintenance summary table
                 console.log('Switched to Future Maintenance tab');
-                const modal = new bootstrap.Modal(document.getElementById('futureMaintenanceModal'));
-                modal.show();
+                showFutureMaintenanceTab();
             }
         }
+        
+        function showFutureMaintenanceTab() {
+            // Hide the maintenance records table using specific ID
+            const recordsTable = document.getElementById('maintenanceRecordsTable');
+            if (recordsTable) {
+                recordsTable.style.display = 'none';
+            }
+            
+            // Show the future maintenance summary
+            const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
+            if (futureMaintenanceContent) {
+                futureMaintenanceContent.style.display = 'block';
+            }
+            
+            // Load future maintenance records
+            loadFutureMaintenanceRecords();
+        }
+        
+        function showAllRecordsTab() {
+            // Show the maintenance records table using specific ID
+            const recordsTable = document.getElementById('maintenanceRecordsTable');
+            if (recordsTable) {
+                recordsTable.style.display = 'block';
+            }
+            
+            // Hide the future maintenance summary
+            const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
+            if (futureMaintenanceContent) {
+                futureMaintenanceContent.style.display = 'none';
+            }
+        }
+        
+        function openVehicleModal(vehicleId, vehicleName) {
+            // Pre-populate the vehicle field
+            const vehicleSelect = document.getElementById('vehicle_id');
+            if (vehicleSelect) {
+                vehicleSelect.value = vehicleId;
+            }
+            
+            // Update modal title to show vehicle name
+            const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+            if (modalTitle) {
+                modalTitle.innerHTML = `<i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance - ${vehicleName}`;
+            }
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('futureMaintenanceModal'));
+            modal.show();
+        }
+        
+        function openFutureMaintenanceModal() {
+            // Reset the modal title to generic
+            const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+            if (modalTitle) {
+                modalTitle.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance';
+            }
+            
+            // Reset the form
+            const form = document.getElementById('futureMaintenanceForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('futureMaintenanceModal'));
+            modal.show();
+        }
+        
+        function loadFutureMaintenanceRecords() {
+            fetch('/api/future-maintenance')
+                .then(response => response.json())
+                .then(data => {
+                    displayFutureMaintenanceRecords(data.future_maintenance || []);
+                })
+                .catch(error => {
+                    console.error('Error loading future maintenance records:', error);
+                    displayFutureMaintenanceRecords([]);
+                });
+        }
+        
+        function displayFutureMaintenanceRecords(records) {
+            const tbody = document.getElementById('futureMaintenanceTableBody');
+            if (!tbody) return;
+            
+            if (records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-calendar-plus fa-2x mb-3"></i>
+                                <h5>No Future Maintenance Records</h5>
+                                <p>Click "Add Future Maintenance" to plan upcoming service.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = records.map(record => `
+                <tr>
+                    <td>
+                        <div class="vehicle-info">
+                            <i class="fas fa-car text-primary mb-1"></i>
+                            <div>
+                                <strong>${record.vehicle_name || 'Unknown Vehicle'}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    ${record.vehicle_year || ''} ${record.vehicle_make || ''} ${record.vehicle_model || ''}
+                                </small>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <strong>${record.maintenance_type || 'N/A'}</strong>
+                    </td>
+                    <td class="text-center">
+                        ${record.target_mileage ? record.target_mileage.toLocaleString() : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-center">
+                        ${record.target_date ? new Date(record.target_date).toLocaleDateString() : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-center">
+                        ${record.estimated_cost ? `$${record.estimated_cost.toFixed(2)}` : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editFutureMaintenance(${record.id})">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFutureMaintenance(${record.id})">
+                                <i class="fas fa-trash me-1"></i>Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function editFutureMaintenance(recordId) {
+            // Fetch the future maintenance record data
+            fetch(`/api/future-maintenance/single/${recordId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const record = data.future_maintenance;
+                        
+                        // Pre-populate the form with existing data
+                        const form = document.getElementById('futureMaintenanceForm');
+                        if (form) {
+                            // Set vehicle
+                            const vehicleSelect = document.getElementById('vehicle_id');
+                            if (vehicleSelect) {
+                                vehicleSelect.value = record.vehicle_id;
+                            }
+                            
+                            // Set other fields
+                            document.getElementById('maintenance_type').value = record.maintenance_type || '';
+                            document.getElementById('target_mileage').value = record.target_mileage || '';
+                            document.getElementById('target_date').value = record.target_date || '';
+                            document.getElementById('mileage_reminder').value = record.mileage_reminder || 100;
+                            document.getElementById('date_reminder').value = record.date_reminder || 30;
+                            document.getElementById('estimated_cost').value = record.estimated_cost || '';
+                            document.getElementById('parts_link').value = record.parts_link || '';
+                            document.getElementById('notes').value = record.notes || '';
+                            document.getElementById('is_recurring').checked = record.is_recurring || false;
+                            document.getElementById('recurrence_interval_miles').value = record.recurrence_interval_miles || '';
+                            document.getElementById('recurrence_interval_months').value = record.recurrence_interval_months || '';
+                        }
+                        
+                        // Update modal title and add hidden field for record ID
+                        const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+                        if (modalTitle) {
+                            modalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Edit Future Maintenance';
+                        }
+                        
+                        // Add hidden field for record ID if it doesn't exist
+                        let recordIdField = document.getElementById('edit_record_id');
+                        if (!recordIdField) {
+                            recordIdField = document.createElement('input');
+                            recordIdField.type = 'hidden';
+                            recordIdField.id = 'edit_record_id';
+                            recordIdField.name = 'edit_record_id';
+                            form.appendChild(recordIdField);
+                        }
+                        recordIdField.value = recordId;
+                        
+                        // Show the modal
+                        const modal = new bootstrap.Modal(document.getElementById('futureMaintenanceModal'));
+                        modal.show();
+                    } else {
+                        alert('Error loading record: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading record. Please try again.');
+                });
+        }
+        
+        function deleteFutureMaintenance(recordId) {
+            if (confirm('Are you sure you want to delete this future maintenance record?')) {
+                fetch(`/api/future-maintenance/${recordId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Refresh the table
+                        loadFutureMaintenanceRecords();
+                        alert('Future maintenance record deleted successfully!');
+                    } else {
+                        alert('Error deleting record: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting record. Please try again.');
+                });
+            }
+        }
+        
+        // Reset modal when it's hidden
+        document.addEventListener('DOMContentLoaded', function() {
+            const futureMaintenanceModal = document.getElementById('futureMaintenanceModal');
+            if (futureMaintenanceModal) {
+                futureMaintenanceModal.addEventListener('hidden.bs.modal', function() {
+                    // Reset the modal title
+                    const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+                    if (modalTitle) {
+                        modalTitle.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance';
+                    }
+                    
+                    // Reset the form
+                    const form = document.getElementById('futureMaintenanceForm');
+                    if (form) {
+                        form.reset();
+                    }
+                });
+            }
+        });
         
         function initializeSorting() {
             // Add click handlers to sortable headers

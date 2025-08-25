@@ -1233,3 +1233,324 @@ def get_vehicle_health_status() -> List[Dict[str, Any]]:
     except Exception as e:
         print(f"Error getting vehicle health status: {e}")
         return []
+
+# ============================================================================
+# FUTURE MAINTENANCE OPERATIONS
+# ============================================================================
+
+def create_future_maintenance(
+    vehicle_id: int,
+    maintenance_type: str,
+    target_date: str,
+    target_mileage: Optional[int] = None,
+    mileage_reminder: int = 100,
+    date_reminder: int = 30,
+    estimated_cost: Optional[float] = None,
+    parts_link: Optional[str] = None,
+    notes: Optional[str] = None,
+    is_recurring: bool = False,
+    recurrence_interval_miles: Optional[int] = None,
+    recurrence_interval_months: Optional[int] = None
+) -> Dict[str, Any]:
+    """Create a new future maintenance reminder"""
+    session = SessionLocal()
+    try:
+        from models import FutureMaintenance
+        from datetime import datetime
+        
+        # Parse the target date
+        try:
+            parsed_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+        except ValueError:
+            return {
+                "success": False,
+                "error": "Invalid date format. Use YYYY-MM-DD"
+            }
+        
+        # Validate vehicle exists
+        vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
+        if not vehicle:
+            return {"success": False, "error": "Vehicle not found"}
+        
+        # Create future maintenance record
+        future_maintenance = FutureMaintenance(
+            vehicle_id=vehicle_id,
+            maintenance_type=maintenance_type,
+            target_date=parsed_date,
+            target_mileage=target_mileage,
+            mileage_reminder=mileage_reminder,
+            date_reminder=date_reminder,
+            estimated_cost=estimated_cost,
+            parts_link=parts_link,
+            notes=notes,
+            is_recurring=is_recurring,
+            recurrence_interval_miles=recurrence_interval_miles,
+            recurrence_interval_months=recurrence_interval_months,
+            created_at=datetime.now().date(),
+            updated_at=datetime.now().date()
+        )
+        
+        session.add(future_maintenance)
+        session.commit()
+        session.refresh(future_maintenance)
+        
+        print(f"Future maintenance created: Vehicle {vehicle_id}, Type {maintenance_type}, Target Date {parsed_date}")
+        
+        return {
+            "success": True,
+            "message": "Future maintenance reminder created successfully",
+            "future_maintenance_id": future_maintenance.id
+        }
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Error creating future maintenance: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to create future maintenance: {str(e)}"
+        }
+    finally:
+        session.close()
+
+def update_future_maintenance(
+    future_maintenance_id: int,
+    vehicle_id: int,
+    maintenance_type: str,
+    target_date: str,
+    target_mileage: Optional[int] = None,
+    mileage_reminder: int = 100,
+    date_reminder: int = 30,
+    estimated_cost: Optional[float] = None,
+    parts_link: Optional[str] = None,
+    notes: Optional[str] = None,
+    is_recurring: bool = False,
+    recurrence_interval_miles: Optional[int] = None,
+    recurrence_interval_months: Optional[int] = None
+) -> Dict[str, Any]:
+    """Update an existing future maintenance reminder"""
+    session = SessionLocal()
+    try:
+        from models import FutureMaintenance
+        from datetime import datetime
+        
+        # Get the existing record
+        future_maintenance = session.execute(
+            select(FutureMaintenance).where(FutureMaintenance.id == future_maintenance_id)
+        ).scalar_one_or_none()
+        
+        if not future_maintenance:
+            return {
+                "success": False,
+                "error": "Future maintenance reminder not found"
+            }
+        
+        # Parse the target date
+        try:
+            parsed_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+        except ValueError:
+            return {
+                "success": False,
+                "error": "Invalid date format. Use YYYY-MM-DD"
+            }
+        
+        # Validate vehicle exists
+        vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
+        if not vehicle:
+            return {"success": False, "error": "Vehicle not found"}
+        
+        # Update the fields
+        future_maintenance.vehicle_id = vehicle_id
+        future_maintenance.maintenance_type = maintenance_type
+        future_maintenance.target_date = parsed_date
+        future_maintenance.target_mileage = target_mileage
+        future_maintenance.mileage_reminder = mileage_reminder
+        future_maintenance.date_reminder = date_reminder
+        future_maintenance.estimated_cost = estimated_cost
+        future_maintenance.parts_link = parts_link
+        future_maintenance.notes = notes
+        future_maintenance.is_recurring = is_recurring
+        future_maintenance.recurrence_interval_miles = recurrence_interval_miles
+        future_maintenance.recurrence_interval_months = recurrence_interval_months
+        future_maintenance.updated_at = datetime.now().date()
+        
+        session.commit()
+        
+        print(f"Future maintenance updated: ID {future_maintenance_id}, Vehicle {vehicle_id}, Type {maintenance_type}")
+        
+        return {
+            "success": True,
+            "message": "Future maintenance reminder updated successfully"
+        }
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Error updating future maintenance: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to update future maintenance: {str(e)}"
+        }
+    finally:
+        session.close()
+
+def get_all_future_maintenance() -> List[Dict[str, Any]]:
+    """Get all future maintenance reminders with vehicle information"""
+    session = SessionLocal()
+    try:
+        from models import FutureMaintenance
+        
+        # Get all future maintenance records with vehicle info
+        future_maintenance = session.execute(
+            select(FutureMaintenance, Vehicle)
+            .join(Vehicle, FutureMaintenance.vehicle_id == Vehicle.id)
+            .where(FutureMaintenance.is_active == True)
+            .order_by(FutureMaintenance.target_date)
+        ).all()
+        
+        # Convert to list of dictionaries
+        result = []
+        for fm, vehicle in future_maintenance:
+            result.append({
+                'id': fm.id,
+                'vehicle_id': fm.vehicle_id,
+                'vehicle_name': vehicle.name,
+                'vehicle_year': vehicle.year,
+                'vehicle_make': vehicle.make,
+                'vehicle_model': vehicle.model,
+                'maintenance_type': fm.maintenance_type,
+                'target_mileage': fm.target_mileage,
+                'target_date': fm.target_date,
+                'mileage_reminder': fm.mileage_reminder,
+                'date_reminder': fm.date_reminder,
+                'estimated_cost': fm.estimated_cost,
+                'parts_link': fm.parts_link,
+                'notes': fm.notes,
+                'is_recurring': fm.is_recurring,
+                'recurrence_interval_miles': fm.recurrence_interval_miles,
+                'recurrence_interval_months': fm.recurrence_interval_months,
+                'is_active': fm.is_active,
+                'created_at': fm.created_at,
+                'updated_at': fm.updated_at
+            })
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error getting future maintenance: {e}")
+        return []
+    finally:
+        session.close()
+
+def get_future_maintenance_by_vehicle(vehicle_id: int) -> List[Dict[str, Any]]:
+    """Get future maintenance reminders for a specific vehicle"""
+    session = SessionLocal()
+    try:
+        from models import FutureMaintenance
+        
+        future_maintenance = session.execute(
+            select(FutureMaintenance)
+            .where(FutureMaintenance.vehicle_id == vehicle_id)
+            .where(FutureMaintenance.is_active == True)
+            .order_by(FutureMaintenance.target_date)
+        ).scalars().all()
+        
+        # Convert to list of dictionaries
+        result = []
+        for fm in future_maintenance:
+            result.append({
+                'id': fm.id,
+                'vehicle_id': fm.vehicle_id,
+                'maintenance_type': fm.maintenance_type,
+                'target_mileage': fm.target_mileage,
+                'target_date': fm.target_date,
+                'mileage_reminder': fm.mileage_reminder,
+                'date_reminder': fm.date_reminder,
+                'estimated_cost': fm.estimated_cost,
+                'parts_link': fm.parts_link,
+                'notes': fm.notes,
+                'is_recurring': fm.is_recurring,
+                'recurrence_interval_miles': fm.recurrence_interval_miles,
+                'recurrence_interval_months': fm.recurrence_interval_months,
+                'is_active': fm.is_active,
+                'created_at': fm.created_at,
+                'updated_at': fm.updated_at
+            })
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error getting future maintenance for vehicle {vehicle_id}: {e}")
+        return []
+    finally:
+        session.close()
+
+def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional[Dict[str, Any]]:
+    """Get a specific future maintenance reminder by ID"""
+    session = SessionLocal()
+    try:
+        from models import FutureMaintenance
+        
+        future_maintenance = session.execute(
+            select(FutureMaintenance).where(FutureMaintenance.id == future_maintenance_id)
+        ).scalar_one_or_none()
+        
+        if not future_maintenance:
+            return None
+        
+        # Convert to dictionary
+        result = {
+            'id': future_maintenance.id,
+            'vehicle_id': future_maintenance.vehicle_id,
+            'maintenance_type': future_maintenance.maintenance_type,
+            'target_mileage': future_maintenance.target_mileage,
+            'target_date': future_maintenance.target_date,
+            'mileage_reminder': future_maintenance.mileage_reminder,
+            'date_reminder': future_maintenance.date_reminder,
+            'estimated_cost': future_maintenance.estimated_cost,
+            'parts_link': future_maintenance.parts_link,
+            'notes': future_maintenance.notes,
+            'is_recurring': future_maintenance.is_recurring,
+            'recurrence_interval_miles': future_maintenance.recurrence_interval_miles,
+            'recurrence_interval_months': future_maintenance.recurrence_interval_months,
+            'is_active': future_maintenance.is_active,
+            'created_at': future_maintenance.created_at,
+            'updated_at': future_maintenance.updated_at
+        }
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error getting future maintenance {future_maintenance_id}: {e}")
+        return None
+    finally:
+        session.close()
+
+def delete_future_maintenance(future_maintenance_id: int) -> Dict[str, Any]:
+    """Delete a future maintenance reminder"""
+    session = SessionLocal()
+    try:
+        from models import FutureMaintenance
+        
+        future_maintenance = session.execute(
+            select(FutureMaintenance).where(FutureMaintenance.id == future_maintenance_id)
+        ).scalar_one_or_none()
+        
+        if not future_maintenance:
+            return {"success": False, "error": "Future maintenance reminder not found"}
+        
+        session.delete(future_maintenance)
+        session.commit()
+        
+        return {
+            "success": True,
+            "message": "Future maintenance reminder deleted successfully"
+        }
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Error deleting future maintenance: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to delete future maintenance: {str(e)}"
+        }
+    finally:
+        session.close()

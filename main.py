@@ -455,12 +455,19 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
         # Get summary data for the maintenance page
         summary = get_maintenance_summary()
         
+        # Get all vehicles for the future maintenance modal
+        vehicles = get_all_vehicles()
+        print(f"DEBUG: Maintenance route - vehicles count: {len(vehicles) if vehicles else 0}")
+        if vehicles:
+            print(f"DEBUG: First vehicle: {vehicles[0].name if vehicles[0] else 'None'}")
+        
         return templates.TemplateResponse("maintenance_list.html", {
             "request": request, 
             "records": records, 
             "vehicle": vehicle,
             "vehicle_name": vehicle_name,
-            "summary": summary
+            "summary": summary,
+            "vehicles": vehicles
         })
     except Exception as e:
         return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
@@ -1138,3 +1145,178 @@ async def create_fuel_entry(
             "success": False,
             "error": f"Failed to create fuel entry: {str(e)}"
         }
+
+# ============================================================================
+# FUTURE MAINTENANCE API ENDPOINTS
+# ============================================================================
+
+@app.post("/api/future-maintenance")
+async def create_future_maintenance_api(
+    vehicle_id: int = Form(...),
+    maintenance_type: str = Form(...),
+    target_date: str = Form(...),
+    target_mileage: Optional[int] = Form(None),
+    mileage_reminder: int = Form(100),
+    date_reminder: int = Form(30),
+    estimated_cost: Optional[float] = Form(None),
+    parts_link: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    is_recurring: bool = Form(False),
+    recurrence_interval_miles: Optional[int] = Form(None),
+    recurrence_interval_months: Optional[int] = Form(None)
+):
+    """Create a new future maintenance reminder"""
+    try:
+        from data_operations import create_future_maintenance
+        
+        result = create_future_maintenance(
+            vehicle_id=vehicle_id,
+            maintenance_type=maintenance_type,
+            target_date=target_date,
+            target_mileage=target_mileage,
+            mileage_reminder=mileage_reminder,
+            date_reminder=date_reminder,
+            estimated_cost=estimated_cost,
+            parts_link=parts_link,
+            notes=notes,
+            is_recurring=is_recurring,
+            recurrence_interval_miles=recurrence_interval_miles,
+            recurrence_interval_months=recurrence_interval_months
+        )
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error in create_future_maintenance_api: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to create future maintenance: {str(e)}"
+        }
+
+@app.put("/api/future-maintenance/{future_maintenance_id}")
+async def update_future_maintenance_api(
+    future_maintenance_id: int,
+    vehicle_id: int = Form(...),
+    maintenance_type: str = Form(...),
+    target_date: str = Form(...),
+    target_mileage: Optional[int] = Form(None),
+    mileage_reminder: int = Form(100),
+    date_reminder: int = Form(30),
+    estimated_cost: Optional[float] = Form(None),
+    parts_link: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    is_recurring: bool = Form(False),
+    recurrence_interval_miles: Optional[int] = Form(None),
+    recurrence_interval_months: Optional[int] = Form(None)
+):
+    """Update an existing future maintenance reminder"""
+    try:
+        from data_operations import update_future_maintenance
+        
+        result = update_future_maintenance(
+            future_maintenance_id=future_maintenance_id,
+            vehicle_id=vehicle_id,
+            maintenance_type=maintenance_type,
+            target_date=target_date,
+            target_mileage=target_mileage,
+            mileage_reminder=mileage_reminder,
+            date_reminder=date_reminder,
+            estimated_cost=estimated_cost,
+            parts_link=parts_link,
+            notes=notes,
+            is_recurring=is_recurring,
+            recurrence_interval_miles=recurrence_interval_miles,
+            recurrence_interval_months=recurrence_interval_months
+        )
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error in update_future_maintenance_api: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to update future maintenance: {str(e)}"
+        }
+
+@app.get("/api/future-maintenance/vehicle/{vehicle_id}")
+async def get_future_maintenance_by_vehicle_api(vehicle_id: int):
+    """Get future maintenance reminders for a specific vehicle"""
+    try:
+        from data_operations import get_future_maintenance_by_vehicle
+        
+        future_maintenance = get_future_maintenance_by_vehicle(vehicle_id)
+        return {
+            "success": True,
+            "future_maintenance": future_maintenance
+        }
+        
+    except Exception as e:
+        print(f"Error in get_future_maintenance_by_vehicle_api: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to get future maintenance for vehicle: {str(e)}"
+        }
+
+@app.get("/api/future-maintenance/single/{future_maintenance_id}")
+async def get_future_maintenance_by_id_api(future_maintenance_id: int):
+    """Get a specific future maintenance reminder by ID"""
+    try:
+        from data_operations import get_future_maintenance_by_id
+        
+        future_maintenance = get_future_maintenance_by_id(future_maintenance_id)
+        if future_maintenance:
+            return {
+                "success": True,
+                "future_maintenance": future_maintenance
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Future maintenance reminder not found"
+            }
+        
+    except Exception as e:
+        print(f"Error in get_future_maintenance_by_id_api: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to get future maintenance: {str(e)}"
+        }
+
+@app.get("/api/future-maintenance")
+async def get_future_maintenance_api():
+    """Get all future maintenance reminders"""
+    try:
+        from data_operations import get_all_future_maintenance
+        
+        future_maintenance = get_all_future_maintenance()
+        return {
+            "success": True,
+            "future_maintenance": future_maintenance
+        }
+        
+    except Exception as e:
+        print(f"Error in get_future_maintenance_api: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to get future maintenance: {str(e)}"
+        }
+
+@app.delete("/api/future-maintenance/{future_maintenance_id}")
+async def delete_future_maintenance_api(future_maintenance_id: int):
+    """Delete a future maintenance reminder"""
+    try:
+        from data_operations import delete_future_maintenance
+        
+        result = delete_future_maintenance(future_maintenance_id)
+        return result
+        
+    except Exception as e:
+        print(f"Error in delete_future_maintenance_api: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to delete future maintenance: {str(e)}"
+        }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
