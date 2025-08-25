@@ -712,6 +712,32 @@
                             <textarea class="form-control" id="notes" name="notes" rows="3" 
                                       placeholder="Additional details about this maintenance..."></textarea>
                         </div>
+
+                        <!-- Recurring Maintenance -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
+                                <label class="form-check-label fw-bold" for="is_recurring">
+                                    This is recurring maintenance
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Recurrence Intervals (shown when recurring is checked) -->
+                        <div id="recurrenceFields" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="recurrence_interval_miles" class="form-label fw-bold">Recurrence Interval (Miles)</label>
+                                    <input type="number" class="form-control" id="recurrence_interval_miles" name="recurrence_interval_miles" 
+                                           placeholder="e.g., 5000" min="0">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="recurrence_interval_months" class="form-label fw-bold">Recurrence Interval (Months)</label>
+                                    <input type="number" class="form-control" id="recurrence_interval_months" name="recurrence_interval_months" 
+                                           placeholder="e.g., 6" min="0">
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -764,14 +790,23 @@
                 });
             }
             
-            // Handle delete maintenance record buttons
-            document.querySelectorAll('.delete-maintenance-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const recordId = this.getAttribute('data-record-id');
-                    const description = this.getAttribute('data-description');
-                    confirmDeleteMaintenance(recordId, description);
-                });
+                    // Handle delete maintenance record buttons
+        document.querySelectorAll('.delete-maintenance-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const recordId = this.getAttribute('data-record-id');
+                const description = this.getAttribute('data-description');
+                confirmDeleteMaintenance(recordId, description);
             });
+        });
+
+        // Handle recurring maintenance checkbox
+        const isRecurringCheckbox = document.getElementById('is_recurring');
+        const recurrenceFields = document.getElementById('recurrenceFields');
+        if (isRecurringCheckbox && recurrenceFields) {
+            isRecurringCheckbox.addEventListener('change', function() {
+                recurrenceFields.style.display = this.checked ? 'block' : 'none';
+            });
+        }
             
 
         });
