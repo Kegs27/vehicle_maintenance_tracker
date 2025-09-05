@@ -887,8 +887,6 @@ async def update_maintenance_route(
             updated_record = get_maintenance_by_id(record_id)
             is_oil_change_record = is_oil_change or (updated_record and updated_record.is_oil_change)
             
-            print(f"DEBUG: link_oil_analysis={link_oil_analysis}, is_oil_change={is_oil_change}, is_oil_change_record={is_oil_change_record}")
-            
             if link_oil_analysis and is_oil_change_record:
                 try:
                     # Create a placeholder oil analysis record linked to this oil change
@@ -1803,56 +1801,6 @@ async def get_notifications_api():
             "total_count": 0,
             "has_overdue": False
         }
-
-@app.get("/check-database-schema")
-async def check_database_schema():
-    """Check if all required columns exist in the database"""
-    try:
-        from sqlalchemy import create_engine, text
-        
-        database_url = os.getenv('DATABASE_URL')
-        if not database_url:
-            return {"error": "DATABASE_URL not found"}
-        
-        # Handle different database URL formats
-        if database_url.startswith('postgres://'):
-            database_url = database_url.replace('postgres://', 'postgresql+psycopg://', 1)
-        elif database_url.startswith('postgresql://'):
-            database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
-        
-        engine = create_engine(database_url)
-        
-        with engine.connect() as conn:
-            # Check existing columns
-            result = conn.execute(text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'maintenancerecord'
-                ORDER BY ordinal_position
-            """))
-            
-            existing_columns = [row[0] for row in result]
-            
-            # Check for specific columns we need
-            required_columns = [
-                'linked_oil_change_id',
-                'oil_analysis_report',
-                'iron_level',
-                'aluminum_level'
-            ]
-            
-            missing_columns = [col for col in required_columns if col not in existing_columns]
-            
-            return {
-                "total_columns": len(existing_columns),
-                "existing_columns": existing_columns,
-                "required_columns": required_columns,
-                "missing_columns": missing_columns,
-                "has_linked_oil_change_id": 'linked_oil_change_id' in existing_columns
-            }
-            
-    except Exception as e:
-        return {"error": str(e)}
 
 @app.get("/migrate-database-full", response_class=HTMLResponse)
 async def migrate_database_endpoint():
