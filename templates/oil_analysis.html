@@ -28,9 +28,11 @@
                     <p class="lead mb-0">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} - {{ vehicle.name }}</p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <a href="/oil-analysis/new?vehicle_id={{ vehicle.id }}" class="btn btn-light btn-lg">
-                        <i class="fas fa-plus me-2"></i>Add Analysis
-                    </a>
+                    <!-- Add Analysis button removed - use oil change workflow instead -->
+                    <div class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Add oil analysis via Oil Change records
+                    </div>
                 </div>
             </div>
         </div>
@@ -163,9 +165,14 @@
                                     <i class="fas fa-flask mb-3" style="font-size: 3rem;"></i>
                                     <h5>No Oil Analysis Records</h5>
                                     <p class="mb-4">Start tracking your oil analysis data to monitor engine health and oil quality.</p>
-                                    <a href="/oil-analysis/new?vehicle_id={{ vehicle.id }}" class="btn btn-primary">
-                                        <i class="fas fa-plus me-2"></i>Add First Analysis
-                                    </a>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-lightbulb me-2"></i>
+                                        <strong>How to add oil analysis:</strong><br>
+                                        1. Go to <a href="/oil-changes" class="alert-link">Oil Changes</a><br>
+                                        2. Edit an oil change record<br>
+                                        3. Check "Link to oil analysis report"<br>
+                                        4. Return here to add analysis data
+                                    </div>
                                 </div>
                             {% endif %}
                         </div>
@@ -186,8 +193,8 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="d-grid">
-                                        <a href="/oil-analysis/new?vehicle_id={{ vehicle.id }}" class="btn btn-outline-primary">
-                                            <i class="fas fa-plus me-2"></i>Add New Analysis
+                                        <a href="/oil-changes" class="btn btn-outline-success">
+                                            <i class="fas fa-tint me-2"></i>Manage Oil Changes
                                         </a>
                                     </div>
                                 </div>
