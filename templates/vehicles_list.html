@@ -6,22 +6,13 @@
     <title>Vehicles - Vehicle Maintenance Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/icon-styles.css" rel="stylesheet">
+    <link href="/static/app-styles.css" rel="stylesheet">
     <style>
+        /* Page-specific styles */
         .table-card {
             border: none;
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            border: none;
-            border-radius: 25px;
-            padding: 12px 30px;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         
         /* Background styling */
@@ -43,7 +34,7 @@
             z-index: -1;
         }
         
-        /* Content styling to stand out against background */
+        /* Content styling */
         .navbar {
             background: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px);
@@ -64,22 +55,29 @@
             overflow: hidden;
             box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
         }
+        
         .nav-link {
             color: #6c757d;
             font-weight: 500;
         }
+        
         .nav-link:hover {
             color: #6f42c1;
         }
+        
         .table th {
             background-color: #f8f9fa;
             border-top: none;
             font-weight: 600;
+            text-align: center !important;
+            vertical-align: middle !important;
         }
-        .btn-sm {
-            border-radius: 20px;
-            padding: 6px 16px;
+        
+        .table td {
+            text-align: center !important;
+            vertical-align: middle !important;
         }
+        
         .hover-primary:hover {
             color: #6f42c1 !important;
             text-decoration: underline !important;
@@ -93,73 +91,118 @@
             margin-right: 0;
         }
         
-        /* Consistent button styling */
-        .btn {
-            border-radius: 8px;
-            font-weight: 500;
-            padding: 8px 16px;
+        /* Custom purple color for table icons */
+        .text-purple-600 {
+            color: #9333ea !important;
         }
         
-
-            transition: all 0.2s ease;
-        }
-        
-        .btn-lg {
-            padding: 12px 24px;
-            font-size: 1rem;
-        }
-        
-        .btn-sm {
-            padding: 6px 12px;
+        /* Table header icon styling */
+        .table th i {
             font-size: 0.875rem;
+            opacity: 0.8;
         }
         
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        .table th span {
+            font-size: 0.875rem;
+            font-weight: 600;
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            border: none;
+        /* Future maintenance indicators */
+        .maintenance-indicator {
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin: 2px;
+            display: inline-block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            width: 140px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            box-sizing: border-box;
         }
         
-        .btn-outline-primary {
-            border: 2px solid #8b5cf6;
-            color: #8b5cf6;
+        .indicator-red {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
         }
         
-        .btn-outline-primary:hover {
-            background: #8b5cf6;
-            border-color: #8b5cf6;
+        .indicator-yellow {
+            background-color: #fef3c7;
+            color: #d97706;
+            border: 1px solid #fed7aa;
         }
         
-        .btn-outline-success {
-            border: 2px solid #10b981;
-            color: #10b981;
+        .indicator-blue {
+            background-color: #dbeafe;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
         }
         
-        .btn-outline-success:hover {
-            background: #10b981;
-            border-color: #10b981;
-            color: white;
+        /* Hover modal */
+        .hover-modal {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-width: 300px;
+            display: none;
+        }
+        
+        .hover-modal.show {
+            display: block;
+        }
+        
+        /* Column width optimization */
+        .col-vehicle { width: 25%; }
+        .col-year { width: 8%; }
+        .col-make { width: 12%; }
+        .col-model { width: 15%; }
+        .col-vin { width: 15%; }
+        .col-future { width: 15%; }
+        .col-health { width: 10%; }
+        
+        /* VIN hover enhancement */
+        .col-vin code {
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            border-bottom: 1px dotted #6c757d;
+        }
+        
+        .col-vin code:hover {
+            color: #6f42c1;
+            border-bottom-color: #6f42c1;
+        }
+        
+        /* Mobile optimization */
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .btn-group .btn {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+            
+            .maintenance-indicator {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+                width: 120px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="fas fa-car me-2"></i>Vehicle Maintenance Tracker
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link active" href="/vehicles">Vehicles</a>
-                <a class="nav-link" href="/maintenance">Maintenance</a>
-                <a class="nav-link" href="/import">Data Transfer</a>
-            </div>
-        </div>
-    </nav>
+    {% include 'nav.html' %}
 
     <div class="container py-5">
         <!-- Header -->
@@ -167,82 +210,88 @@
             <h2 class="mb-0">
                 <i class="fas fa-car me-2"></i>My Vehicles
             </h2>
-                            <div class="d-flex flex-wrap gap-2 mb-4">
-                    <a href="/vehicles/new" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Add Vehicle
-                    </a>
-                    <div class="dropdown">
-                        <button class="btn btn-outline-success dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-exchange-alt me-2"></i>Data Transfer
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="exportDropdown">
-                            <li><a class="dropdown-item" href="/import">
-                                <i class="fas fa-upload me-2 text-primary"></i>Import Data
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
-                                <i class="fas fa-file-csv me-2 text-success"></i>Transfer All to CSV
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="exportAllVehiclesToPDF()">
-                                <i class="fas fa-file-pdf me-2 text-danger"></i>Transfer All to PDF
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
-                                <i class="fas fa-car me-2 text-primary"></i>Transfer Single Vehicle
-                            </a></li>
-                        </ul>
-                    </div>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <a href="/vehicles/new" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Vehicle
+                </a>
+                <div class="dropdown">
+                    <button class="btn btn-outline-success dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-exchange-alt me-2"></i>Data Transfer
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                        <li><a class="dropdown-item" href="/import">
+                            <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
+                            <i class="fas fa-file-csv me-2 text-success"></i>Transfer All to CSV
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportAllVehiclesToPDF()">
+                            <i class="fas fa-file-pdf me-2 text-danger"></i>Transfer All to PDF
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
+                            <i class="fas fa-car me-2 text-purple-600"></i>Transfer Single Vehicle
+                        </a></li>
+                    </ul>
                 </div>
+            </div>
         </div>
 
         {% if vehicles %}
         <!-- Vehicles Table -->
-        <div class="card table-card">
+        <div class="card table-card" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th class="text-center">
+                                <th class="col-vehicle">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-car text-primary mb-1"></i>
-                                        <span>Vehicle</span>
+                                        <i class="fas fa-car text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Vehicle</span>
                                     </div>
                                 </th>
-                                <th class="text-center">
+                                <th class="col-year">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-calendar-day text-primary mb-1"></i>
-                                        <span>Year</span>
+                                        <i class="fas fa-calendar-day text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Year</span>
                                     </div>
                                 </th>
-                                <th class="text-center">
+                                <th class="col-make">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-building text-primary mb-1"></i>
-                                        <span>Make</span>
+                                        <i class="fas fa-building text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Make</span>
                                     </div>
                                 </th>
-                                <th class="text-center">
+                                <th class="col-model">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-tag text-primary mb-1"></i>
-                                        <span>Model</span>
+                                        <i class="fas fa-tag text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Model</span>
                                     </div>
                                 </th>
-                                <th class="text-center">
+                                <th class="col-vin">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-barcode text-primary mb-1"></i>
-                                        <span>VIN</span>
+                                        <i class="fas fa-barcode text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">VIN</span>
                                     </div>
                                 </th>
-                                <th class="text-center">
+                                <th class="col-future">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-ellipsis-h text-primary mb-1"></i>
-                                        <span>Actions</span>
+                                        <i class="fas fa-clock text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Future Maintenance</span>
                                     </div>
                                 </th>
-                                <th class="text-center">
+                                <th class="col-health">
                                     <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-oil-can text-primary mb-1"></i>
-                                        <span>Oil Change</span>
+                                        <i class="fas fa-heartbeat text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Health</span>
+                                    </div>
+                                </th>
+                                <th>
+                                    <div class="d-flex flex-column align-items-center">
+                                        <i class="fas fa-ellipsis-h text-purple-600 small mb-2"></i>
+                                        <span class="small fw-semibold">Actions</span>
                                     </div>
                                 </th>
                             </tr>
@@ -250,27 +299,95 @@
                         <tbody>
                             {% for vehicle in vehicles %}
                             <tr data-vehicle-id="{{ vehicle.id }}">
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-car text-primary me-2"></i>
-                                        <div>
+                                <td class="col-vehicle">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <div class="mb-2">
+                                            <i class="fas fa-car text-primary me-2"></i>
                                             <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="text-decoration-none fw-bold text-dark hover-primary">
-                                                {{ vehicle.name }} <i class="fas fa-external-link-alt text-muted small ms-1"></i>
+                                                {{ vehicle.name }}
                                             </a>
-                                            <div class="text-muted small">
-                                                <i class="fas fa-tools me-1"></i>{{ vehicle.maintenance_records|length }} maintenance records
-                                            </div>
+                                        </div>
+                                        {% set health_data = vehicle_health | selectattr("vehicle.id", "equalto", vehicle.id) | first %}
+                                        {% if health_data %}
+                                        <div class="text-muted small">
+                                            <i class="fas fa-tachometer-alt text-primary me-1"></i>
+                                            {{ "{:,}".format(health_data.current_mileage) }} mi
+                                        </div>
+                                        {% endif %}
+                                        <div class="text-muted small">
+                                            <i class="fas fa-tools me-1"></i>
+                                            {{ vehicle.maintenance_records|length }} maintenance records
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ vehicle.year }}</td>
-                                <td>{{ vehicle.make }}</td>
-                                <td>{{ vehicle.model }}</td>
-                                <td>
+                                <td class="col-year">{{ vehicle.year }}</td>
+                                <td class="col-make">{{ vehicle.make }}</td>
+                                <td class="col-model">{{ vehicle.model }}</td>
+                                <td class="col-vin">
                                     {% if vehicle.vin %}
-                                    <code class="small">{{ vehicle.vin }}</code>
+                                    <code class="small" 
+                                          onmouseover="showVinHoverModal(event, '{{ vehicle.vin }}')"
+                                          onmouseout="hideVinHoverModal()">{{ vehicle.vin[:8] }}...</code>
                                     {% else %}
                                     <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="col-future">
+                                    {% set triggered_items = triggered_maintenance.get(vehicle.id, []) %}
+                                    {% if triggered_items %}
+                                         {% for item in triggered_items %}
+                                             {% if item.urgency == "high" %}
+                                                 <a href="/maintenance?tab=future-maintenance&vehicle_id={{ vehicle.id }}" class="text-decoration-none">
+                                                     <div class="maintenance-indicator indicator-red" 
+                                                          data-maintenance-id="{{ item.id }}"
+                                                          onmouseover="showHoverModal(event, '{{ item.maintenance_type }}', '{{ item.target_mileage or "" }}', '{{ item.target_date or "" }}')"
+                                                          onmouseout="hideHoverModal()"
+                                                          title="{{ item.maintenance_type }}">
+                                                         🔴 {{ item.maintenance_type[:10] }}{% if item.maintenance_type|length > 10 %}...{% endif %}
+                                                     </div>
+                                                 </a>
+                                             {% elif item.urgency == "medium" %}
+                                                 <a href="/maintenance?tab=future-maintenance&vehicle_id={{ vehicle.id }}" class="text-decoration-none">
+                                                     <div class="maintenance-indicator indicator-yellow"
+                                                          data-maintenance-id="{{ item.id }}"
+                                                          onmouseover="showHoverModal(event, '{{ item.maintenance_type }}', '{{ item.target_mileage or "" }}', '{{ item.target_date or "" }}')"
+                                                          onmouseout="hideHoverModal()"
+                                                          title="{{ item.maintenance_type }}">
+                                                         🟡 {{ item.maintenance_type[:10] }}{% if item.maintenance_type|length > 10 %}...{% endif %}
+                                                     </div>
+                                                 </a>
+                                             {% else %}
+                                                 <a href="/maintenance?tab=future-maintenance&vehicle_id={{ vehicle.id }}" class="text-decoration-none">
+                                                     <div class="maintenance-indicator indicator-blue"
+                                                          data-maintenance-id="{{ item.id }}"
+                                                          onmouseover="showHoverModal(event, '{{ item.maintenance_type }}', '{{ item.target_mileage or "" }}', '{{ item.target_date or "" }}')"
+                                                          onmouseout="hideHoverModal()"
+                                                          title="{{ item.maintenance_type }}">
+                                                         🔵 {{ item.maintenance_type[:10] }}{% if item.maintenance_type|length > 10 %}...{% endif %}
+                                                     </div>
+                                                 </a>
+                                             {% endif %}
+                                         {% endfor %}
+                                     {% else %}
+                                        <span class="text-muted small">No alerts</span>
+                                    {% endif %}
+                                </td>
+                                <td class="col-health">
+                                    {% set health_data = vehicle_health | selectattr("vehicle.id", "equalto", vehicle.id) | first %}
+                                    {% if health_data %}
+                                    <div class="d-flex flex-column align-items-center">
+                                        <div class="mb-2">
+                                            <span class="h5 {{ health_data.health_class }}" title="{{ health_data.health_text }}">
+                                                {{ health_data.health_indicator }}
+                                            </span>
+                                        </div>
+                                        <div class="small text-muted">{{ health_data.health_text }}</div>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-question-circle"></i>
+                                        <div class="small">No data</div>
+                                    </div>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -282,18 +399,6 @@
                                                 data-vehicle-id="{{ vehicle.id }}" 
                                                 data-vehicle-name="{{ vehicle.name }}">
                                             <i class="fas fa-trash me-1"></i>Delete
-                                        </button>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="text-center">
-                                        <button type="button" class="btn btn-sm btn-outline-info me-1" 
-                                                onclick="showOilChangeHistory({{ vehicle.id }}, '{{ vehicle.name }}')">
-                                            <i class="fas fa-history me-1"></i>View History
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-success" 
-                                                onclick="addNewOilChange({{ vehicle.id }}, '{{ vehicle.name }}')">
-                                            <i class="fas fa-plus me-1"></i>Add New
                                         </button>
                                     </div>
                                 </td>
@@ -324,412 +429,119 @@
         </div>
     </div>
 
-    <!-- Oil Change History Modal -->
-    <div class="modal fade" id="oilChangeModal" tabindex="-1" aria-labelledby="oilChangeModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="oilChangeModalLabel">
-                        <i class="fas fa-history me-2"></i>Oil Change History - <span id="modalVehicleName"></span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Oil Change History Table -->
-                    <div class="table-responsive mb-4">
-                        <h5 class="text-dark mb-3 fw-bold">
-                            <i class="fas fa-history me-2 text-primary"></i>Oil Change Records
-                        </h5>
-                        <table class="table table-striped table-hover">
-                            <thead class="table-primary">
-                                <tr>
-                                    <th class="text-dark fw-bold">Date</th>
-                                    <th class="text-dark fw-bold">Mileage</th>
-                                    <th class="text-dark fw-bold">Oil Used</th>
-                                    <th class="text-dark fw-bold">Filter Used</th>
-                                    <th class="text-dark fw-bold">Next Due Date</th>
-                                    <th class="text-dark fw-bold">Next Due Mileage</th>
-                                    <th class="text-dark fw-bold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="oilChangeHistoryTable">
-                                <!-- Oil change records will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Add New Oil Change Form -->
-                    <div class="card border-primary">
-                        <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0 fw-bold">
-                                <i class="fas fa-plus me-2"></i>Add New Oil Change Record
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-dark">Oil Change Date:</label>
-                                    <input type="date" class="form-control" id="modalLastOilChange" placeholder="Select date">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-dark">Mileage at Change:</label>
-                                    <input type="number" class="form-control" id="modalOilChangeMileage" placeholder="Enter mileage">
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-dark">Mileage Interval:</label>
-                                    <input type="number" class="form-control" id="modalMileageInterval" placeholder="e.g., 5000 miles">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-dark">Auto-calculate Next Due:</label>
-                                    <div class="d-flex gap-2 mt-2">
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="calculateNextOilChange()">
-                                            <i class="fas fa-calculator me-1"></i>Calculate
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearCalculations()">
-                                            <i class="fas fa-eraser me-1"></i>Clear
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-dark">Next Due Date:</label>
-                                    <input type="date" class="form-control" id="modalNextOilChangeDate" placeholder="Select date">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-dark">Next Due Mileage:</label>
-                                    <input type="number" class="form-control" id="modalNextOilChangeMileage" placeholder="Mileage">
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-dark">Oil Used:</label>
-                                    <input type="text" class="form-control" id="modalOilUsed" placeholder="e.g., Mobil 1 5W-30">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-dark">Filter Used:</label>
-                                    <input type="text" class="form-control" id="modalFilterUsed" placeholder="e.g., Fram PH6607">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-success" onclick="addOilChangeRecord()">
-                        <i class="fas fa-plus me-2"></i>Add Oil Change
-                    </button>
-                </div>
-            </div>
+    <!-- Hover Modal -->
+    <div id="hoverModal" class="hover-modal">
+        <div id="modalContent"></div>
+    </div>
+    
+    <!-- VIN Hover Modal -->
+    <div id="vinHoverModal" class="hover-modal">
+        <div class="text-center">
+            <div class="small text-muted mb-1">Full VIN</div>
+            <div class="fw-bold" id="vinModalContent"></div>
         </div>
     </div>
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle delete vehicle buttons
-    document.querySelectorAll('.delete-vehicle-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const vehicleId = this.getAttribute('data-vehicle-id');
-            const vehicleName = this.getAttribute('data-vehicle-name');
-            confirmDeleteVehicle(vehicleId, vehicleName);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle delete vehicle buttons
+            document.querySelectorAll('.delete-vehicle-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const vehicleId = this.getAttribute('data-vehicle-id');
+                    const vehicleName = this.getAttribute('data-vehicle-name');
+                    confirmDeleteVehicle(vehicleId, vehicleName);
+                });
+            });
         });
-    });
-});
 
-function confirmDeleteVehicle(vehicleId, vehicleName) {
-    if (confirm('Are you sure you want to delete the vehicle "' + vehicleName + '"?\n\nThis will also delete ALL maintenance records for this vehicle.\n\nThis action cannot be undone.')) {
-        // Use fetch with DELETE method
-        fetch('/vehicles/' + vehicleId + '/delete', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                // Reload the page to show updated vehicle list
-                window.location.reload();
-            } else {
-                response.json().then(data => {
-                    alert('Error deleting vehicle: ' + (data.detail || 'Unknown error'));
+        function confirmDeleteVehicle(vehicleId, vehicleName) {
+            if (confirm('Are you sure you want to delete the vehicle "' + vehicleName + '"?\n\nThis will also delete ALL maintenance records for this vehicle.\n\nThis action cannot be undone.')) {
+                fetch('/vehicles/' + vehicleId + '/delete', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        response.json().then(data => {
+                            alert('Error deleting vehicle: ' + (data.detail || 'Unknown error'));
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting vehicle: ' + error.message);
                 });
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error deleting vehicle: ' + error.message);
-        });
-    }
-}
-
-let currentVehicleId = null;
-
-function showOilChangeHistory(vehicleId, vehicleName) {
-    currentVehicleId = vehicleId;
-    document.getElementById('modalVehicleName').textContent = vehicleName;
-    
-    // Load and display oil change history
-    loadOilChangeHistory(vehicleId);
-    
-    // Clear the form
-    clearOilChangeForm();
-    
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('oilChangeModal'));
-    modal.show();
-}
-
-function addNewOilChange(vehicleId, vehicleName) {
-    currentVehicleId = vehicleId;
-    document.getElementById('modalVehicleName').textContent = vehicleName;
-    
-    // Load existing history but don't populate form
-    loadOilChangeHistory(vehicleId);
-    
-    // Clear the form for new entry
-    clearOilChangeForm();
-    
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('oilChangeModal'));
-    modal.show();
-}
-
-function saveOilChangeInfo() {
-    if (!currentVehicleId) {
-        alert('No vehicle selected');
-        return;
-    }
-    
-    // Get form values
-    const lastOilChange = document.getElementById('modalLastOilChange').value;
-    const mileage = document.getElementById('modalOilChangeMileage').value;
-    const mileageInterval = document.getElementById('modalMileageInterval').value;
-    const nextOilChangeDate = document.getElementById('modalNextOilChangeDate').value;
-    const nextOilChangeMileage = document.getElementById('modalNextOilChangeMileage').value;
-    const oilUsed = document.getElementById('modalOilUsed').value;
-    const filterUsed = document.getElementById('modalFilterUsed').value;
-    
-    // Save to localStorage
-    const oilChangeData = {
-        lastOilChange,
-        mileage,
-        mileageInterval,
-        nextOilChangeDate,
-        nextOilChangeMileage,
-        oilUsed,
-        filterUsed
-    };
-    
-    localStorage.setItem(`oilChange_${currentVehicleId}`, JSON.stringify(oilChangeData));
-    
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('oilChangeModal'));
-    modal.hide();
-    
-    // Show success message
-    alert('Oil change information saved successfully!');
-}
-
-function calculateNextOilChange() {
-    const lastOilChange = document.getElementById('modalLastOilChange').value;
-    const mileage = document.getElementById('modalOilChangeMileage').value;
-    const mileageInterval = document.getElementById('modalMileageInterval').value;
-    
-    if (!lastOilChange || !mileage || !mileageInterval) {
-        alert('Please fill in Last Oil Change Date, Mileage, and Mileage Interval first.');
-        return;
-    }
-    
-    // Calculate next oil change date (6 months from last change)
-    const lastDate = new Date(lastOilChange);
-    const nextDate = new Date(lastDate);
-    nextDate.setMonth(nextDate.getMonth() + 6);
-    
-    // Format date for input field (YYYY-MM-DD)
-    const nextDateFormatted = nextDate.toISOString().split('T')[0];
-    
-    // Calculate next oil change mileage
-    const nextMileage = parseInt(mileage) + parseInt(mileageInterval);
-    
-    // Populate the fields
-    document.getElementById('modalNextOilChangeDate').value = nextDateFormatted;
-    document.getElementById('modalNextOilChangeMileage').value = nextMileage;
-    
-    alert(`Calculated:\nNext Oil Change Date: ${nextDateFormatted}\nNext Oil Change Mileage: ${nextMileage.toLocaleString()} miles`);
-}
-
-function clearCalculations() {
-    document.getElementById('modalNextOilChangeDate').value = '';
-    document.getElementById('modalNextOilChangeMileage').value = '';
-}
-
-function loadOilChangeHistory(vehicleId) {
-    const historyTable = document.getElementById('oilChangeHistoryTable');
-    const savedData = localStorage.getItem(`oilChangeHistory_${vehicleId}`);
-    
-    if (savedData) {
-        const history = JSON.parse(savedData);
-        let tableHTML = '';
-        
-        // Sort by date (newest first)
-        history.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        history.forEach((record, index) => {
-            tableHTML += `
-                <tr>
-                    <td>${record.date}</td>
-                    <td>${record.mileage.toLocaleString()}</td>
-                    <td>${record.oilUsed || '-'}</td>
-                    <td>${record.filterUsed || '-'}</td>
-                    <td>${record.nextDueDate || '-'}</td>
-                    <td>${record.nextDueMileage ? record.nextDueMileage.toLocaleString() : '-'}</td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteOilChangeRecord(${vehicleId}, ${index})">
-                                                            <i class="fas fa-trash-alt me-1"></i>Delete
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-        
-        historyTable.innerHTML = tableHTML;
-    } else {
-        historyTable.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No oil change records yet</td></tr>';
-    }
-}
-
-function clearOilChangeForm() {
-    document.getElementById('modalLastOilChange').value = '';
-    document.getElementById('modalOilChangeMileage').value = '';
-    document.getElementById('modalMileageInterval').value = '';
-    document.getElementById('modalNextOilChangeDate').value = '';
-    document.getElementById('modalNextOilChangeMileage').value = '';
-    document.getElementById('modalOilUsed').value = '';
-    document.getElementById('modalFilterUsed').value = '';
-}
-
-function addOilChangeRecord() {
-    if (!currentVehicleId) {
-        alert('No vehicle selected');
-        return;
-    }
-    
-    // Get form values
-    const date = document.getElementById('modalLastOilChange').value;
-    const mileage = document.getElementById('modalOilChangeMileage').value;
-    const oilUsed = document.getElementById('modalOilUsed').value;
-    const filterUsed = document.getElementById('modalFilterUsed').value;
-    const nextDueDate = document.getElementById('modalNextOilChangeDate').value;
-    const nextDueMileage = document.getElementById('modalNextOilChangeMileage').value;
-    
-    if (!date || !mileage) {
-        alert('Please fill in at least the date and mileage.');
-        return;
-    }
-    
-    // Check for duplicate oil change records
-    const existingHistory = localStorage.getItem(`oilChangeHistory_${currentVehicleId}`);
-    const history = existingHistory ? JSON.parse(existingHistory) : [];
-    
-    // Check for duplicates by date or mileage
-    const isDuplicate = history.some(record => {
-        return record.date === date || record.mileage === parseInt(mileage);
-    });
-    
-    if (isDuplicate) {
-        alert('An oil change record already exists for this date or mileage. Please check your entries.');
-        return;
-    }
-    
-    // Create new oil change record
-    const newRecord = {
-        date: date,
-        mileage: parseInt(mileage),
-        oilUsed: oilUsed,
-        filterUsed: filterUsed,
-        nextDueDate: nextDueDate,
-        nextDueMileage: nextDueMileage ? parseInt(nextDueMileage) : null
-    };
-    
-    // Add new record to oil change history
-    history.push(newRecord);
-    localStorage.setItem(`oilChangeHistory_${currentVehicleId}`, JSON.stringify(history));
-    
-    // Create maintenance record description (simplified as requested)
-    const description = "Oil change/filter";
-    
-    // Create maintenance record in database
-    fetch('/maintenance', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-            'vehicle_id': currentVehicleId,
-            'date_str': date,
-            'description': description,
-            'cost': '',  // Empty cost as requested
-            'mileage': mileage
-        })
-    })
-    .then(response => {
-        if (response.ok) {
-            // Success - maintenance record created in database
-            console.log('Maintenance record created successfully');
-        } else {
-            // Handle error
-            response.json().then(data => {
-                console.error('Error creating maintenance record:', data);
-                let errorMessage = 'Unknown error';
-                if (data.detail) {
-                    if (typeof data.detail === 'string') {
-                        errorMessage = data.detail;
-                    } else if (Array.isArray(data.detail)) {
-                        errorMessage = data.detail.map(err => err.msg || err.message || 'Validation error').join(', ');
-                    } else if (typeof data.detail === 'object') {
-                        errorMessage = data.detail.message || data.detail.msg || 'Validation error';
-                    }
-                }
-                alert('Oil change saved, but maintenance record creation failed: ' + errorMessage);
-            });
         }
-    })
-    .catch(error => {
-        console.error('Error creating maintenance record:', error);
-        alert('Oil change saved, but maintenance record creation failed: ' + error.message);
-    });
-    
-    // Refresh the history table
-    loadOilChangeHistory(currentVehicleId);
-    
-    // Clear the form
-    clearOilChangeForm();
-    
-    // Show success message
-    alert('Oil change record saved and maintenance record created successfully!');
-}
 
-function deleteOilChangeRecord(vehicleId, index) {
-    if (confirm('Are you sure you want to delete this oil change record?')) {
-        const existingHistory = localStorage.getItem(`oilChangeHistory_${vehicleId}`);
-        if (existingHistory) {
-            const history = JSON.parse(existingHistory);
-            history.splice(index, 1);
-            localStorage.setItem(`oilChangeHistory_${vehicleId}`, JSON.stringify(history));
-            loadOilChangeHistory(vehicleId);
+                 function showHoverModal(event, maintenanceType, targetMileage, targetDate) {
+             const modal = document.getElementById('hoverModal');
+             const content = document.getElementById('modalContent');
+             
+             // Build modal content
+             let html = `<div class="fw-bold mb-2">${maintenanceType}</div>`;
+             
+             if (targetMileage && targetMileage !== '') {
+                 html += `<div class="mb-1"><i class="fas fa-tachometer-alt text-primary me-1"></i>Due at ${parseInt(targetMileage).toLocaleString()} mi</div>`;
+             }
+             
+             if (targetDate && targetDate !== '') {
+                 html += `<div class="mb-1"><i class="fas fa-calendar text-warning me-1"></i>Due on ${targetDate}</div>`;
+             }
+             
+             // Get current mileage from the vehicle row
+             const vehicleRow = event.target.closest('tr');
+             const mileageElement = vehicleRow.querySelector('.fa-tachometer-alt');
+             if (mileageElement) {
+                 const mileageText = mileageElement.parentElement.textContent;
+                 const currentMileage = mileageText.match(/(\d{1,3}(?:,\d{3})*)/);
+                 if (currentMileage) {
+                     html += `<div class="text-muted small"><i class="fas fa-info-circle me-1"></i>Current: ${currentMileage[1]} mi</div>`;
+                 }
+             }
+             
+             content.innerHTML = html;
+             
+             // Position modal
+             const rect = event.target.getBoundingClientRect();
+             modal.style.left = (rect.right + 10) + 'px';
+             modal.style.top = (rect.top - 10) + 'px';
+             
+             modal.classList.add('show');
+         }
+
+        function hideHoverModal() {
+            const modal = document.getElementById('hoverModal');
+            modal.classList.remove('show');
         }
-    }
-}
-
-
-</script>
+        
+        function showVinHoverModal(event, fullVin) {
+            const modal = document.getElementById('vinHoverModal');
+            const content = document.getElementById('vinModalContent');
+            
+            content.textContent = fullVin;
+            
+            // Position modal
+            const rect = event.target.getBoundingClientRect();
+            modal.style.left = (rect.left + rect.width/2 - 75) + 'px';
+            modal.style.top = (rect.bottom + 10) + 'px';
+            
+            modal.classList.add('show');
+        }
+        
+        function hideVinHoverModal() {
+            const modal = document.getElementById('vinHoverModal');
+            modal.classList.remove('show');
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="/static/app-functions.js"></script>
     <script src="/static/import-data.js"></script>
     <script src="/static/export-data.js?v=3"></script>
 </body>

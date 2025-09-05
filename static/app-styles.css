@@ -1,0 +1,307 @@
+/**
+ * Vehicle Maintenance Tracker - Centralized Styles
+ * This file contains all common styles used across the application
+ * to maintain consistency and reduce style duplication.
+ */
+
+/* ============================================================================
+   GLOBAL STYLES
+   ============================================================================ */
+
+/* Background styling */
+body {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><pattern id="tools" patternUnits="userSpaceOnUse" width="200" height="200"><g fill="%23f8f9fa" opacity="0.1"><path d="M20 20h40v40h-40z"/><circle cx="40" cy="40" r="15"/><path d="M60 30h20v20h-20z"/><path d="M90 35h10v10h-20z"/><path d="M110 25h15v30h-15z"/><path d="M135 30h20v20h-20z"/><path d="M160 35h15v10h-15z"/><path d="M180 25h20v30h-20z"/><path d="M25 70h30v20h-30z"/><path d="M65 75h25v10h-25z"/><path d="M100 70h20v20h-20z"/><path d="M130 75h25v10h-25z"/><path d="M165 70h20v20h-20z"/><path d="M30 100h40v30h-40z"/><path d="M80 105h30v20h-30z"/><path d="M120 100h40v30h-40z"/><path d="M170 105h30v20h-30z"/><path d="M40 140h20v20h-20z"/><path d="M70 140h20v20h-20z"/><path d="M100 140h20v20h-20z"/><path d="M130 140h20v20h-20z"/><path d="M160 140h20v20h-20z"/><path d="M50 170h10v10h-10z"/><path d="M80 170h10v10h-10z"/><path d="M110 170h10v10h-10z"/><path d="M140 170h10v10h-10z"/><path d="M170 170h10v10h-10z"/></g></pattern><pattern id="vehicles" patternUnits="userSpaceOnUse" width="300" height="200"><g fill="%23e9ecef" opacity="0.08"><path d="M50 50h200v100h-200z"/><path d="M70 70h160v60h-160z"/><path d="M80 80h140v40h-140z"/><path d="M90 90h120v20h-120z"/><path d="M100 100h100v10h-100z"/><path d="M110 110h80v5h-80z"/><path d="M120 120h60v3h-60z"/><path d="M130 130h40v2h-40z"/><path d="M140 140h20v1h-20z"/><path d="M150 150h10v0.5h-10z"/><path d="M160 160h5v0.25h-5z"/><path d="M170 170h2.5v0.125h-2.5z"/><path d="M180 180h1.25v0.0625h-1.25z"/><path d="M190 190h0.625v0.03125h-0.625z"/><path d="M200 200h0.3125v0.015625h-0.3125z"/><path d="M210 210h0.15625v0.0078125h-0.15625z"/><path d="M220 220h0.078125v0.00390625h-0.078125z"/><path d="M230 230h0.0390625v0.001953125h-0.0390625z"/><path d="M240 240h0.01953125v0.0009765625h-0.01953125z"/><path d="M250 250h0.009765625v0.00048828125h-0.009765625z"/><path d="M260 260h0.0048828125v0.000244140625h-0.0048828125z"/><path d="M270 270h0.00244140625v0.0001220703125h-0.00244140625z"/><path d="M280 280h0.001220703125v0.00006103515625h-0.001220703125z"/><path d="M290 290h0.0006103515625v0.000030517578125h-0.0006103515625z"/><path d="M300 300h0.00030517578125v0.0000152587890625h-0.00030517578125z"/></g></pattern></defs><rect width="1200" height="800" fill="%23ffffff"/><rect width="1200" height="800" fill="url(%23tools)"/><rect width="1200" height="800" fill="url(%23vehicles)"/></svg>');
+    background-attachment: fixed;
+    background-size: cover;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
+    z-index: -1;
+}
+
+/* ============================================================================
+   NAVIGATION STYLES
+   ============================================================================ */
+
+/* Navbar styling */
+.navbar {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.nav-link {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: #6f42c1;
+}
+
+/* ============================================================================
+   CARD STYLES
+   ============================================================================ */
+
+/* Card styling */
+.card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.1);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+}
+
+.table-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.feature-card:hover .badge {
+    background-color: #6f42c1 !important;
+}
+
+/* ============================================================================
+   BUTTON STYLES
+   ============================================================================ */
+
+/* Primary button styling */
+.btn-primary {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Consistent button styling */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-sm {
+    border-radius: 8px;
+    padding: 6px 16px;
+}
+
+/* ============================================================================
+   TABLE STYLES
+   ============================================================================ */
+
+/* Table styling */
+.table {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table thead th i {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(139, 92, 246, 0.05);
+}
+
+/* ============================================================================
+   ICON STYLES
+   ============================================================================ */
+
+/* Icon color classes */
+.text-purple-600 {
+    color: #9333ea !important;
+}
+
+.text-primary {
+    color: #0d6efd !important;
+}
+
+.text-success {
+    color: #198754 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-info {
+    color: #0dcaf0 !important;
+}
+
+/* ============================================================================
+   FORM STYLES
+   ============================================================================ */
+
+/* Form styling */
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 0.2rem rgba(139, 92, 246, 0.25);
+}
+
+.form-select {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-select:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 0.2rem rgba(139, 92, 246, 0.25);
+}
+
+/* ============================================================================
+   UTILITY STYLES
+   ============================================================================ */
+
+/* Hover effects */
+.hover-primary:hover {
+    color: #6f42c1 !important;
+    text-decoration: underline !important;
+}
+
+/* Button group styling */
+.btn-group .btn {
+    margin-right: 0.25rem;
+    border-radius: 0.375rem;
+}
+
+.btn-group .btn:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Badge styling */
+.badge.bg-purple-600 {
+    background-color: #9333ea !important;
+}
+
+/* Ghost/Outlined button styling */
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-danger,
+.btn-outline-warning,
+.btn-outline-info {
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-success:hover,
+.btn-outline-danger:hover,
+.btn-outline-warning:hover,
+.btn-outline-info:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   RESPONSIVE STYLES
+   ============================================================================ */
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .btn {
+        padding: 8px 16px;
+        font-size: 0.875rem;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* ============================================================================
+   ANIMATION STYLES
+   ============================================================================ */
+
+/* Smooth transitions */
+.card, .btn, .form-control, .form-select {
+    transition: all 0.3s ease;
+}
+
+/* Hover animations */
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}

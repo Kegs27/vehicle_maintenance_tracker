@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Tracking - Vehicle Maintenance Tracker</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/app-styles.css" rel="stylesheet">
+    <link href="/static/icon-styles.css" rel="stylesheet">
+    <style>
+        /* Mobile optimization for quick fill buttons */
+        @media (max-width: 768px) {
+            .btn-lg {
+                padding: 12px 24px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    {% include 'nav.html' %}
+
+    <!-- Header -->
+    <header class="bg-primary text-white py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-4">
+                        <i class="fas fa-gas-pump me-3"></i>Fuel Tracking
+                    </h1>
+                    <p class="lead mb-0">Track fuel consumption and calculate MPG across your fleet</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-warning" onclick="showQuickFillModal()">
+                            <i class="fas fa-bolt me-2"></i>Quick Fill-Up
+                        </button>
+                        <button class="btn btn-success" onclick="showFuelEntryModal()">
+                            <i class="fas fa-plus me-2"></i>New Fuel Entry
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="py-5">
+        <div class="container">
+            <!-- Recent Fuel Entries -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list me-2"></i>Recent Fuel Entries
+                                <button class="btn btn-light btn-sm float-end" onclick="loadFuelEntries()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="fuelEntriesList">
+                                <!-- Fuel entries will be loaded here -->
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                    <p>Loading fuel entries...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle MPG Summary -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>Vehicle MPG Summary
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="mpgSummary">
+                                <!-- MPG summary will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Fuel Entry Modal -->
+    <div class="modal fade" id="fuelEntryModal" tabindex="-1" aria-labelledby="fuelEntryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="fuelEntryModalLabel">
+                        <i class="fas fa-gas-pump me-2"></i><span id="modalTitle">New Fuel Entry</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="fuelEntryForm">
+                        <!-- Hidden entry ID for editing -->
+                        <input type="hidden" id="entryId" name="entry_id">
+                        
+                        <!-- Vehicle Selection -->
+                        <div class="mb-3">
+                            <label for="vehicleSelect" class="form-label fw-bold">
+                                <i class="fas fa-car me-2"></i>Vehicle
+                            </label>
+                            <select class="form-select" id="vehicleSelect" name="vehicle_id" required onchange="loadQuickFillData()">
+                                <option value="">Select a vehicle...</option>
+                                {% for vehicle in vehicles %}
+                                <option value="{{ vehicle.id }}">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Quick Fill-Up Info -->
+                        <div id="quickFillInfo" class="mb-3" style="display: none;">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading mb-2">
+                                    <i class="fas fa-info-circle me-2"></i>Quick Fill-Up Mode
+                                </h6>
+                                <p class="mb-2">Pre-filled with your last used settings:</p>
+                                <div id="lastUsedSettings" class="small">
+                                    <!-- Last used settings will appear here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date and Time -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="fuelDate" class="form-label fw-bold">
+                                    <i class="fas fa-calendar me-2"></i>Date
+                                </label>
+                                <input type="text" class="form-control" id="fuelDate" name="date" required
+                                       placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="fuelTime" class="form-label fw-bold">
+                                    <i class="fas fa-clock me-2"></i>Time
+                                </label>
+                                <input type="time" class="form-control" id="fuelTime" name="time" required>
+                            </div>
+                        </div>
+
+                        <!-- Mileage and Fuel Amount -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="mileage" class="form-label fw-bold">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Current Mileage
+                                </label>
+                                <input type="number" class="form-control" id="mileage" name="mileage" required min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="fuelAmount" class="form-label fw-bold">
+                                    <i class="fas fa-gas-pump me-2"></i>Fuel Amount (Gallons)
+                                </label>
+                                <input type="number" class="form-control" id="fuelAmount" name="fuel_amount" required min="0" step="0.1">
+                            </div>
+                        </div>
+
+                        <!-- Cost and Type -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="fuelCost" class="form-label fw-bold">
+                                    <i class="fas fa-dollar-sign me-2"></i>Total Cost
+                                </label>
+                                <input type="number" class="form-control" id="fuelCost" name="fuel_cost" required min="0" step="0.01">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="fuelType" class="form-label fw-bold">
+                                    <i class="fas fa-gas-pump me-2"></i>Fuel Type
+                                </label>
+                                <select class="form-select" id="fuelType" name="fuel_type" required>
+                                    <option value="">Select fuel type...</option>
+                                    <option value="87">87 Octane</option>
+                                    <option value="89">89 Octane</option>
+                                    <option value="91">91 Octane</option>
+                                    <option value="93">93 Octane</option>
+                                    <option value="diesel">Diesel</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Driving Pattern and Notes -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="drivingPattern" class="form-label fw-bold">
+                                    <i class="fas fa-route me-2"></i>Driving Pattern
+                                </label>
+                                <select class="form-select" id="drivingPattern" name="driving_pattern" required>
+                                    <option value="">Select pattern...</option>
+                                    <option value="highway">Highway</option>
+                                    <option value="city">City</option>
+                                    <option value="mixed">Mixed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="notes" class="form-label fw-bold">
+                                    <i class="fas fa-sticky-note me-2"></i>Notes (Optional)
+                                </label>
+                                <input type="text" class="form-control" id="notes" name="notes" placeholder="Any additional notes...">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-warning me-2" id="quickFillNextBtn" onclick="prepareQuickFillUp()" title="Save current entry and prepare form for next entry">
+                        <i class="fas fa-bolt me-2"></i>Save & Next Entry
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="submitFuelEntry()">
+                        <i class="fas fa-save me-2"></i><span id="saveButtonText">Save Fuel Entry</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let fuelEntries = [];
+        let vehicles = {{ vehicles | tojson }};
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default date to today in MM/DD/YYYY format
+            const today = new Date();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const year = today.getFullYear();
+            document.getElementById('fuelDate').value = `${month}/${day}/${year}`;
+            
+            // Set default time to current time
+            const now = new Date();
+            const timeString = now.toTimeString().slice(0, 5);
+            document.getElementById('fuelTime').value = timeString;
+            
+            // Load initial data
+            loadFuelEntries();
+            loadMPGSummary();
+        });
+
+        // Show fuel entry modal
+        function showFuelEntryModal() {
+            resetModalToCreate();
+            const modal = new bootstrap.Modal(document.getElementById('fuelEntryModal'));
+            modal.show();
+        }
+
+        // Show quick fill modal
+        function showQuickFillModal() {
+            // Reset modal to create mode first
+            resetModalToCreate();
+            
+            // Pre-fill with last used template if available
+            const savedTemplate = localStorage.getItem('quickFillTemplate');
+            if (savedTemplate) {
+                const template = JSON.parse(savedTemplate);
+                
+                // Pre-fill form with saved template
+                if (template.vehicleId) {
+                    document.getElementById('vehicleSelect').value = template.vehicleId;
+                    // Trigger quick fill data loading to show the info panel
+                    loadQuickFillData();
+                }
+                if (template.fuel_type) {
+                    document.getElementById('fuelType').value = template.fuel_type;
+                }
+                if (template.driving_pattern) {
+                    document.getElementById('drivingPattern').value = template.driving_pattern;
+                }
+                if (template.notes) {
+                    document.getElementById('notes').value = template.notes;
+                }
+                
+                // Set current date and time for quick entry in MM/DD/YYYY format
+                const today = new Date();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const year = today.getFullYear();
+                document.getElementById('fuelDate').value = `${month}/${day}/${year}`;
+                const now = new Date();
+                const timeString = now.toTimeString().slice(0, 5);
+                document.getElementById('fuelTime').value = timeString;
+                
+                // Show quick fill info panel with template info
+                showQuickFillTemplateInfo(template);
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('fuelEntryModal'));
+            modal.show();
+            
+            // Focus on fuel amount for quick entry
+            setTimeout(() => {
+                document.getElementById('fuelAmount').focus();
+            }, 500);
+        }
+
+        // Show quick fill template info
+        function showQuickFillTemplateInfo(template) {
+            const quickFillInfo = document.getElementById('quickFillInfo');
+            const lastUsedSettings = document.getElementById('lastUsedSettings');
+            
+            lastUsedSettings.innerHTML = `
+                <strong>Vehicle:</strong> ${template.vehicleName || 'Not set'}<br>
+                <strong>Fuel Type:</strong> ${template.fuel_type || 'Not set'}<br>
+                <strong>Driving Pattern:</strong> ${template.driving_pattern || 'Not set'}<br>
+                <strong>Notes:</strong> ${template.notes || 'None'}<br>
+                <span class="text-muted"><i class="fas fa-bolt me-1"></i>Using saved Quick Fill-Up template</span>
+            `;
+            
+            quickFillInfo.style.display = 'block';
+        }
+
+        // Load fuel entries from database
+        async function loadFuelEntries() {
+            try {
+                const response = await fetch('/api/fuel/entries');
+                const data = await response.json();
+                
+                if (data.success) {
+                    fuelEntries = data.entries;
+                    displayFuelEntries();
+                } else {
+                    console.error('Failed to load fuel entries:', data.error);
+                    document.getElementById('fuelEntriesList').innerHTML = 
+                        '<div class="alert alert-danger">Failed to load fuel entries</div>';
+                }
+            } catch (error) {
+                console.error('Error loading fuel entries:', error);
+                document.getElementById('fuelEntriesList').innerHTML = 
+                    '<div class="alert alert-danger">Error loading fuel entries</div>';
+            }
+        }
+
+        // Display fuel entries in the table
+        function displayFuelEntries() {
+            const container = document.getElementById('fuelEntriesList');
+            
+            if (fuelEntries.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-gas-pump fa-3x mb-3"></i>
+                        <h5>No fuel entries yet</h5>
+                        <p>Add your first fuel entry to start tracking!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="fas fa-car me-2"></i>Vehicle</th>
+                                <th><i class="fas fa-calendar me-2"></i>Date</th>
+                                <th><i class="fas fa-tachometer-alt me-2"></i>Mileage</th>
+                                <th><i class="fas fa-gas-pump me-2"></i>Fuel</th>
+                                <th><i class="fas fa-dollar-sign me-2"></i>Cost</th>
+                                <th><i class="fas fa-route me-2"></i>Pattern</th>
+                                <th><i class="fas fa-cogs me-2"></i>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            fuelEntries.forEach(entry => {
+                const vehicle = vehicles.find(v => v.id === entry.vehicle_id);
+                const vehicleName = vehicle ? vehicle.name : 'Unknown Vehicle';
+                const date = entry.date ? formatDateForDisplay(entry.date) : 'Unknown Date';
+                const time = entry.time || '';
+                const mileage = entry.mileage ? entry.mileage.toLocaleString() : 'Unknown';
+                const fuelAmount = entry.fuel_amount || 0;
+                const fuelType = entry.fuel_type || 'Unknown';
+                const fuelCost = entry.fuel_cost || 0;
+                const drivingPattern = entry.driving_pattern || 'Unknown';
+                
+                html += `
+                    <tr>
+                        <td><strong>${vehicleName}</strong></td>
+                        <td>${date} ${time}</td>
+                        <td>${mileage} miles</td>
+                        <td>${fuelAmount} gal (${fuelType})</td>
+                        <td>$${fuelCost.toFixed(2)}</td>
+                        <td><span class="badge bg-secondary">${drivingPattern}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editFuelEntry(${entry.id})" title="Edit Entry">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteFuelEntry(${entry.id})" title="Delete Entry">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // Submit fuel entry (create or edit)
+        async function submitFuelEntry() {
+            const form = document.getElementById('fuelEntryForm');
+            const formData = new FormData(form);
+            const entryId = formData.get('entry_id');
+            
+            // Validate required fields
+            if (!formData.get('vehicle_id') || !formData.get('date') || !formData.get('mileage') || 
+                !formData.get('fuel_amount') || !formData.get('fuel_cost') || !formData.get('fuel_type') || 
+                !formData.get('driving_pattern')) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                let response;
+                let successMessage;
+                
+                if (entryId) {
+                    // Edit existing entry
+                    response = await fetch(`/api/fuel/${entryId}`, {
+                        method: 'PUT',
+                        body: formData
+                    });
+                    successMessage = 'Fuel entry updated successfully!';
+                } else {
+                    // Create new entry
+                    response = await fetch('/api/fuel/entry', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    successMessage = 'Fuel entry saved successfully!';
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(successMessage);
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('fuelEntryModal'));
+                    modal.hide();
+                    
+                    // Reset modal to create mode
+                    resetModalToCreate();
+                    
+                    // Reload data
+                    loadFuelEntries();
+                    loadMPGSummary();
+                } else {
+                    alert('Error saving fuel entry: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error submitting fuel entry:', error);
+                alert('Error saving fuel entry. Please try again.');
+            }
+        }
+
+        // Delete fuel entry
+        async function deleteFuelEntry(entryId) {
+            if (!confirm('Are you sure you want to delete this fuel entry?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/fuel/${entryId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Fuel entry deleted successfully!');
+                    
+                    // Reload data
+                    loadFuelEntries();
+                    loadMPGSummary();
+                } else {
+                    alert('Error deleting fuel entry: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error deleting fuel entry:', error);
+                alert('Error deleting fuel entry. Please try again.');
+            }
+        }
+
+        // Load MPG summary
+        async function loadMPGSummary() {
+            try {
+                const response = await fetch('/api/fuel/mpg-summary');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayMPGSummary(data.summary);
+                } else {
+                    console.error('Failed to load MPG summary:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading MPG summary:', error);
+            }
+        }
+
+        // Display MPG summary
+        function displayMPGSummary(summary) {
+            const container = document.getElementById('mpgSummary');
+            
+            if (summary.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No MPG data available</p>';
+                return;
+            }
+
+            let html = '<div class="row g-3">';
+            
+            summary.forEach(vehicle => {
+                html += `
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">${vehicle.vehicle_name}</h6>
+                                ${vehicle.mpg ? 
+                                    `<p class="h4 text-success mb-1">${vehicle.mpg.toFixed(1)} MPG</p>
+                                     <small class="text-muted">Based on ${vehicle.entries_count} entries</small>` :
+                                    `<p class="text-muted">Need at least 2 fuel entries</p>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Quick Fill-Up Functions
+        async function loadQuickFillData() {
+            const vehicleId = document.getElementById('vehicleSelect').value;
+            if (!vehicleId) {
+                document.getElementById('quickFillInfo').style.display = 'none';
+                return;
+            }
+
+            try {
+                // Get last fuel entry for this vehicle
+                const response = await fetch('/api/fuel/entries');
+                const data = await response.json();
+                
+                if (data.success && data.entries.length > 0) {
+                    // Find last entry for this vehicle
+                    const vehicleEntries = data.entries.filter(entry => entry.vehicle_id == vehicleId);
+                    
+                    if (vehicleEntries.length > 0) {
+                        const lastEntry = vehicleEntries[0]; // Most recent
+                        showQuickFillInfo(lastEntry);
+                    } else {
+                        // Try to get from localStorage or show default
+                        showDefaultQuickFill();
+                    }
+                } else {
+                    showDefaultQuickFill();
+                }
+            } catch (error) {
+                console.error('Error loading quick fill data:', error);
+                showDefaultQuickFill();
+            }
+        }
+
+        function showQuickFillInfo(lastEntry) {
+            const quickFillInfo = document.getElementById('quickFillInfo');
+            const lastUsedSettings = document.getElementById('lastUsedSettings');
+            
+            // Pre-fill form with last used settings (only if not already set by template)
+            if (lastEntry.fuel_type && !document.getElementById('fuelType').value) {
+                document.getElementById('fuelType').value = lastEntry.fuel_type;
+            }
+            if (lastEntry.driving_pattern && !document.getElementById('drivingPattern').value) {
+                document.getElementById('drivingPattern').value = lastEntry.driving_pattern;
+            }
+            if (lastEntry.notes && !document.getElementById('notes').value) {
+                document.getElementById('notes').value = lastEntry.notes;
+            }
+            
+            // Show quick fill info
+            lastUsedSettings.innerHTML = `
+                <strong>Fuel Type:</strong> ${lastEntry.fuel_type || 'Not set'}<br>
+                <strong>Driving Pattern:</strong> ${lastEntry.driving_pattern || 'Not set'}<br>
+                <strong>Last Mileage:</strong> ${lastEntry.mileage ? lastEntry.mileage.toLocaleString() : 'Not set'}<br>
+                <strong>Notes:</strong> ${lastEntry.notes || 'None'}<br>
+                <span class="text-muted"><i class="fas fa-info-circle me-1"></i>Using last entry data</span>
+            `;
+            
+            quickFillInfo.style.display = 'block';
+        }
+
+        function showDefaultQuickFill() {
+            const quickFillInfo = document.getElementById('quickFillInfo');
+            const lastUsedSettings = document.getElementById('lastUsedSettings');
+            
+            lastUsedSettings.innerHTML = `
+                <span class="text-muted"><i class="fas fa-info-circle me-1"></i>No previous data for this vehicle. Fill in manually or use defaults.</span>
+            `;
+            
+            quickFillInfo.style.display = 'block';
+        }
+
+        // Prepare Quick Fill-Up for next entry - Saves current entry first
+        async function prepareQuickFillUp() {
+            try {
+                // First, save the current entry
+                const currentEntryData = {
+                    vehicle_id: document.getElementById('vehicleSelect').value,
+                    date: document.getElementById('fuelDate').value,
+                    time: document.getElementById('fuelTime').value,
+                    mileage: document.getElementById('mileage').value,
+                    fuel_amount: document.getElementById('fuelAmount').value,
+                    fuel_cost: document.getElementById('fuelCost').value,
+                    fuel_type: document.getElementById('fuelType').value,
+                    driving_pattern: document.getElementById('drivingPattern').value,
+                    notes: document.getElementById('notes').value
+                };
+                
+                // Validate required fields
+                if (!currentEntryData.vehicle_id || !currentEntryData.date || !currentEntryData.mileage || 
+                    !currentEntryData.fuel_amount || !currentEntryData.fuel_cost) {
+                    alert('Please fill in all required fields before using Quick Fill-Up Next');
+                    return;
+                }
+                
+                // Save current entry
+                const response = await fetch('/api/fuel/entry', {
+                    method: 'POST',
+                    body: new FormData(document.getElementById('fuelEntryForm'))
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Save current form data as template for next entry
+                    const selectedVehicle = vehicles.find(v => v.id == currentEntryData.vehicle_id);
+                    const quickFillTemplate = {
+                        vehicleId: currentEntryData.vehicle_id,
+                        vehicleName: selectedVehicle ? selectedVehicle.name : '',
+                        fuel_type: currentEntryData.fuel_type,
+                        driving_pattern: currentEntryData.driving_pattern,
+                        notes: currentEntryData.notes
+                    };
+                    
+                    localStorage.setItem('quickFillTemplate', JSON.stringify(quickFillTemplate));
+                    
+                    // Show success message
+                    alert(`Fuel entry saved successfully! Quick Fill-Up template updated for next entry.`);
+                    
+                    // Refresh fuel entries list
+                    loadFuelEntries();
+                    
+                    // Reset form for next entry
+                    document.getElementById('fuelEntryForm').reset();
+                    
+                    // Set default date and time in MM/DD/YYYY format
+                    const today = new Date();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    const year = today.getFullYear();
+                    document.getElementById('fuelDate').value = `${month}/${day}/${year}`;
+                    const now = new Date();
+                    const timeString = now.toTimeString().slice(0, 5);
+                    document.getElementById('fuelTime').value = timeString;
+                    
+                    // Pre-fill with saved template
+                    if (quickFillTemplate.vehicleId) {
+                        document.getElementById('vehicleSelect').value = quickFillTemplate.vehicleId;
+                    }
+                    if (quickFillTemplate.fuel_type) {
+                        document.getElementById('fuelType').value = quickFillTemplate.fuel_type;
+                    }
+                    if (quickFillTemplate.driving_pattern) {
+                        document.getElementById('drivingPattern').value = quickFillTemplate.driving_pattern;
+                    }
+                    if (quickFillTemplate.notes) {
+                        document.getElementById('notes').value = quickFillTemplate.notes;
+                    }
+                    
+                    // Focus on fuel amount for quick entry
+                    document.getElementById('fuelAmount').focus();
+                    
+                } else {
+                    alert('Error saving fuel entry: ' + data.error);
+                }
+                
+            } catch (error) {
+                console.error('Error in Quick Fill-Up Next:', error);
+                alert('Error saving fuel entry. Please try again.');
+            }
+        }
+
+        // Edit fuel entry
+        async function editFuelEntry(entryId) {
+            try {
+                // Find the entry in our local data
+                const entry = fuelEntries.find(e => e.id === entryId);
+                if (!entry) {
+                    alert('Entry not found');
+                    return;
+                }
+
+                // Set modal to edit mode
+                document.getElementById('modalTitle').textContent = 'Edit Fuel Entry';
+                document.getElementById('saveButtonText').textContent = 'Update Entry';
+                document.getElementById('entryId').value = entryId;
+                
+                // Hide Quick Fill-Up Next button in edit mode
+                document.getElementById('quickFillNextBtn').style.display = 'none';
+                
+                // Pre-fill form with entry data
+                document.getElementById('vehicleSelect').value = entry.vehicle_id;
+                document.getElementById('fuelDate').value = entry.date;
+                document.getElementById('fuelTime').value = entry.time || '';
+                document.getElementById('mileage').value = entry.mileage;
+                document.getElementById('fuelAmount').value = entry.fuel_amount;
+                document.getElementById('fuelCost').value = entry.fuel_cost;
+                document.getElementById('fuelType').value = entry.fuel_type;
+                document.getElementById('drivingPattern').value = entry.driving_pattern;
+                document.getElementById('notes').value = entry.notes || '';
+                
+                // Hide Quick Fill-Up info in edit mode
+                document.getElementById('quickFillInfo').style.display = 'none';
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('fuelEntryModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('Error editing fuel entry:', error);
+                alert('Error loading entry for editing. Please try again.');
+            }
+        }
+
+        // Reset modal to create mode
+        function resetModalToCreate() {
+            document.getElementById('modalTitle').textContent = 'New Fuel Entry';
+            document.getElementById('saveButtonText').textContent = 'Save Fuel Entry';
+            document.getElementById('entryId').value = '';
+            document.getElementById('quickFillNextBtn').style.display = 'inline-block';
+            document.getElementById('quickFillInfo').style.display = 'none';
+            
+            // Reset form
+            document.getElementById('fuelEntryForm').reset();
+            
+            // Set default date and time in MM/DD/YYYY format
+            const today = new Date();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const year = today.getFullYear();
+            document.getElementById('fuelDate').value = `${month}/${day}/${year}`;
+            const now = new Date();
+            const timeString = now.toTimeString().slice(0, 5);
+            document.getElementById('fuelTime').value = timeString;
+        }
+
+        // Format date for display in MM/DD/YYYY format
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return '';
+            
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return dateString; // Return original if invalid
+                
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${month}/${day}/${year}`;
+            } catch (error) {
+                return dateString; // Return original if parsing fails
+            }
+        }
+    </script>
+</body>
+</html>

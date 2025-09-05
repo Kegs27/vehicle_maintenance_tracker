@@ -13,12 +13,7 @@
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 25px;
-            padding: 12px 30px;
-        }
+        /* Button styles are now centralized in app-styles.css */
         .nav-link {
             color: #6c757d;
             font-weight: 500;
@@ -35,27 +30,20 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="fas fa-car me-2"></i>Vehicle Maintenance Tracker
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/vehicles">Vehicles</a>
-                <a class="nav-link active" href="/maintenance">Maintenance</a>
-                <a class="nav-link" href="/import">Data Transfer</a>
-            </div>
-        </div>
-    </nav>
+    {% include 'nav.html' %}
 
     <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card form-card">
-                    <div class="card-header bg-primary text-white text-center py-3">
+                    <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card form-card" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
+                        <div class="card-header bg-primary text-white text-center py-3">
                         <h4 class="mb-0">
-                            <i class="fas fa-tools me-2"></i>
-                            {% if record %}Edit Maintenance Record{% else %}Add New Maintenance Record{% endif %}
+                            <i class="fas fa-{% if return_url and 'oil-analysis' in return_url %}flask{% else %}tools{% endif %} me-2"></i>
+                            {% if return_url and 'oil-analysis' in return_url %}
+                                {% if record %}Edit Oil Analysis{% else %}Add New Oil Analysis{% endif %}
+                            {% else %}
+                                {% if record %}Edit Maintenance Record{% else %}Add New Maintenance Record{% endif %}
+                            {% endif %}
                         </h4>
                     </div>
                     <div class="card-body p-4">
@@ -76,6 +64,10 @@
                         {% endif %}
 
                         <form method="post" action="{% if record %}/maintenance/{{ record.id }}{% else %}/maintenance{% endif %}">
+                            {% if not is_oil_analysis %}
+                                {% set is_oil_analysis = return_url and 'oil-analysis' in return_url %}
+                            {% endif %}
+                            
                             {% if not record %}
                             <!-- Vehicle selection for new records -->
                             <div class="mb-3">
@@ -92,12 +84,20 @@
                             {% else %}
                             <!-- Hidden vehicle_id for existing records -->
                             <input type="hidden" name="vehicle_id" value="{{ record.vehicle_id }}">
+                            
+                            <!-- Pass return URL for proper redirect -->
+                            {% if request.query_params.get('return_url') %}
+                            <input type="hidden" name="return_url" value="{{ request.query_params.get('return_url') }}">
+                            {% endif %}
                             {% endif %}
 
+                            {% if not is_oil_analysis %}
+                            <!-- Regular maintenance fields - only show if NOT coming from oil analysis -->
                             <div class="mb-3">
                                 <label for="date" class="form-label fw-bold">Date</label>
-                                <input type="date" class="form-control" id="date" name="date_str" 
-                                       value="{{ record.date.strftime('%Y-%m-%d') if record and record.date and record.date.year > 1900 else '' }}">
+                                <input type="text" class="form-control" id="date" name="date_str" 
+                                       value="{{ record.date.strftime('%m/%d/%Y') if record and record.date and record.date.year > 1900 else '' }}"
+                                       placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Leave blank if date is unknown - record will use placeholder date (01/01/1900) and be sorted by mileage
@@ -145,13 +145,212 @@
                                     Enter the cost of parts, labor, or services. Leave blank if no cost.
                                 </div>
                             </div>
+                            {% endif %}
+
+                            {% if not is_oil_analysis or (is_oil_analysis and record and record.is_oil_change) %}
+                            <!-- Oil Change Checkbox -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_oil_change" name="is_oil_change" 
+                                           {% if record and record.is_oil_change %}checked{% endif %}>
+                                    <label class="form-check-label fw-bold" for="is_oil_change">
+                                        <i class="fas fa-oil-can me-2"></i>This is an oil change record
+                                    </label>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Check this box to show enhanced oil change fields and analysis options
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Enhanced Oil Change Fields (shown only when checkbox is checked) -->
+                            <div id="oilChangeFields" style="display: none;">
+                                <hr class="my-4">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-oil-can me-2"></i>Oil Change Details
+                                </h5>
+                                
+                                <!-- Oil Change Interval -->
+                                <div class="mb-3">
+                                    <label for="oil_change_interval" class="form-label fw-bold">Oil Change Interval (Miles)</label>
+                                    <input type="number" class="form-control" id="oil_change_interval" name="oil_change_interval" 
+                                           value="{{ record.oil_change_interval if record and record.oil_change_interval else '5000' }}"
+                                           min="1000" max="10000" step="100" placeholder="5000">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Set the mileage interval for the next oil change. Default is 5,000 miles.
+                                    </div>
+                                </div>
+
+                                <!-- Oil Analysis Linking Checkbox -->
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="link_oil_analysis" name="link_oil_analysis" value="true"
+                                               {% if has_linked_oil_analysis %}checked{% endif %}>
+                                        <label class="form-check-label fw-bold" for="link_oil_analysis">
+                                            <i class="fas fa-flask me-2"></i>Link to oil analysis report
+                                        </label>
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Check this box to create a placeholder oil analysis record linked to this oil change. 
+                                            You can add the analysis report and data later when it arrives (typically 2 weeks after oil change).
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Oil Information Row -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="oil_type" class="form-label">Oil Type</label>
+                                        <select class="form-select" id="oil_type" name="oil_type">
+                                            <option value="">Select oil type...</option>
+                                            <option value="0W-20" {% if record and record.oil_type == '0W-20' %}selected{% endif %}>0W-20</option>
+                                            <option value="0W-30" {% if record and record.oil_type == '0W-30' %}selected{% endif %}>0W-30</option>
+                                            <option value="5W-20" {% if record and record.oil_type == '5W-20' %}selected{% endif %}>5W-20</option>
+                                            <option value="5W-30" {% if record and record.oil_type == '5W-30' %}selected{% endif %}>5W-30</option>
+                                            <option value="5W-40" {% if record and record.oil_type == '5W-40' %}selected{% endif %}>5W-40</option>
+                                            <option value="10W-30" {% if record and record.oil_type == '10W-30' %}selected{% endif %}>10W-30</option>
+                                            <option value="10W-40" {% if record and record.oil_type == '10W-40' %}selected{% endif %}>10W-40</option>
+                                            <option value="15W-40" {% if record and record.oil_type == '15W-40' %}selected{% endif %}>15W-40</option>
+                                            <option value="20W-50" {% if record and record.oil_type == '20W-50' %}selected{% endif %}>20W-50</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="oil_brand" class="form-label">Oil Brand</label>
+                                        <input type="text" class="form-control" id="oil_brand" name="oil_brand" 
+                                               value="{{ record.oil_brand if record and record.oil_brand else '' }}"
+                                               placeholder="e.g., Mobil 1, Castrol, Valvoline">
+                                    </div>
+                                </div>
+
+                                <!-- Filter Information Row -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="oil_filter_brand" class="form-label">Filter Brand</label>
+                                        <input type="text" class="form-control" id="oil_filter_brand" name="oil_filter_brand" 
+                                               value="{{ record.oil_filter_brand if record and record.oil_filter_brand else '' }}"
+                                               placeholder="e.g., Fram, Mobil 1, K&N">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="oil_filter_part_number" class="form-label">Filter Part Number</label>
+                                        <input type="text" class="form-control" id="oil_filter_part_number" name="oil_filter_part_number" 
+                                               value="{{ record.oil_filter_part_number if record and record.oil_filter_part_number else '' }}"
+                                               placeholder="e.g., PH2870A">
+                                    </div>
+                                </div>
+
+                                <!-- Cost Breakdown Row -->
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="oil_cost" class="form-label">Oil Cost</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="oil_cost" name="oil_cost" 
+                                                   value="{{ record.oil_cost if record and record.oil_cost else '' }}"
+                                                   step="0.01" min="0" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="filter_cost" class="form-label">Filter Cost</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="filter_cost" name="filter_cost" 
+                                                   value="{{ record.filter_cost if record and record.filter_cost else '' }}"
+                                                   step="0.01" min="0" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="labor_cost" class="form-label">Labor Cost</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="labor_cost" name="labor_cost" 
+                                                   value="{{ record.labor_cost if record and record.labor_cost else '' }}"
+                                                   step="0.01" min="0" placeholder="0.00">
+                                        </div>
+                                                                    </div>
+                            </div>
+
+                            <!-- Oil Analysis Section (Outside oilChangeFields div) -->
+                            {% if is_oil_analysis or (record and record.is_oil_change) %}
+                            <hr class="my-4">
+                            <h5 class="text-info mb-3">
+                                <i class="fas fa-flask me-2"></i>Oil Analysis {% if is_oil_analysis %}Details{% else %}(Optional){% endif %}
+                            </h5>
+                            
+                            {% if is_oil_analysis %}
+                            <!-- Required fields for oil analysis -->
+                            <div class="mb-3">
+                                <label for="description" class="form-label fw-bold">Analysis Description *</label>
+                                <textarea class="form-control" id="description" name="description" rows="2" 
+                                          placeholder="Brief description of the oil analysis (e.g., 'Oil analysis from Blackstone Labs')">{{ record.description if record else '' }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="date" class="form-label fw-bold">Analysis Date *</label>
+                                <input type="text" class="form-control" id="date" name="date_str" 
+                                       value="{{ record.date.strftime('%m/%d/%Y') if record and record.date and record.date.year > 1900 else '' }}"
+                                       placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="mileage" class="form-label fw-bold">Vehicle Mileage at Analysis *</label>
+                                <input type="number" class="form-control" id="mileage" name="mileage" 
+                                       value="{{ record.mileage if record else '' }}" 
+                                       min="0" step="1" placeholder="e.g., 50000">
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Oil Analysis Report Upload -->
+                            <div class="mb-3">
+                                <label for="oil_analysis_report" class="form-label">Oil Analysis Report (PDF)</label>
+                                <input type="file" class="form-control" id="oil_analysis_report" name="oil_analysis_report" 
+                                       accept=".pdf" onchange="handleFileUpload(this)">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Upload your oil analysis report from Blackstone Labs or other testing facilities
+                                </div>
+                            </div>
+
+                            <!-- Oil Analysis Dates Row -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="oil_analysis_date" class="form-label">Analysis Date</label>
+                                    <input type="text" class="form-control" id="oil_analysis_date" name="oil_analysis_date" 
+                                       value="{{ record.oil_analysis_date.strftime('%m/%d/%Y') if record and record.oil_analysis_date else '' }}"
+                                       placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="next_oil_analysis_date" class="form-label">Next Analysis Due</label>
+                                    <input type="text" class="form-control" id="next_oil_analysis_date" name="next_oil_analysis_date" 
+                                       value="{{ record.next_oil_analysis_date.strftime('%m/%d/%Y') if record and record.next_oil_analysis_date else '' }}"
+                                       placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
+                                </div>
+                            </div>
+
+                            <!-- Oil Analysis Cost -->
+                            <div class="mb-3">
+                                <label for="oil_analysis_cost" class="form-label">Analysis Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="oil_analysis_cost" name="oil_analysis_cost" 
+                                           value="{{ record.oil_analysis_cost if record and record.oil_analysis_cost else '' }}"
+                                           step="0.01" min="0" placeholder="0.00">
+                                </div>
+                            </div>
+                            {% endif %}
+
+
+
+
+                            </div>
 
                             <div class="d-flex gap-2 justify-content-center">
                                 <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-save me-2"></i>
                                     {% if record %}Update Record{% else %}Add Record{% endif %}
                                 </button>
-                                <a href="/maintenance" class="btn btn-outline-secondary">
+                                <a href="{{ return_url }}" class="btn btn-outline-secondary">
                                     <i class="fas fa-times me-2"></i>Cancel
                                 </a>
                             </div>
@@ -163,5 +362,224 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/export-data.js?v=3"></script>
+    <script>
+        function showOilChangeMenu() {
+            // Redirect to vehicles page for oil change management
+            window.location.href = '/vehicles';
+        }
+
+        // Show/hide enhanced oil change fields based on checkbox
+        function toggleOilChangeFields() {
+            const oilChangeCheckbox = document.getElementById('is_oil_change');
+            const oilChangeFields = document.getElementById('oilChangeFields');
+            
+            console.log('toggleOilChangeFields called');
+            console.log('oilChangeCheckbox:', oilChangeCheckbox);
+            console.log('oilChangeFields:', oilChangeFields);
+            
+            // Check if we're in oil analysis mode (coming from oil analysis page)
+            const isOilAnalysisMode = window.location.href.includes('oil-analysis');
+            console.log('isOilAnalysisMode:', isOilAnalysisMode);
+            
+            if (oilChangeFields) {
+                if (oilChangeCheckbox) {
+                    // Normal mode - checkbox exists, use its state
+                    const isOilChange = oilChangeCheckbox.checked;
+                    console.log('isOilChange:', isOilChange);
+                    
+                    if (isOilChange) {
+                        oilChangeFields.style.display = 'block';
+                        console.log('Showing oil change fields (checkbox checked)');
+                    } else {
+                        oilChangeFields.style.display = 'none';
+                        console.log('Hiding oil change fields (checkbox unchecked)');
+                    }
+                } else if (isOilAnalysisMode) {
+                    // Oil analysis mode - checkbox doesn't exist, show fields anyway
+                    oilChangeFields.style.display = 'block';
+                    console.log('Showing oil change fields (oil analysis mode)');
+                } else {
+                    // No checkbox and not oil analysis mode - hide fields
+                    oilChangeFields.style.display = 'none';
+                    console.log('Hiding oil change fields (no checkbox, not oil analysis mode)');
+                }
+            } else {
+                console.log('Missing oilChangeFields element');
+            }
+        }
+
+        // Handle PDF file upload
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    alert('Please select a PDF file.');
+                    input.value = '';
+                    return;
+                }
+                
+                                if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                    input.value = '';
+                    return;
+                }
+                
+                // PDF upload functionality will be implemented in future update
+            }
+        }
+
+        // Validate cost breakdown matches total cost
+        function validateCostBreakdown() {
+            const costElement = document.getElementById('cost');
+            const oilCostElement = document.getElementById('oil_cost');
+            const filterCostElement = document.getElementById('filter_cost');
+            const laborCostElement = document.getElementById('labor_cost');
+            
+            // Only validate if all elements exist (not in oil analysis mode)
+            if (!costElement || !oilCostElement || !filterCostElement || !laborCostElement) {
+                return true; // Skip validation if elements don't exist
+            }
+            
+            const totalCost = parseFloat(costElement.value) || 0;
+            const oilCost = parseFloat(oilCostElement.value) || 0;
+            const filterCost = parseFloat(filterCostElement.value) || 0;
+            const laborCost = parseFloat(laborCostElement.value) || 0;
+            
+            const breakdownTotal = oilCost + filterCost + laborCost;
+            
+            // If any breakdown fields are filled, they must match total
+            if ((oilCost > 0 || filterCost > 0 || laborCost > 0) && Math.abs(breakdownTotal - totalCost) > 0.01) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Auto-calculate total cost from breakdown
+        function updateTotalCost() {
+            const oilCostElement = document.getElementById('oil_cost');
+            const filterCostElement = document.getElementById('filter_cost');
+            const laborCostElement = document.getElementById('labor_cost');
+            const costElement = document.getElementById('cost');
+            
+            // Only update if all elements exist
+            if (!oilCostElement || !filterCostElement || !laborCostElement || !costElement) {
+                return;
+            }
+            
+            const oilCost = parseFloat(oilCostElement.value) || 0;
+            const filterCost = parseFloat(filterCostElement.value) || 0;
+            const laborCost = parseFloat(laborCostElement.value) || 0;
+            
+            const breakdownTotal = oilCost + filterCost + laborCost;
+            
+            if (breakdownTotal > 0) {
+                costElement.value = breakdownTotal.toFixed(2);
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize form state based on existing data
+            initializeFormState();
+            
+            // Set up event listeners for cost breakdown fields if they exist
+            const oilCostField = document.getElementById('oil_cost');
+            const filterCostField = document.getElementById('filter_cost');
+            const laborCostField = document.getElementById('labor_cost');
+            
+            if (oilCostField) oilCostField.addEventListener('input', updateTotalCost);
+            if (filterCostField) filterCostField.addEventListener('input', updateTotalCost);
+            if (laborCostField) laborCostField.addEventListener('input', updateTotalCost);
+            
+            // Add event listener to description field for auto-detection (only if it exists)
+            const descriptionField = document.getElementById('description');
+            if (descriptionField) {
+                descriptionField.addEventListener('input', function() {
+                    // Auto-detection removed - users must manually check the oil change checkbox
+                });
+            }
+
+            // Add form validation
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Preserve checkbox states before submission
+                    preserveCheckboxStates();
+                    
+                    // Check if we're in oil analysis mode - if so, skip all validation
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const returnUrl = urlParams.get('return_url');
+                    const isOilAnalysis = returnUrl && returnUrl.includes('oil-analysis');
+                    
+                    if (isOilAnalysis) {
+                        // Skip all validation for oil analysis - just let the form submit
+                        return true;
+                    }
+                    
+                    // For regular maintenance, use existing validation
+                    if (!validateCostBreakdown()) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
+        });
+
+        // Preserve checkbox states during form submission
+        function preserveCheckboxStates() {
+            const oilChangeCheckbox = document.getElementById('is_oil_change');
+            const linkOilAnalysisCheckbox = document.getElementById('link_oil_analysis');
+            
+            if (oilChangeCheckbox && oilChangeCheckbox.checked) {
+                // Ensure the checkbox value is included in form data
+                if (!oilChangeCheckbox.value) {
+                    oilChangeCheckbox.value = 'true';
+                }
+            }
+            
+            if (linkOilAnalysisCheckbox && linkOilAnalysisCheckbox.checked) {
+                // Ensure the checkbox value is included in form data
+                if (!linkOilAnalysisCheckbox.value) {
+                    linkOilAnalysisCheckbox.value = 'true';
+                }
+            }
+        }
+
+        // Initialize form state based on existing data
+        function initializeFormState() {
+            console.log('initializeFormState called');
+            
+            // Check if this is an existing oil change record and toggle fields if needed
+            toggleOilChangeFields();
+            
+            // Ensure checkboxes maintain their state
+            const oilChangeCheckbox = document.getElementById('is_oil_change');
+            const linkOilAnalysisCheckbox = document.getElementById('link_oil_analysis');
+            
+            if (oilChangeCheckbox) {
+                console.log('Oil change checkbox found, checked:', oilChangeCheckbox.checked);
+                // Add event listener to maintain state
+                oilChangeCheckbox.addEventListener('change', function() {
+                    console.log('Oil change checkbox changed to:', this.checked);
+                    toggleOilChangeFields();
+                });
+                
+                // Ensure the checkbox state is preserved
+                if (oilChangeCheckbox.hasAttribute('checked') || oilChangeCheckbox.checked) {
+                    oilChangeCheckbox.checked = true;
+                    toggleOilChangeFields();
+                }
+            }
+            
+            if (linkOilAnalysisCheckbox) {
+                console.log('Link oil analysis checkbox found, checked:', linkOilAnalysisCheckbox.checked);
+                // Ensure the checkbox value is properly set
+                if (linkOilAnalysisCheckbox.hasAttribute('checked') || linkOilAnalysisCheckbox.checked) {
+                    linkOilAnalysisCheckbox.checked = true;
+                }
+            }
+        }
+    </script>
 </body>
 </html>

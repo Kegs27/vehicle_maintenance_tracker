@@ -17,7 +17,7 @@ def get_database_url():
     # Check if we're in production (cloud) or development (local)
     database_url = os.getenv("DATABASE_URL")
     # Debug logging
-    print(f"Environment check - DATABASE_URL: {"SET" if database_url else "NOT SET"}")
+    print(f"Environment check - DATABASE_URL: {'SET' if database_url else 'NOT SET'}")
     if database_url:
         print(f"Using PostgreSQL: {database_url[:20]}...")  # Show first 20 chars for security
     else:
@@ -56,7 +56,7 @@ if DATABASE_URL.startswith("postgresql"):
 else:
     # SQLite (local) configuration
     engine = create_engine(
-        asyncpg_url,
+        DATABASE_URL,
         connect_args={"check_same_thread": False},
         echo=False
     )

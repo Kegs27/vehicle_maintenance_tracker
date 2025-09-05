@@ -6,44 +6,97 @@
     <title>Maintenance Records - Vehicle Maintenance Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/icon-styles.css" rel="stylesheet">
+    <link href="/static/icon-styles.css?v=1" rel="stylesheet">
     <style>
+        /* Consistent table styling across tabs */
         .table-card {
             border: none;
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            border: none;
-            border-radius: 25px;
-            padding: 12px 30px;
-        }
-        .nav-link {
-            color: #6c757d;
-            font-weight: 500;
-        }
-        .nav-link:hover {
-            color: #6f42c1;
-        }
+        
+        /* Consistent header styling */
         .table th {
             background-color: #f8f9fa;
             border-top: none;
             font-weight: 600;
+            text-align: center;
+            vertical-align: middle;
+            padding: 1rem 0.5rem;
         }
-        .btn-sm {
-            border-radius: 20px;
-            padding: 6px 16px;
+        
+        /* Consistent header content layout */
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 60px;
         }
+        
+        /* Consistent sortable header layout */
+        .sortable-header .header-content {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            width: 100%;
+            min-height: 60px;
+        }
+        
+        /* Consistent icon styling */
+        .table th i {
+            font-size: 0.875rem;
+            opacity: 0.8;
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Consistent text styling */
+        .table th .small {
+            font-size: 0.75rem;
+            line-height: 1.2;
+        }
+        
+        /* Consistent modal styling */
+        .modal-dialog {
+            max-width: 800px;
+        }
+        
+        .modal-content {
+            border-radius: 15px;
+            border: 1px solid rgba(139, 92, 246, 0.1);
+        }
+        
+        .modal-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid rgba(139, 92, 246, 0.1);
+            border-radius: 0 0 15px 15px;
+        }
+        
+        /* Cost styling */
         .cost-positive {
             color: #dc3545;
             font-weight: 600;
         }
+        
         .cost-negative {
             color: #198754;
             font-weight: 600;
         }
         
+        /* Description text styling */
         .description-text:hover {
             color: #0d6efd;
             text-decoration: underline;
@@ -94,22 +147,298 @@
             box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
         }
         
+        /* Custom purple color for table icons */
+        .text-purple-600 {
+            color: #9333ea !important;
+        }
+        
+        /* Simple, clean table header styling */
+        .table th {
+            text-align: center;
+            vertical-align: middle;
+            padding: 1rem 0.5rem;
+        }
+
+        /* ========================================
+           MOBILE OPTIMIZATION STYLES
+           ======================================== */
+        
+        /* Mobile-first responsive design */
+        @media (max-width: 768px) {
+            /* Container adjustments */
+            .container {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+            
+            /* Card optimizations */
+            .card {
+                margin-bottom: 1rem;
+                border-radius: 12px;
+            }
+            
+            /* Table mobile optimizations */
+            .table-responsive {
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            
+            .table th,
+            .table td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.9rem;
+            }
+            
+            /* Stack form elements vertically on mobile */
+            .row .col-md-6 {
+                margin-bottom: 1rem;
+            }
+            
+            /* Larger touch targets */
+            .btn {
+                padding: 0.75rem 1rem;
+                font-size: 1rem;
+                min-height: 44px; /* Apple's recommended minimum */
+            }
+            
+            .btn-sm {
+                padding: 0.5rem 0.75rem;
+                min-height: 38px;
+            }
+            
+            /* Modal optimizations */
+            .modal-dialog {
+                margin: 1rem;
+                max-width: calc(100% - 2rem);
+            }
+            
+            .modal-body {
+                padding: 1rem;
+            }
+            
+            /* Tab navigation mobile optimization */
+            .nav-tabs .nav-link {
+                padding: 0.75rem 1rem;
+                font-size: 0.95rem;
+                min-height: 44px;
+            }
+            
+            /* Statistics cards mobile layout */
+            .stats-card {
+                margin-bottom: 1rem;
+                text-align: center;
+            }
+            
+            .stats-card .card-body {
+                padding: 1rem;
+            }
+            
+            /* Future maintenance button mobile optimization */
+            .btn-success {
+                width: 100%;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                font-size: 1.1rem;
+            }
+        }
+        
+        /* Extra small devices */
+        @media (max-width: 576px) {
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            
+            .table th,
+            .table td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.85rem;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+            
+            .modal-dialog {
+                margin: 0.5rem;
+                max-width: calc(100% - 1rem);
+            }
+        }
+        
+        /* Touch-friendly hover states */
+        @media (hover: none) and (pointer: coarse) {
+            .btn:hover {
+                transform: none;
+            }
+            
+            .description-text:hover {
+                color: inherit;
+                text-decoration: none;
+            }
+        }
+        
+        /* Landscape mobile optimization */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .modal-dialog {
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+        }
+        
+        /* Header content wrapper */
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        /* Sortable headers use horizontal layout for icon + text + sort icon */
+        .sortable-header .header-content {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        
+        /* Icon styling */
+        .table th i {
+            font-size: 0.875rem;
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Text styling */
+        .table th span {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Sortable header styles */
+        .sortable-header {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sortable-header:hover {
+            background-color: #e9ecef !important;
+        }
+        
+        /* Sort icon styling */
+        .sort-icon {
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            margin-top: 0.25rem;
+        }
+        
+        .sort-icon.active {
+            color: #9333ea !important;
+        }
+        
+        .sortable-header:hover .sort-icon {
+            color: #6c757d !important;
+        }
+        
+        /* Custom Horizontal Tabs */
+        .custom-tabs {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+            overflow: hidden;
+        }
+        
+        .tab-nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: #6c757d;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(139, 92, 246, 0.05);
+            color: #9333ea;
+        }
+        
+        .tab-btn.active {
+            background: #fff;
+            color: #9333ea;
+            border-bottom: 3px solid #9333ea;
+            box-shadow: 0 -2px 8px rgba(139, 92, 246, 0.1);
+        }
+        
+        .tab-btn.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #9333ea;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        /* Center all table data cells to align with centered headers */
+        .table td {
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        /* Special handling for vehicle column to center the vehicle info */
+        .table td:first-child {
+            text-align: center;
+        }
+        
+        /* Ensure action buttons are centered */
+        .table td:last-child {
+            text-align: center;
+        }
+        
+        /* Center the vehicle info content */
+        .vehicle-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        /* Future maintenance table styling */
+        #futureMaintenanceContent .table-card {
+            margin-bottom: 2rem;
+        }
+        
+        #futureMaintenanceContent .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Ensure consistent spacing in future maintenance table */
+        #futureMaintenanceContent .table td {
+            padding: 1rem 0.5rem;
+            vertical-align: middle;
+        }
 
     </style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="fas fa-car me-2"></i>Vehicle Maintenance Tracker
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/vehicles">Vehicles</a>
-                <a class="nav-link active" href="/maintenance">Maintenance</a>
-            </div>
-        </div>
-    </nav>
+    {% include 'nav.html' %}
 
     <div class="container py-5">
         <!-- Header -->
@@ -125,70 +454,225 @@
                     </p>
                 {% endif %}
             </div>
-                            <div class="d-flex flex-wrap gap-2 mb-4">
-                    {% if vehicle %}
-                        <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
-                            <i class="fas fa-plus me-2"></i>Add Maintenance
-                        </button>
-                    {% else %}
-                        <a href="/maintenance/new" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Add Maintenance
-                        </a>
-                    {% endif %}
-                    {% if vehicle %}
-                        <a href="/maintenance" class="btn btn-outline-secondary">
-                            <i class="fas fa-list me-2"></i>View All Records
-                        </a>
-                    {% endif %}
-                </div>
+            <div class="d-flex flex-wrap gap-2">
+                {% if vehicle %}
+                    <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
+                        <i class="fas fa-plus me-2"></i>Add Maintenance
+                    </button>
+                {% else %}
+                    <a href="/maintenance/new" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Maintenance
+                    </a>
+                {% endif %}
+
+                <!-- Add Future Maintenance Button - Always Visible -->
+                <button type="button" class="btn btn-success" onclick="openFutureMaintenanceModal()">
+                    <i class="fas fa-calendar-plus me-2"></i>Add Future Maintenance
+                </button>
+            </div>
         </div>
 
+        <!-- System Summary -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
+                    <div class="card-body text-center p-4">
+                        <h4 class="text-purple-600 mb-3">
+                            <i class="fas fa-chart-bar me-2"></i>Maintenance Summary
+                        </h4>
+                        <div class="row g-3">
+                            <div class="col-6 col-md-3">
+                                <div class="border-end border-md-end">
+                                    <h5 class="text-success mb-1">{{ summary.total_vehicles }}</h5>
+                                    <small class="text-muted d-none d-md-inline">Total Vehicles</small>
+                                    <small class="text-muted d-inline d-md-none">Vehicles</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="border-end border-md-end">
+                                    <h5 class="text-info mb-1">{{ summary.total_records }}</h5>
+                                    <small class="text-muted d-none d-md-inline">Maintenance Records</small>
+                                    <small class="text-muted d-inline d-md-none">Records</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="border-end border-md-end">
+                                    <h5 class="text-warning mb-1">${{ "%.2f"|format(summary.total_cost) }}</h5>
+                                    <small class="text-muted d-none d-md-inline">Total Cost</small>
+                                    <small class="text-muted d-inline d-md-none">Total Cost</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div>
+                                    <h5 class="text-secondary mb-1">${{ "%.2f"|format(summary.average_cost_per_record) }}</h5>
+                                    <small class="text-muted d-none d-md-inline">Avg. Cost/Record</small>
+                                    <small class="text-muted d-inline d-md-none">Avg. Cost</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Horizontal Tab Navigation -->
+        <div class="row justify-content-center mb-5 mt-5">
+            <div class="col-lg-10">
+                <div class="custom-tabs">
+                    <div class="tab-nav">
+                        <button class="tab-btn active" data-tab="all-records">
+                            <i class="fas fa-list me-2"></i><span class="d-none d-md-inline">All Records</span><span class="d-inline d-md-none">Records</span>
+                        </button>
+                        <button class="tab-btn" data-tab="future-maintenance">
+                            <i class="fas fa-calendar-plus me-2"></i><span class="d-none d-md-inline">Future Maintenance</span><span class="d-inline d-md-none">Future</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Future Maintenance Content (Hidden by default) -->
+        <div id="futureMaintenanceContent" style="display: none;">
+            <div class="card table-card" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important; margin-bottom: 2rem;">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-car text-purple-600 small"></i>
+                                                <span class="small fw-semibold d-none d-md-inline">Vehicle</span>
+                                                <span class="small fw-semibold d-inline d-md-none">Car</span>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-tools text-purple-600 small"></i>
+                                                <span class="small fw-semibold d-none d-md-inline">Maintenance Type</span>
+                                                <span class="small fw-semibold d-inline d-md-none">Type</span>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-tachometer-alt text-purple-600 small"></i>
+                                                <span class="small fw-semibold d-none d-md-inline">Target Mileage</span>
+                                                <span class="small fw-semibold d-inline d-md-none">Miles</span>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-calendar-alt text-purple-600 small"></i>
+                                                <span class="small fw-semibold d-none d-md-inline">Target Date</span>
+                                                <span class="small fw-semibold d-inline d-md-none">Date</span>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-dollar-sign text-purple-600 small"></i>
+                                                <span class="small fw-semibold d-none d-md-inline">Est. Cost</span>
+                                                <span class="small fw-semibold d-inline d-md-none">Cost</span>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="text-center">
+                                        <div class="header-content">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-ellipsis-h text-purple-600 small"></i>
+                                                <span class="small fw-semibold d-none d-md-inline">Actions</span>
+                                                <span class="small fw-semibold d-inline d-md-none">Actions</span>
+                                            </div>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="futureMaintenanceTableBody">
+                                <!-- Future maintenance records will be loaded here dynamically -->
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-calendar-plus fa-2x mb-3"></i>
+                                            <h5>No Future Maintenance Records</h5>
+                                            <p>Click "Add Future Maintenance" to plan upcoming service.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         
         {% if records %}
         <!-- Maintenance Records Table -->
-        <div class="card table-card">
+        <div id="maintenanceRecordsTable" class="card table-card" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important; margin-bottom: 2rem;">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
                                 {% if not vehicle %}
-                                    <th class="text-center">
+                                <th class="text-center sortable-header" data-sort="vehicle">
+                                    <div class="header-content">
                                         <div class="d-flex flex-column align-items-center">
-                                            <i class="fas fa-car text-primary"></i>
-                                            <span>Vehicle</span>
+                                            <i class="fas fa-car text-purple-600 small"></i>
+                                            <span class="small fw-semibold d-none d-md-inline">Vehicle</span>
+                                            <span class="small fw-semibold d-inline d-md-none">Car</span>
                                         </div>
-                                    </th>
+                                        <i class="fas fa-sort text-muted small sort-icon"></i>
+                                    </div>
+                                </th>
                                 {% endif %}
-                                <th class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-calendar-alt text-primary"></i>
-                                        <span>Date</span>
+                                <th class="text-center sortable-header" data-sort="date">
+                                    <div class="header-content">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-calendar-alt text-purple-600 small"></i>
+                                            <span class="small fw-semibold d-none d-md-inline">Date</span>
+                                            <span class="small fw-semibold d-inline d-md-none">Date</span>
+                                        </div>
+                                        <i class="fas fa-sort-down text-purple-600 small sort-icon active"></i>
+                                    </div>
+                                </th>
+                                <th class="text-center sortable-header" data-sort="mileage">
+                                    <div class="header-content">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-tachometer-alt text-purple-600 small"></i>
+                                            <span class="small fw-semibold d-none d-md-inline">Mileage</span>
+                                            <span class="small fw-semibold d-inline d-md-none">Miles</span>
+                                        </div>
+                                        <i class="fas fa-sort text-muted small sort-icon"></i>
                                     </div>
                                 </th>
                                 <th class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-tachometer-alt text-primary mb-1"></i>
-                                        <span>Mileage</span>
+                                    <div class="header-content">
+                                        <i class="fas fa-clipboard-list text-purple-600 small"></i>
+                                        <span class="small fw-semibold d-none d-md-inline">Description</span>
+                                        <span class="small fw-semibold d-inline d-md-none">Details</span>
                                     </div>
                                 </th>
                                 <th class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-clipboard-list text-primary mb-1"></i>
-                                        <span>Description</span>
+                                    <div class="header-content">
+                                        <i class="fas fa-dollar-sign text-purple-600 small"></i>
+                                        <span class="small fw-semibold d-none d-md-inline">Cost</span>
+                                        <span class="small fw-semibold d-inline d-md-none">Cost</span>
                                     </div>
                                 </th>
                                 <th class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-dollar-sign text-primary mb-1"></i>
-                                        <span>Cost</span>
-                                    </div>
-                                </th>
-                                <th class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-ellipsis-h text-primary mb-1"></i>
-                                        <span>Actions</span>
+                                    <div class="header-content">
+                                        <i class="fas fa-ellipsis-h text-purple-600 small"></i>
+                                        <span class="small fw-semibold d-none d-md-inline">Actions</span>
+                                        <span class="small fw-semibold d-inline d-md-none">Actions</span>
                                     </div>
                                 </th>
                             </tr>
@@ -198,8 +682,8 @@
                             <tr>
                                 {% if not vehicle %}
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-car text-primary me-2"></i>
+                                        <div class="vehicle-info">
+                                            <i class="fas fa-car text-primary mb-1"></i>
                                             <div>
                                                 <strong>{{ record.vehicle.name or 'Unnamed Vehicle' }}</strong>
                                                 <br>
@@ -213,12 +697,8 @@
                                 <td>
                                     {% if record.date and record.date.year > 1900 %}
                                         {{ record.date.strftime('%m/%d/%Y') }}
-                                        {% if record.date_estimated %}
-                                            <span class="badge bg-warning text-dark ms-1" title="Date estimated from mileage">Est.</span>
-                                        {% endif %}
                                     {% else %}
                                         <span class="text-muted">No date</span>
-                                        <span class="badge bg-info text-dark ms-1" title="Positioned by mileage">Mileage</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -226,7 +706,6 @@
                                         {{ "{:,}".format(record.mileage) }}
                                     {% else %}
                                         <span class="text-muted">0</span>
-                                        <span class="badge bg-warning text-dark ms-1" title="Placeholder mileage - sorted by date">Date</span>
                                     {% endif %}
                                 </td>
                                 <td class="description-cell" 
@@ -251,7 +730,17 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="btn-group" role="group">
+                                    <div class="btn-group-vertical btn-group-sm d-md-none" role="group">
+                                        <a href="/maintenance/{{ record.id }}/edit" class="btn btn-outline-primary mb-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger delete-maintenance-btn" 
+                                                data-record-id="{{ record.id }}" 
+                                                data-description="{{ record.description[:50] }}{% if record.description|length > 50 %}...{% endif %}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="btn-group d-none d-md-flex" role="group">
                                         <a href="/maintenance/{{ record.id }}/edit" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit me-1"></i>Edit
                                         </a>
@@ -293,17 +782,16 @@
             <div class="d-flex gap-3 justify-content-center flex-wrap">
                 {% if vehicle %}
                 <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
-                    <i class="fas fa-plus me-2"></i>Add Maintenance
+                    <i class="fas fa-plus me-2"></i><span class="d-none d-md-inline">Add Maintenance</span><span class="d-inline d-md-none">Add</span>
                 </button>
                 {% else %}
                 <a href="/maintenance/new" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Add Maintenance
+                    <i class="fas fa-plus me-2"></i><span class="d-none d-md-inline">Add Maintenance</span><span class="d-inline d-md-none">Add</span>
                 </a>
                 {% endif %}
                 <a href="/" class="btn btn-outline-secondary">
-                    <i class="fas fa-home me-2"></i>Back to Home
+                    <i class="fas fa-home me-2"></i><span class="d-none d-md-inline">Back to Home</span><span class="d-inline d-md-none">Home</span>
                 </a>
-
             </div>
         </div>
     </div>
@@ -321,27 +809,27 @@
                 <div class="modal-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Vehicle:</strong>
-                            <span id="modalVehicle" class="ms-2"></span>
+                            <label class="form-label fw-bold">Vehicle</label>
+                            <div class="form-control-plaintext" id="modalVehicle"></div>
                         </div>
                         <div class="col-md-6">
-                            <strong>Date:</strong>
-                            <span id="modalDate" class="ms-2"></span>
+                            <label class="form-label fw-bold">Date</label>
+                            <div class="form-control-plaintext" id="modalDate"></div>
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Mileage:</strong>
-                            <span id="modalMileage" class="ms-2"></span>
+                            <label class="form-label fw-bold">Mileage</label>
+                            <div class="form-control-plaintext" id="modalMileage"></div>
                         </div>
                         <div class="col-md-6">
-                            <strong>Cost:</strong>
-                            <span id="modalCost" class="ms-2"></span>
+                            <label class="form-label fw-bold">Cost</label>
+                            <div class="form-control-plaintext" id="modalCost"></div>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <strong>Description:</strong>
-                        <div class="mt-2 p-3 bg-light rounded" style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
+                        <label class="form-label fw-bold">Description</label>
+                        <div class="form-control-plaintext" style="white-space: pre-wrap; max-height: 300px; overflow-y: auto; background-color: #f8f9fa; padding: 1rem; border-radius: 0.375rem;">
                             <span id="modalDescription"></span>
                         </div>
                     </div>
@@ -353,13 +841,168 @@
         </div>
     </div>
 
+    <!-- Future Maintenance Modal -->
+    <div class="modal fade" id="futureMaintenanceModal" tabindex="-1" aria-labelledby="futureMaintenanceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="futureMaintenanceModalLabel">
+                        <i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="futureMaintenanceForm">
+                        <!-- Vehicle Selection -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="vehicle_id" class="form-label fw-bold">Vehicle</label>
+                                <select class="form-select" id="vehicle_id" name="vehicle_id" required>
+                                    <option value="">Select a vehicle...</option>
+                                    {% for vehicle in vehicles %}
+                                    <option value="{{ vehicle.id }}">{{ vehicle.name }} ({{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="maintenance_type" class="form-label fw-bold">
+                                    <span class="d-none d-md-inline">Maintenance Type</span>
+                                    <span class="d-inline d-md-none">Type</span>
+                                </label>
+                                <input type="text" class="form-control" id="maintenance_type" name="maintenance_type" 
+                                       placeholder="e.g., Oil Change, Brake Service, Tire Rotation" required>
+                            </div>
+                        </div>
+
+                        <!-- Target Mileage and Date -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="target_mileage" class="form-label fw-bold">
+                                    <span class="d-none d-md-inline">Target Mileage</span>
+                                    <span class="d-inline d-md-none">Target Miles</span>
+                                    <span class="text-muted">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="target_mileage" name="target_mileage" 
+                                       placeholder="e.g., 50000" min="0">
+                                <div class="form-text d-none d-md-block">At least one of Target Mileage or Target Date is required</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="target_date" class="form-label fw-bold">Target Date
+                                    <span class="text-muted">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="target_date" name="target_date"
+                                       placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
+                                <div class="form-text d-none d-md-block">At least one of Target Mileage or Target Date is required</div>
+                            </div>
+                        </div>
+
+                        <!-- Reminder Settings -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="mileage_reminder" class="form-label fw-bold">Mileage Reminder</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="mileage_reminder" name="mileage_reminder" 
+                                           placeholder="100" min="0" value="100">
+                                    <span class="input-group-text">miles before</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="date_reminder" class="form-label fw-bold">Date Reminder</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="date_reminder" name="date_reminder" 
+                                           placeholder="30" min="0" value="30">
+                                    <span class="input-group-text">days before</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cost and Parts -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="estimated_cost" class="form-label fw-bold">Estimated Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="estimated_cost" name="estimated_cost" 
+                                           placeholder="0.00" step="0.01" min="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="parts_link" class="form-label fw-bold">Parts Link/Part Number</label>
+                                <input type="text" class="form-control" id="parts_link" name="parts_link" 
+                                       placeholder="e.g., Amazon link, part number, or notes">
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label for="notes" class="form-label fw-bold">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Additional details about this maintenance..."></textarea>
+                        </div>
+
+                        <!-- Recurring Maintenance -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
+                                <label class="form-check-label fw-bold" for="is_recurring">
+                                    This is recurring maintenance
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Recurrence Intervals (shown when recurring is checked) -->
+                        <div id="recurrenceFields" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="recurrence_interval_miles" class="form-label fw-bold">Recurrence Interval (Miles)</label>
+                                    <input type="number" class="form-control" id="recurrence_interval_miles" name="recurrence_interval_miles" 
+                                           placeholder="e.g., 5000" min="0">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="recurrence_interval_months" class="form-label fw-bold">Recurrence Interval (Months)</label>
+                                    <input type="number" class="form-control" id="recurrence_interval_months" name="recurrence_interval_months" 
+                                           placeholder="e.g., 6" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hierarchy Note -->
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Planning Hierarchy:</strong> You must provide either Target Mileage or Target Date (or both). 
+                            This allows for flexible planning based on your driving patterns and maintenance schedule.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <span class="d-none d-md-inline">Cancel</span>
+                        <span class="d-inline d-md-none">Cancel</span>
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveFutureMaintenance()">
+                        <i class="fas fa-save me-2"></i><span class="d-none d-md-inline">Save Future Maintenance</span><span class="d-inline d-md-none">Save</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/import-data.js"></script>
     <script src="/static/export-data.js?v=3"></script>
     
     <script>
+        // Sorting functionality
+        let currentSort = { column: 'date', direction: 'desc' };
+        
         // Handle description modal
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize sorting functionality
+            initializeSorting();
+            
+            // Initialize tab functionality
+            initializeTabs();
+            
             const descriptionModal = document.getElementById('descriptionModal');
             if (descriptionModal) {
                 const modal = new bootstrap.Modal(descriptionModal);
@@ -384,14 +1027,23 @@
                 });
             }
             
-            // Handle delete maintenance record buttons
-            document.querySelectorAll('.delete-maintenance-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const recordId = this.getAttribute('data-record-id');
-                    const description = this.getAttribute('data-description');
-                    confirmDeleteMaintenance(recordId, description);
-                });
+                    // Handle delete maintenance record buttons
+        document.querySelectorAll('.delete-maintenance-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const recordId = this.getAttribute('data-record-id');
+                const description = this.getAttribute('data-description');
+                confirmDeleteMaintenance(recordId, description);
             });
+        });
+
+        // Handle recurring maintenance checkbox
+        const isRecurringCheckbox = document.getElementById('is_recurring');
+        const recurrenceFields = document.getElementById('recurrenceFields');
+        if (isRecurringCheckbox && recurrenceFields) {
+            isRecurringCheckbox.addEventListener('change', function() {
+                recurrenceFields.style.display = this.checked ? 'block' : 'none';
+            });
+        }
             
 
         });
@@ -421,25 +1073,512 @@
         }
         
         function goToAddRecord(vehicleId) {
-            console.log('Going to add record for vehicle:', vehicleId);
             const url = '/maintenance/new?vehicle_id=' + vehicleId;
-            console.log('URL:', url);
             window.location.href = url;
         }
         
         function goToImport(vehicleId) {
-            console.log('Going to import for vehicle:', vehicleId);
             const url = '/import?vehicle_id=' + vehicleId;
-            console.log('URL:', url);
             window.location.href = url;
         }
         
-
+        function showOilChangeMenu() {
+            // Redirect to vehicles page for oil change management
+            window.location.href = '/vehicles';
+        }
         
-
+        function saveFutureMaintenance() {
+            // Get form data
+            const form = document.getElementById('futureMaintenanceForm');
+            const formData = new FormData(form);
+            
+            // Validate required fields
+            const vehicleId = formData.get('vehicle_id');
+            const maintenanceType = formData.get('maintenance_type');
+            let targetMileage = formData.get('target_mileage');
+            let targetDate = formData.get('target_date');
+            
+            // Set placeholder values for empty fields
+            if (!targetMileage || targetMileage.trim() === '') {
+                targetMileage = '0';
+                formData.set('target_mileage', '0');
+            }
+            if (!targetDate || targetDate.trim() === '') {
+                targetDate = '0';
+                formData.set('target_date', '0');
+            }
+            
+            if (!vehicleId || !maintenanceType) {
+                alert('Please fill in Vehicle and Maintenance Type fields');
+                return;
+            }
+            
+            // Enforce hierarchy: At least one of target mileage OR target date must be provided
+            // Convert placeholder values to null for proper validation
+            const hasTargetMileage = targetMileage && targetMileage.trim() !== '' && targetMileage !== '0';
+            const hasTargetDate = targetDate && targetDate.trim() !== '' && targetDate !== '0';
+            
+            if (!hasTargetMileage && !hasTargetDate) {
+                alert('Please provide either Target Mileage or Target Date (or both)');
+                return;
+            }
+            
+            // Check if this is an edit or create operation
+            const editRecordId = document.getElementById('edit_record_id');
+            const isEdit = editRecordId && editRecordId.value;
+            
+            // Determine API endpoint and method
+            const url = isEdit ? `/api/future-maintenance/${editRecordId.value}` : '/api/future-maintenance';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            // Send data to backend API
+            fetch(url, {
+                method: method,
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const message = isEdit ? 'Future maintenance plan updated successfully!' : 'Future maintenance plan saved successfully!';
+                    alert(message);
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('futureMaintenanceModal'));
+                    modal.hide();
+                    
+                    // Reset form and remove edit record ID
+                    form.reset();
+                    if (editRecordId) {
+                        editRecordId.remove();
+                    }
+                    
+                    // Refresh the future maintenance table if it's visible
+                    const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
+                    if (futureMaintenanceContent && futureMaintenanceContent.style.display !== 'none') {
+                        loadFutureMaintenanceRecords();
+                    }
+                    
+                    console.log(isEdit ? 'Future maintenance updated:' : 'Future maintenance created:', data);
+                } else {
+                    alert('Error saving future maintenance: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving future maintenance. Please try again.');
+            });
+        }
         
-
+        // Tab switching functionality
+        function initializeTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all tabs
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    // Handle tab content switching
+                    const tabType = this.getAttribute('data-tab');
+                    handleTabSwitch(tabType);
+                });
+            });
+        }
         
+        function handleTabSwitch(tabType) {
+            if (tabType === 'all-records') {
+                // Show current maintenance records (default view)
+                                    // Switch to All Records tab
+                showAllRecordsTab();
+            } else if (tabType === 'future-maintenance') {
+                // Show future maintenance summary table
+                                    // Switch to Future Maintenance tab
+                showFutureMaintenanceTab();
+            }
+        }
+        
+        function showFutureMaintenanceTab() {
+            // Hide the maintenance records table using specific ID
+            const recordsTable = document.getElementById('maintenanceRecordsTable');
+            if (recordsTable) {
+                recordsTable.style.display = 'none';
+            }
+            
+            // Show the future maintenance summary
+            const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
+            if (futureMaintenanceContent) {
+                futureMaintenanceContent.style.display = 'block';
+            }
+            
+            // Update tab button states
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('[data-tab="future-maintenance"]').classList.add('active');
+            
+            // Load future maintenance records
+            loadFutureMaintenanceRecords();
+        }
+        
+        function showAllRecordsTab() {
+            // Show the maintenance records table using specific ID
+            const recordsTable = document.getElementById('maintenanceRecordsTable');
+            if (recordsTable) {
+                recordsTable.style.display = 'block';
+            }
+            
+            // Hide the future maintenance summary
+            const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
+            if (futureMaintenanceContent) {
+                futureMaintenanceContent.style.display = 'none';
+            }
+            
+            // Update tab button states
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('[data-tab="all-records"]').classList.add('active');
+        }
+        
+        function switchTab(tabType) {
+            if (tabType === 'all-records') {
+                showAllRecordsTab();
+            } else if (tabType === 'future-maintenance') {
+                showFutureMaintenanceTab();
+            }
+        }
+        
+        function openVehicleModal(vehicleId, vehicleName) {
+            // Pre-populate the vehicle field
+            const vehicleSelect = document.getElementById('vehicle_id');
+            if (vehicleSelect) {
+                vehicleSelect.value = vehicleId;
+            }
+            
+            // Update modal title to show vehicle name
+            const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+            if (modalTitle) {
+                modalTitle.innerHTML = `<i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance - ${vehicleName}`;
+            }
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('futureMaintenanceModal'));
+            modal.show();
+        }
+        
+        function openFutureMaintenanceModal() {
+            // Reset the modal title to generic
+            const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+            if (modalTitle) {
+                modalTitle.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance';
+            }
+            
+            // Reset the form
+            const form = document.getElementById('futureMaintenanceForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('futureMaintenanceModal'));
+            modal.show();
+        }
+        
+        function loadFutureMaintenanceRecords() {
+            fetch('/api/future-maintenance')
+                .then(response => response.json())
+                .then(data => {
+                    displayFutureMaintenanceRecords(data.future_maintenance || []);
+                })
+                .catch(error => {
+                    console.error('Error loading future maintenance records:', error);
+                    displayFutureMaintenanceRecords([]);
+                });
+        }
+        
+        function displayFutureMaintenanceRecords(records) {
+            const tbody = document.getElementById('futureMaintenanceTableBody');
+            if (!tbody) return;
+            
+            if (records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-calendar-plus fa-2x mb-3"></i>
+                                <h5>No Future Maintenance Records</h5>
+                                <p>Click "Add Future Maintenance" to plan upcoming service.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = records.map(record => `
+                <tr>
+                    <td>
+                        <div class="vehicle-info">
+                            <i class="fas fa-car text-primary mb-1"></i>
+                            <div>
+                                <strong>${record.vehicle_name || 'Unknown Vehicle'}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    ${record.vehicle_year || ''} ${record.vehicle_make || ''} ${record.vehicle_model || ''}
+                                </small>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <strong>${record.maintenance_type || 'N/A'}</strong>
+                    </td>
+                    <td class="text-center">
+                        ${record.target_mileage ? record.target_mileage.toLocaleString() : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-center">
+                        ${record.target_date ? formatDateForDisplay(record.target_date) : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-center">
+                        ${record.estimated_cost ? `$${record.estimated_cost.toFixed(2)}` : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editFutureMaintenance(${record.id})">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFutureMaintenance(${record.id})">
+                                <i class="fas fa-trash me-1"></i>Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function editFutureMaintenance(recordId) {
+            // Fetch the future maintenance record data
+            fetch(`/api/future-maintenance/single/${recordId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const record = data.future_maintenance;
+                        
+                        // Pre-populate the form with existing data
+                        const form = document.getElementById('futureMaintenanceForm');
+                        if (form) {
+                            // Set vehicle
+                            const vehicleSelect = document.getElementById('vehicle_id');
+                            if (vehicleSelect) {
+                                vehicleSelect.value = record.vehicle_id;
+                            }
+                            
+                            // Set other fields
+                            document.getElementById('maintenance_type').value = record.maintenance_type || '';
+                            document.getElementById('target_mileage').value = record.target_mileage || '';
+                            document.getElementById('target_date').value = record.target_date || '';
+                            document.getElementById('mileage_reminder').value = record.mileage_reminder || 100;
+                            document.getElementById('date_reminder').value = record.date_reminder || 30;
+                            document.getElementById('estimated_cost').value = record.estimated_cost || '';
+                            document.getElementById('parts_link').value = record.parts_link || '';
+                            document.getElementById('notes').value = record.notes || '';
+                            document.getElementById('is_recurring').checked = record.is_recurring || false;
+                            document.getElementById('recurrence_interval_miles').value = record.recurrence_interval_miles || '';
+                            document.getElementById('recurrence_interval_months').value = record.recurrence_interval_months || '';
+                        }
+                        
+                        // Update modal title and add hidden field for record ID
+                        const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+                        if (modalTitle) {
+                            modalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Edit Future Maintenance';
+                        }
+                        
+                        // Add hidden field for record ID if it doesn't exist
+                        let recordIdField = document.getElementById('edit_record_id');
+                        if (!recordIdField) {
+                            recordIdField = document.createElement('input');
+                            recordIdField.type = 'hidden';
+                            recordIdField.id = 'edit_record_id';
+                            recordIdField.name = 'edit_record_id';
+                            form.appendChild(recordIdField);
+                        }
+                        recordIdField.value = recordId;
+                        
+                        // Show the modal
+                        const modal = new bootstrap.Modal(document.getElementById('futureMaintenanceModal'));
+                        modal.show();
+                    } else {
+                        alert('Error loading record: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading record. Please try again.');
+                });
+        }
+        
+        function deleteFutureMaintenance(recordId) {
+            if (confirm('Are you sure you want to delete this future maintenance record?')) {
+                fetch(`/api/future-maintenance/${recordId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Refresh the table
+                        loadFutureMaintenanceRecords();
+                        alert('Future maintenance record deleted successfully!');
+                    } else {
+                        alert('Error deleting record: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting record. Please try again.');
+                });
+            }
+        }
+        
+        // Reset modal when it's hidden
+        document.addEventListener('DOMContentLoaded', function() {
+            const futureMaintenanceModal = document.getElementById('futureMaintenanceModal');
+            if (futureMaintenanceModal) {
+                futureMaintenanceModal.addEventListener('hidden.bs.modal', function() {
+                    // Reset the modal title
+                    const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+                    if (modalTitle) {
+                        modalTitle.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance';
+                    }
+                    
+                    // Reset the form
+                    const form = document.getElementById('futureMaintenanceForm');
+                    if (form) {
+                        form.reset();
+                    }
+                });
+            }
+            
+            // Add click handlers for tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabType = this.getAttribute('data-tab');
+                    switchTab(tabType);
+                });
+            });
+            
+            // Check URL parameters for auto-tab switching
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            const vehicleIdParam = urlParams.get('vehicle_id');
+            
+            if (tabParam === 'future-maintenance') {
+                // Auto-switch to future maintenance tab
+                setTimeout(() => {
+                    switchTab('future-maintenance');
+                    
+                    // If vehicle_id is provided, pre-populate the add form
+                    if (vehicleIdParam) {
+                        // Find the vehicle name
+                        fetch(`/api/vehicles/${vehicleIdParam}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.vehicle) {
+                                    openVehicleModal(vehicleIdParam, data.vehicle.name);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error fetching vehicle:', error);
+                            });
+                    }
+                }, 100); // Small delay to ensure DOM is ready
+            }
+        });
+        
+        function initializeSorting() {
+            // Add click handlers to sortable headers
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const sortColumn = this.getAttribute('data-sort');
+                    handleSort(sortColumn);
+                });
+            });
+        }
+        
+        function handleSort(column) {
+            const tbody = document.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Toggle direction if same column
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'desc'; // Default to desc for new columns
+            }
+            
+            // Sort the rows
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                if (column === 'vehicle') {
+                    aValue = a.querySelector('td:first-child')?.textContent?.trim() || '';
+                    bValue = b.querySelector('td:first-child')?.textContent?.trim() || '';
+                } else if (column === 'date') {
+                    aValue = new Date(a.querySelector('td:nth-child(2)')?.textContent?.trim() || '');
+                    bValue = new Date(b.querySelector('td:nth-child(2)')?.textContent?.trim() || '');
+                } else if (column === 'mileage') {
+                    aValue = parseInt(a.querySelector('td:nth-child(3)')?.textContent?.replace(/,/g, '') || '0');
+                    bValue = parseInt(b.querySelector('td:nth-child(3)')?.textContent?.replace(/,/g, '') || '0');
+                } else {
+                    return 0;
+                }
+                
+                if (currentSort.direction === 'asc') {
+                    return aValue > bValue ? 1 : -1;
+                } else {
+                    return aValue < bValue ? 1 : -1;
+                }
+            });
+            
+            // Reorder the DOM
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update sort indicators
+            updateSortIndicators(column, currentSort.direction);
+        }
+        
+        function updateSortIndicators(activeColumn, direction) {
+            // Reset all sort icons
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.className = 'fas fa-sort text-muted small sort-icon';
+            });
+            
+            // Update active column icon
+            const activeHeader = document.querySelector(`[data-sort="${activeColumn}"] .sort-icon`);
+            if (activeHeader) {
+                activeHeader.className = `fas fa-sort-${direction === 'asc' ? 'up' : 'down'} text-purple-600 small sort-icon active`;
+            }
+        }
+
+        // Format date for display in MM/DD/YYYY format
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return '';
+            
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return dateString; // Return original if invalid
+                
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${month}/${day}/${year}`;
+            } catch (error) {
+                return dateString; // Return original if parsing fails
+            }
+        }
 
     </script>
 

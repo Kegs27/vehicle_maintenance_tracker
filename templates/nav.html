@@ -1,0 +1,177 @@
+<!-- Reusable Navigation Component -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="fas fa-car me-2"></i>Vehicle Maintenance Tracker
+        </a>
+        <div class="navbar-nav ms-auto">
+            <!-- Notification Bell -->
+            <div class="notification-bell me-2 me-md-3" style="position: relative;">
+                <button class="btn btn-outline-warning position-relative btn-sm" type="button" onclick="showNotificationsModal()">
+                    <i class="fas fa-bell"></i>
+                    <span id="notificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
+                        0
+                    </span>
+                </button>
+            </div>
+            
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-bars me-2"></i>Menu
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mainNavDropdown">
+                    <li><a class="dropdown-item" href="/vehicles">
+                        <i class="fas fa-car me-2 text-purple-600"></i>Vehicles
+                    </a></li>
+                    <li><a class="dropdown-item" href="/maintenance">
+                        <i class="fas fa-tools me-2 text-purple-600"></i>Maintenance
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/oil-changes">
+                        <i class="fas fa-oil-can me-2 text-purple-600"></i>Oil Management
+                    </a></li>
+                    <li><a class="dropdown-item" href="/fuel-new">
+                        <i class="fas fa-gas-pump me-2 text-purple-600"></i>Fuel Tracking
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/import">
+                        <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
+                        <i class="fas fa-file-csv me-2 text-success"></i>Export All to CSV
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf me-2 text-danger"></i>Export All to PDF
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
+                        <i class="fas fa-car me-2 text-purple-600"></i>Export Single Vehicle
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Notifications Modal -->
+<div class="modal fade" id="notificationsModal" tabindex="-1" aria-labelledby="notificationsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notificationsModalLabel">
+                    <i class="fas fa-bell me-2"></i>Maintenance Alerts
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="notificationsList">
+                    <!-- Notifications will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export functionality script -->
+<script src="/static/export-data.js"></script>
+
+<!-- Notification System Styles -->
+<style>
+    /* Mobile optimization for notification bell */
+    @media (max-width: 768px) {
+        .notification-bell .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .notification-bell .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+    }
+</style>
+
+<!-- Notification System Script -->
+<script>
+    // Load notifications when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadNotifications();
+    });
+    
+    function loadNotifications() {
+        fetch('/api/notifications')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    updateNotificationCount(data.total_count, data.has_overdue);
+                    populateNotificationsList(data.notifications);
+                } else {
+                    console.error('API returned error:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                // Hide notification count on error
+                const badge = document.getElementById('notificationCount');
+                if (badge) badge.style.display = 'none';
+            });
+    }
+    
+    function updateNotificationCount(count, hasOverdue = false) {
+        const badge = document.getElementById('notificationCount');
+        if (count > 0) {
+            badge.style.display = 'block';
+            badge.textContent = count;
+            
+            // Update badge color based on urgency
+            if (hasOverdue) {
+                badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                badge.style.transform = '';
+            } else {
+                badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning';
+                badge.style.transform = '';
+            }
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
+    function populateNotificationsList(notifications) {
+        const list = document.getElementById('notificationsList');
+        if (notifications.length === 0) {
+            list.innerHTML = '<p class="text-muted text-center">No maintenance alerts at this time.</p>';
+            return;
+        }
+        
+        let html = '';
+        notifications.forEach(notification => {
+            const urgencyClass = notification.urgency === 'high' ? 'text-danger' : 'text-warning';
+            const urgencyText = notification.urgency === 'high' ? 'Overdue' : 'Due Soon';
+            
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
+                    <div>
+                        <a href="${notification.link}" class="text-decoration-none ${urgencyClass} fw-bold">
+                            ${notification.type} - ${notification.vehicle}
+                        </a>
+                        <div class="small text-muted">${urgencyText}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        list.innerHTML = html;
+    }
+    
+    function showNotificationsModal() {
+        const modal = new bootstrap.Modal(document.getElementById('notificationsModal'));
+        modal.show();
+    }
+</script>
