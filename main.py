@@ -1230,36 +1230,8 @@ async def fuel_tracking_new(request: Request):
 
 @app.get("/migrate-database")
 async def migrate_database():
-    """Migration endpoint to add time column to FuelEntry table"""
-    try:
-        from database import SessionLocal
-        from sqlalchemy import text
-        
-        session = SessionLocal()
-        try:
-            # Check if time column already exists
-            result = session.execute(text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'fuelentry' AND column_name = 'time'
-            """))
-            
-            if not result.fetchone():
-                # Add the time column
-                session.execute(text("ALTER TABLE fuelentry ADD COLUMN time VARCHAR(10)"))
-                session.commit()
-                return {"success": True, "message": "Successfully added 'time' column to FuelEntry table"}
-            else:
-                return {"success": True, "message": "'time' column already exists in FuelEntry table"}
-                
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-            
-    except Exception as e:
-        return {"success": False, "error": f"Migration failed: {str(e)}"}
+    """Redirect to comprehensive migration endpoint"""
+    return RedirectResponse(url="/migrate-database-full", status_code=302)
 
 # Debug endpoint removed for production
 
@@ -1768,7 +1740,7 @@ async def get_notifications_api():
             "has_overdue": False
         }
 
-@app.get("/migrate-database", response_class=HTMLResponse)
+@app.get("/migrate-database-full", response_class=HTMLResponse)
 async def migrate_database_endpoint():
     """Run database migration - adds missing columns for oil analysis features"""
     try:
