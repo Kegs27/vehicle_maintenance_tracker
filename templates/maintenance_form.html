@@ -374,38 +374,26 @@
             const oilChangeCheckbox = document.getElementById('is_oil_change');
             const oilChangeFields = document.getElementById('oilChangeFields');
             
-            console.log('toggleOilChangeFields called');
-            console.log('oilChangeCheckbox:', oilChangeCheckbox);
-            console.log('oilChangeFields:', oilChangeFields);
-            
             // Check if we're in oil analysis mode (coming from oil analysis page)
             const isOilAnalysisMode = window.location.href.includes('oil-analysis');
-            console.log('isOilAnalysisMode:', isOilAnalysisMode);
             
             if (oilChangeFields) {
                 if (oilChangeCheckbox) {
                     // Normal mode - checkbox exists, use its state
                     const isOilChange = oilChangeCheckbox.checked;
-                    console.log('isOilChange:', isOilChange);
                     
                     if (isOilChange) {
                         oilChangeFields.style.display = 'block';
-                        console.log('Showing oil change fields (checkbox checked)');
                     } else {
                         oilChangeFields.style.display = 'none';
-                        console.log('Hiding oil change fields (checkbox unchecked)');
                     }
                 } else if (isOilAnalysisMode) {
                     // Oil analysis mode - checkbox doesn't exist, show fields anyway
                     oilChangeFields.style.display = 'block';
-                    console.log('Showing oil change fields (oil analysis mode)');
                 } else {
                     // No checkbox and not oil analysis mode - hide fields
                     oilChangeFields.style.display = 'none';
-                    console.log('Hiding oil change fields (no checkbox, not oil analysis mode)');
                 }
-            } else {
-                console.log('Missing oilChangeFields element');
             }
         }
 
@@ -500,11 +488,11 @@
                 });
             }
 
-            // Add form validation
+            // Add form validation (only for regular maintenance)
             const form = document.querySelector('form');
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    // Preserve checkbox states before submission
+                    // Always preserve checkbox states
                     preserveCheckboxStates();
                     
                     // Check if we're in oil analysis mode - if so, skip all validation
@@ -512,12 +500,12 @@
                     const returnUrl = urlParams.get('return_url');
                     const isOilAnalysis = returnUrl && returnUrl.includes('oil-analysis');
                     
+                    // Skip validation for oil analysis mode
                     if (isOilAnalysis) {
-                        // Skip all validation for oil analysis - just let the form submit
-                        return true;
+                        return; // Let form submit naturally
                     }
                     
-                    // For regular maintenance, use existing validation
+                    // Only validate cost breakdown for regular maintenance
                     if (!validateCostBreakdown()) {
                         e.preventDefault();
                         return false;
@@ -548,8 +536,6 @@
 
         // Initialize form state based on existing data
         function initializeFormState() {
-            console.log('initializeFormState called');
-            
             // Check if this is an existing oil change record and toggle fields if needed
             toggleOilChangeFields();
             
@@ -558,10 +544,8 @@
             const linkOilAnalysisCheckbox = document.getElementById('link_oil_analysis');
             
             if (oilChangeCheckbox) {
-                console.log('Oil change checkbox found, checked:', oilChangeCheckbox.checked);
                 // Add event listener to maintain state
                 oilChangeCheckbox.addEventListener('change', function() {
-                    console.log('Oil change checkbox changed to:', this.checked);
                     toggleOilChangeFields();
                 });
                 
@@ -573,7 +557,6 @@
             }
             
             if (linkOilAnalysisCheckbox) {
-                console.log('Link oil analysis checkbox found, checked:', linkOilAnalysisCheckbox.checked);
                 // Ensure the checkbox value is properly set
                 if (linkOilAnalysisCheckbox.hasAttribute('checked') || linkOilAnalysisCheckbox.checked) {
                     linkOilAnalysisCheckbox.checked = true;

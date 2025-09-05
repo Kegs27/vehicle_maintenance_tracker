@@ -283,34 +283,7 @@
     
     <script>
         // Simple test - just log when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded - clean slate, no conflicting event listeners');
-            
-            // Add debugging to the form and button
-            const form = document.querySelector('form');
-            const button = document.getElementById('submitBtn');
-            
-            if (form) {
-                console.log('Form found:', form);
-                form.addEventListener('submit', function(e) {
-                    console.log('Form submit event fired!');
-                    console.log('Form action:', form.action);
-                    console.log('Form method:', form.method);
-                });
-            } else {
-                console.log('Form NOT found');
-            }
-            
-            if (button) {
-                console.log('Button found:', button);
-                button.addEventListener('click', function(e) {
-                    console.log('Button click event fired!');
-                    console.log('Button type:', button.type);
-                });
-            } else {
-                console.log('Button NOT found');
-            }
-        });
+        // Clean form - no debugging code needed
     </script>
 </body>
 </html>
