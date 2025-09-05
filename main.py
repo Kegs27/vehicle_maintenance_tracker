@@ -895,7 +895,7 @@ async def update_maintenance_route(
                     from data_operations import create_maintenance_record
                     oil_analysis_result = create_maintenance_record(
                         vehicle_id=vehicle_id,
-                        date_str=date_str,  # Same date as oil change
+                        date=date_str,  # Same date as oil change
                         description=f"Oil Analysis for Oil Change #{record_id}",
                         cost=0.0,
                         mileage=mileage,
