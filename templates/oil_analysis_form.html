@@ -268,7 +268,7 @@
                                     <i class="fas fa-save me-2"></i>
                                     {% if record %}Update Analysis{% else %}Add Analysis{% endif %}
                                 </button>
-                                <a href="/oil-analysis/{{ selected_vehicle_id or record.vehicle_id if record else '1' }}" class="btn btn-outline-secondary">
+                                <a href="{% if selected_vehicle_id or (record and record.vehicle_id) %}/oil-analysis/{{ selected_vehicle_id or record.vehicle_id }}{% else %}/maintenance{% endif %}" class="btn btn-outline-secondary">
                                     <i class="fas fa-times me-2"></i>Cancel
                                 </a>
                             </div>

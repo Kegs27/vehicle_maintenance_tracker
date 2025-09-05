@@ -848,6 +848,7 @@ async def update_maintenance_route(
     description: str = Form(...),
     cost: Optional[float] = Form(None),
     oil_change_interval: Optional[int] = Form(None),
+    link_oil_analysis: bool = Form(False),
     # Oil change fields
     is_oil_change: Optional[bool] = Form(None),
     oil_type: Optional[str] = Form(None),
@@ -885,6 +886,27 @@ async def update_maintenance_route(
         )
         
         if result["success"]:
+            # If oil analysis linking was requested, create or link oil analysis record
+            if link_oil_analysis and is_oil_change:
+                try:
+                    # Create a placeholder oil analysis record linked to this oil change
+                    from data_operations import create_maintenance_record
+                    oil_analysis_result = create_maintenance_record(
+                        vehicle_id=vehicle_id,
+                        date_str=date_str,  # Same date as oil change
+                        description=f"Oil Analysis for Oil Change #{record_id}",
+                        cost=0.0,
+                        mileage=mileage,
+                        linked_oil_change_id=record_id
+                    )
+                    
+                    if oil_analysis_result["success"]:
+                        print(f"Created linked oil analysis record {oil_analysis_result['record_id']} for oil change {record_id}")
+                    else:
+                        print(f"Failed to create linked oil analysis: {oil_analysis_result['error']}")
+                except Exception as e:
+                    print(f"Error creating linked oil analysis: {e}")
+            
             # Use return_url if provided, otherwise use smart redirect logic
             if return_url:
                 return RedirectResponse(url=return_url, status_code=303)
