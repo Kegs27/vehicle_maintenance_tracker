@@ -287,14 +287,14 @@
                             </div>
                             
                             <div class="mb-3">
-                                <label for="date" class="form-label fw-bold">Analysis Date *</label>
+                                <label for="date" class="form-label fw-bold">Analysis Sample Taken *</label>
                                 <input type="text" class="form-control" id="date" name="date_str" 
                                        value="{{ record.date.strftime('%m/%d/%Y') if record and record.date and record.date.year > 1900 else '' }}"
                                        placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
                             </div>
                             
                             <div class="mb-3">
-                                <label for="mileage" class="form-label fw-bold">Vehicle Mileage at Analysis *</label>
+                                <label for="mileage" class="form-label fw-bold">Mileage at Analysis Sample *</label>
                                 <input type="number" class="form-control" id="mileage" name="mileage" 
                                        value="{{ record.mileage if record else '' }}" 
                                        min="0" step="1" placeholder="e.g., 50000">
@@ -315,7 +315,7 @@
                             <!-- Oil Analysis Dates Row -->
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="oil_analysis_date" class="form-label">Analysis Date</label>
+                                    <label for="oil_analysis_date" class="form-label">Analysis Results Date</label>
                                     <input type="text" class="form-control" id="oil_analysis_date" name="oil_analysis_date" 
                                        value="{{ record.oil_analysis_date.strftime('%m/%d/%Y') if record and record.oil_analysis_date else '' }}"
                                        placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">

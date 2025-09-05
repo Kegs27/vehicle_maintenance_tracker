@@ -44,11 +44,11 @@ DATABASE_URL = get_database_url()
 
 # Create engine with appropriate configuration
 if DATABASE_URL.startswith("postgresql"):
-    # PostgreSQL (cloud) configuration - use psycopg (version 3) format
-    # Replace postgresql:// with postgresql+psycopg:// for psycopg v3 compatibility
-    psycopg_url = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+    # PostgreSQL (cloud) configuration - convert to asyncpg format
+    # Replace postgresql:// with postgresql+asyncpg:// for asyncpg compatibility
+    asyncpg_url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
     engine = create_engine(
-        psycopg_url,
+        asyncpg_url,
         echo=False,
         pool_pre_ping=True,  # Better connection handling
         pool_recycle=300      # Recycle connections every 5 minutes

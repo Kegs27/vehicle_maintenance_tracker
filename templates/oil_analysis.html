@@ -12,6 +12,24 @@
     <!-- Custom CSS -->
     <link href="/static/app-styles.css" rel="stylesheet">
     <link href="/static/icon-styles.css" rel="stylesheet">
+    
+    <style>
+        .oil-change-link {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .oil-change-link:hover {
+            background-color: #157347 !important;
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .text-muted:hover {
+            color: #6c757d !important;
+            text-decoration: underline !important;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -91,7 +109,7 @@
                                     <table class="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Analysis Date</th>
+                                                <th>Sample Taken</th>
                                                 <th>Linked Oil Change</th>
                                                 <th>Cost</th>
                                                 <th>Key Metrics</th>
@@ -110,9 +128,29 @@
                                                     {% endif %}
                                                 </td>
                                                 <td>
-                                                    {% if record.linked_oil_change_id %}
-                                                        <span class="badge bg-success">Linked</span>
-                                                        <br><small class="text-muted">Oil Change #{{ record.linked_oil_change_id }}</small>
+                                                    {% set matching_oil_change = None %}
+                                                    {% for oil_change in oil_change_records %}
+                                                        {% if oil_change.mileage == record.mileage %}
+                                                            {% set matching_oil_change = oil_change %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    
+                                                    {% if matching_oil_change %}
+                                                        <a href="/maintenance/{{ matching_oil_change.id }}/edit?return_url=/oil-analysis/{{ vehicle.id }}" 
+                                                           class="text-decoration-none" title="Click to view/edit the linked oil change record">
+                                                            <span class="badge bg-success oil-change-link">
+                                                                <i class="fas fa-link me-1"></i>Linked
+                                                            </span>
+                                                        </a>
+                                                        <br><small class="text-muted">
+                                                            <a href="/maintenance/{{ matching_oil_change.id }}/edit?return_url=/oil-analysis/{{ vehicle.id }}" 
+                                                               class="text-muted text-decoration-none" title="View Oil Change at {{ '{:,}'.format(matching_oil_change.mileage) }} miles">
+                                                                <i class="fas fa-tachometer-alt me-1"></i>{{ '{:,}'.format(matching_oil_change.mileage) }} miles
+                                                            </a>
+                                                        </small>
+                                                        <br><small class="text-muted">
+                                                            <i class="fas fa-calendar-alt me-1"></i>{{ matching_oil_change.date.strftime('%m/%d/%Y') }}
+                                                        </small>
                                                     {% else %}
                                                         <span class="text-muted">Standalone</span>
                                                     {% endif %}

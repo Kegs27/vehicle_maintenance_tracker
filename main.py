@@ -899,63 +899,47 @@ async def update_maintenance_route(
                 from data_operations import get_maintenance_records_by_vehicle
                 vehicle_records = get_maintenance_records_by_vehicle(vehicle_id)
                 
-                # Find existing linked oil analysis records
-                existing_linked = [
-                    r for r in vehicle_records 
-                    if r.linked_oil_change_id == record_id
-                ]
-                
+                # Simple mileage-based oil analysis creation
                 if link_oil_analysis:
-                    # User wants to link - create new record if none exists
-                    if not existing_linked:
+                    # Check if oil analysis already exists at this mileage
+                    existing_analysis = [
+                        r for r in vehicle_records 
+                        if r.mileage == mileage and (
+                            r.oil_analysis_date or r.oil_analysis_cost or 
+                            r.iron_level or r.aluminum_level or r.copper_level or
+                            "analysis" in r.description.lower()
+                        )
+                    ]
+                    
+                    if not existing_analysis:
+                        # Create new oil analysis placeholder at same mileage
                         try:
                             from data_operations import create_maintenance_record
                             oil_analysis_result = create_maintenance_record(
                                 vehicle_id=vehicle_id,
                                 date=date_str,  # Same date as oil change
-                                description=f"Oil Analysis for Oil Change #{record_id}",
-                                cost=0.0,
-                                mileage=mileage,
-                                linked_oil_change_id=record_id
+                                description=f"Oil Analysis - {mileage:,} miles",
+                                cost=0.0,  # Analysis cost separate from oil change cost
+                                mileage=mileage,  # Same mileage as oil change - this creates the link!
+                                # Set as analysis record with oil change data for reference
+                                oil_analysis_date=date_str,  # Mark as analysis record
+                                oil_type=oil_type,  # Copy oil change data
+                                oil_brand=oil_brand,
+                                oil_filter_brand=oil_filter_brand,
+                                oil_filter_part_number=oil_filter_part_number,
+                                oil_cost=oil_cost,
+                                filter_cost=filter_cost,
+                                labor_cost=labor_cost
                             )
                             
                             if oil_analysis_result["success"]:
-                                print(f"Created linked oil analysis record {oil_analysis_result['record_id']} for oil change {record_id}")
+                                print(f"Created oil analysis placeholder at {mileage:,} miles")
                             else:
-                                print(f"Failed to create linked oil analysis: {oil_analysis_result['error']}")
+                                print(f"Failed to create oil analysis: {oil_analysis_result['error']}")
                         except Exception as e:
-                            print(f"Error creating linked oil analysis: {e}")
-                else:
-                    # User unchecked - remove links from existing records
-                    if existing_linked:
-                        try:
-                            from data_operations import update_maintenance_record
-                            for linked_record in existing_linked:
-                                # Remove the link by setting linked_oil_change_id to None
-                                update_result = update_maintenance_record(
-                                    linked_record.id, linked_record.vehicle_id, 
-                                    linked_record.date.strftime('%Y-%m-%d'), 
-                                    linked_record.description, linked_record.cost or 0.0, 
-                                    linked_record.mileage, linked_record.oil_change_interval,
-                                    linked_record.is_oil_change, linked_record.oil_type, 
-                                    linked_record.oil_brand, linked_record.oil_filter_brand, 
-                                    linked_record.oil_filter_part_number, linked_record.oil_cost, 
-                                    linked_record.filter_cost, linked_record.labor_cost,
-                                    linked_record.oil_analysis_date.strftime('%Y-%m-%d') if linked_record.oil_analysis_date else None,
-                                    linked_record.next_oil_analysis_date.strftime('%Y-%m-%d') if linked_record.next_oil_analysis_date else None,
-                                    linked_record.oil_analysis_cost, linked_record.iron_level,
-                                    linked_record.aluminum_level, linked_record.copper_level,
-                                    linked_record.viscosity, linked_record.tbn, linked_record.fuel_dilution,
-                                    linked_record.coolant_contamination, linked_record.driving_conditions,
-                                    linked_record.oil_consumption_notes, None  # Set linked_oil_change_id to None
-                                )
-                                
-                                if update_result["success"]:
-                                    print(f"Unlinked oil analysis record {linked_record.id} from oil change {record_id}")
-                                else:
-                                    print(f"Failed to unlink oil analysis record {linked_record.id}: {update_result['error']}")
-                        except Exception as e:
-                            print(f"Error unlinking oil analysis: {e}")
+                            print(f"Error creating oil analysis: {e}")
+                    else:
+                        print(f"Oil analysis already exists at {mileage:,} miles")
             
             # Use return_url if provided, otherwise use smart redirect logic
             if return_url:

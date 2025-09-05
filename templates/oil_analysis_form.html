@@ -85,17 +85,25 @@
                             </div>
                             
                             <div class="mb-3">
-                                <label for="date" class="form-label fw-bold">Analysis Date *</label>
+                                <label for="date" class="form-label fw-bold">Analysis Sample Taken *</label>
                                 <input type="text" class="form-control" id="date" name="date_str" 
                                        value="{{ record.date.strftime('%m/%d/%Y') if record and record.date and record.date.year > 1900 else '' }}"
                                        placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Date when the oil sample was taken (typically during oil change)
+                                </div>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="mileage" class="form-label fw-bold">Vehicle Mileage at Analysis *</label>
+                                <label for="mileage" class="form-label fw-bold">Mileage at Analysis Sample *</label>
                                 <input type="number" class="form-control" id="mileage" name="mileage" 
                                        value="{{ record.mileage if record else '' }}" 
                                        min="0" step="1" placeholder="e.g., 50000" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Vehicle mileage when the oil sample was taken
+                                </div>
                             </div>
                             
                             <!-- Oil Change Linking Section -->
