@@ -168,9 +168,6 @@ async def startup_event():
 async def home(request: Request):
     """Home page with navigation and summary using centralized data operations"""
     try:
-        # Import function locally to ensure it's available
-        from data_operations import get_home_dashboard_summary
-        
         # Get enhanced dashboard data using centralized function
         dashboard_data = get_home_dashboard_summary()
         
@@ -244,7 +241,6 @@ async def test_endpoint():
 async def test_dashboard():
     """Test endpoint to verify dashboard data is working"""
     try:
-        from data_operations import get_home_dashboard_summary
         dashboard_data = get_home_dashboard_summary()
         return {"success": True, "dashboard": dashboard_data}
     except Exception as e:
@@ -1771,6 +1767,147 @@ async def get_notifications_api():
             "total_count": 0,
             "has_overdue": False
         }
+
+@app.get("/migrate-database", response_class=HTMLResponse)
+async def migrate_database_endpoint():
+    """Run database migration - adds missing columns for oil analysis features"""
+    try:
+        from sqlalchemy import create_engine, text
+        from sqlalchemy.exc import OperationalError, ProgrammingError
+        
+        # Get database URL from environment
+        database_url = os.getenv('DATABASE_URL')
+        
+        if not database_url:
+            return HTMLResponse("""
+                <html><body style="font-family: Arial; padding: 20px;">
+                <h2>❌ Migration Failed</h2>
+                <p>DATABASE_URL not found. This endpoint only works on live server.</p>
+                </body></html>
+            """)
+        
+        # Handle different database URL formats
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql+psycopg://', 1)
+        elif database_url.startswith('postgresql://'):
+            database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+        
+        engine = create_engine(database_url)
+        results = []
+        
+        with engine.connect() as conn:
+            # Check existing columns
+            result = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'maintenancerecord'
+                ORDER BY ordinal_position
+            """))
+            
+            existing_columns = [row[0] for row in result]
+            results.append(f"📋 Found {len(existing_columns)} existing columns")
+            
+            # Define all new columns needed
+            new_columns = [
+                ('oil_change_interval', 'INTEGER'),
+                ('is_oil_change', 'BOOLEAN DEFAULT FALSE'),
+                ('oil_type', 'VARCHAR(20)'),
+                ('oil_brand', 'VARCHAR(50)'),
+                ('oil_filter_brand', 'VARCHAR(50)'),
+                ('oil_filter_part_number', 'VARCHAR(50)'),
+                ('oil_cost', 'FLOAT'),
+                ('filter_cost', 'FLOAT'),
+                ('labor_cost', 'FLOAT'),
+                ('oil_analysis_report', 'TEXT'),
+                ('oil_analysis_date', 'DATE'),
+                ('next_oil_analysis_date', 'DATE'),
+                ('oil_analysis_cost', 'FLOAT'),
+                ('iron_level', 'FLOAT'),
+                ('aluminum_level', 'FLOAT'),
+                ('copper_level', 'FLOAT'),
+                ('viscosity', 'FLOAT'),
+                ('tbn', 'FLOAT'),
+                ('fuel_dilution', 'FLOAT'),
+                ('coolant_contamination', 'BOOLEAN'),
+                ('driving_conditions', 'VARCHAR(50)'),
+                ('oil_consumption_notes', 'TEXT'),
+                ('linked_oil_change_id', 'INTEGER')
+            ]
+            
+            # Add missing columns
+            added_count = 0
+            for col_name, col_type in new_columns:
+                if col_name not in existing_columns:
+                    try:
+                        conn.execute(text(f'ALTER TABLE maintenancerecord ADD COLUMN {col_name} {col_type}'))
+                        results.append(f'✅ Added: {col_name}')
+                        added_count += 1
+                    except (OperationalError, ProgrammingError) as e:
+                        results.append(f'⚠️ Error adding {col_name}: {str(e)}')
+                else:
+                    results.append(f'⏭️ Already exists: {col_name}')
+            
+            # Commit changes
+            conn.commit()
+            
+            results.append(f"")
+            results.append(f"🎉 Migration completed!")
+            results.append(f"📊 Added {added_count} new columns")
+            results.append(f"✅ Database is now ready for all features!")
+            
+        # Create HTML response
+        html_content = f"""
+        <html>
+        <head>
+            <title>Database Migration Results</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }}
+                .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                h2 {{ color: #28a745; margin-bottom: 20px; }}
+                .result {{ margin: 5px 0; padding: 8px; border-radius: 4px; }}
+                .success {{ background: #d4edda; color: #155724; }}
+                .warning {{ background: #fff3cd; color: #856404; }}
+                .info {{ background: #d1ecf1; color: #0c5460; }}
+                .final {{ background: #d4edda; color: #155724; font-weight: bold; font-size: 16px; }}
+                .button {{ display: inline-block; margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>🚀 Database Migration Results</h2>
+        """
+        
+        for result in results:
+            if result.startswith('✅'):
+                html_content += f'<div class="result success">{result}</div>'
+            elif result.startswith('⚠️'):
+                html_content += f'<div class="result warning">{result}</div>'
+            elif result.startswith('🎉') or result.startswith('📊') or result.startswith('✅ Database'):
+                html_content += f'<div class="result final">{result}</div>'
+            elif result.strip():
+                html_content += f'<div class="result info">{result}</div>'
+            else:
+                html_content += '<br>'
+        
+        html_content += f"""
+                <a href="/" class="button">🏠 Go to Home Page</a>
+                <a href="/vehicles" class="button">🚗 View Vehicles</a>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return HTMLResponse(html_content)
+        
+    except Exception as e:
+        error_html = f"""
+        <html><body style="font-family: Arial; padding: 20px;">
+        <h2>❌ Migration Failed</h2>
+        <p><strong>Error:</strong> {str(e)}</p>
+        <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">🏠 Go to Home Page</a>
+        </body></html>
+        """
+        return HTMLResponse(error_html)
 
 if __name__ == "__main__":
     import uvicorn
