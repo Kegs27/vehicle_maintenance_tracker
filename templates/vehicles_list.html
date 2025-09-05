@@ -160,6 +160,27 @@
             display: block;
         }
         
+        /* Clickable mileage styling */
+        .mileage-clickable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            padding: 2px 4px;
+            display: inline-block;
+        }
+
+        .mileage-clickable:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+            color: #0d6efd !important;
+            text-decoration: underline;
+        }
+
+        .mileage-clickable:hover::after {
+            content: " ✏️";
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+        
         /* Column width optimization */
         .col-vehicle { width: 25%; }
         .col-year { width: 8%; }
@@ -311,7 +332,13 @@
                                         {% if health_data %}
                                         <div class="text-muted small">
                                             <i class="fas fa-tachometer-alt text-primary me-1"></i>
-                                            {{ "{:,}".format(health_data.current_mileage) }} mi
+                                            <span class="mileage-clickable" 
+                                                  onclick="openMileageModal({{ vehicle.id }}, '{{ vehicle.name }}', {{ health_data.current_mileage }}, '{{ health_data.source_description or 'Unknown source' }}')"
+                                                  title="Click to update mileage"
+                                                  data-vehicle-id="{{ vehicle.id }}"
+                                                  data-current-mileage="{{ health_data.current_mileage }}">
+                                                {{ "{:,}".format(health_data.current_mileage) }} mi
+                                            </span>
                                         </div>
                                         {% endif %}
                                         <div class="text-muted small">
@@ -442,6 +469,59 @@
         </div>
     </div>
 
+    <!-- Mileage Update Modal -->
+    <div class="modal fade" id="mileageUpdateModal" tabindex="-1" aria-labelledby="mileageUpdateModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mileageUpdateModalLabel">
+                        <i class="fas fa-tachometer-alt me-2"></i>Update Mileage
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="mileageUpdateForm">
+                    <div class="modal-body">
+                        <div class="vehicle-info mb-3 p-3 bg-light rounded">
+                            <h6 class="mb-1" id="modalVehicleName"></h6>
+                            <div class="text-muted small">
+                                <span id="modalCurrentMileage"></span>
+                                <span class="ms-2" id="modalMileageSource"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="newMileage" class="form-label">New Mileage <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="newMileage" name="new_mileage" required min="0" step="1">
+                                <span class="input-group-text">miles</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="mileageDate" class="form-label">Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="mileageDate" name="date_str" required>
+                        </div>
+                        
+                        <div id="mileageWarning" class="alert alert-warning d-none">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <span id="warningText"></span>
+                        </div>
+                        
+                        <input type="hidden" id="modalVehicleId" name="vehicle_id">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Update Mileage
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Handle delete vehicle buttons
@@ -536,6 +616,110 @@
         function hideVinHoverModal() {
             const modal = document.getElementById('vinHoverModal');
             modal.classList.remove('show');
+        }
+
+        // Mileage Update Modal Functions
+        function openMileageModal(vehicleId, vehicleName, currentMileage, sourceDescription) {
+            // Set vehicle info
+            document.getElementById('modalVehicleId').value = vehicleId;
+            document.getElementById('modalVehicleName').textContent = vehicleName;
+            document.getElementById('modalCurrentMileage').textContent = `Current: ${currentMileage.toLocaleString()} miles`;
+            document.getElementById('modalMileageSource').textContent = `(from ${sourceDescription})`;
+            
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('mileageDate').value = today;
+            
+            // Clear previous values and warnings
+            document.getElementById('newMileage').value = '';
+            document.getElementById('mileageWarning').classList.add('d-none');
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('mileageUpdateModal'));
+            modal.show();
+        }
+
+        // Handle mileage validation
+        document.getElementById('newMileage').addEventListener('input', function() {
+            const newMileage = parseInt(this.value);
+            const currentMileage = parseInt(document.querySelector('[data-vehicle-id="' + document.getElementById('modalVehicleId').value + '"]').dataset.currentMileage);
+            const warningDiv = document.getElementById('mileageWarning');
+            const warningText = document.getElementById('warningText');
+            
+            if (newMileage && newMileage < currentMileage) {
+                warningText.textContent = `New mileage (${newMileage.toLocaleString()}) is lower than current (${currentMileage.toLocaleString()}). This might indicate an error in the previous entry.`;
+                warningDiv.classList.remove('d-none');
+            } else {
+                warningDiv.classList.add('d-none');
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('mileageUpdateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const vehicleId = formData.get('vehicle_id');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+            submitBtn.disabled = true;
+            
+            fetch(`/vehicles/${vehicleId}/update-mileage`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('mileageUpdateModal')).hide();
+                    
+                    // Show success message
+                    showSuccessMessage(`Mileage updated successfully! New mileage: ${data.new_mileage.toLocaleString()} miles`);
+                    
+                    // Reload page to show updated mileage
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showErrorMessage(data.detail || 'Failed to update mileage');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showErrorMessage('Failed to update mileage. Please try again.');
+            })
+            .finally(() => {
+                // Restore button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+
+        // Helper functions for messages
+        function showSuccessMessage(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        function showErrorMessage(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 5000);
         }
     </script>
 

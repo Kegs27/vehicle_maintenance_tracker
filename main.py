@@ -941,6 +941,46 @@ async def delete_maintenance(record_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete maintenance record: {str(e)}")
 
+@app.post("/vehicles/{vehicle_id}/update-mileage")
+async def update_vehicle_mileage(
+    vehicle_id: int,
+    new_mileage: int = Form(...),
+    date_str: str = Form(...)
+):
+    """Update vehicle mileage by creating a mileage update record"""
+    try:
+        # Get current mileage for validation
+        from data_operations import get_vehicle_current_mileage, create_maintenance_record
+        
+        current_mileage_info = get_vehicle_current_mileage(vehicle_id)
+        current_mileage = current_mileage_info.get("current_mileage", 0)
+        
+        # Create the mileage update record
+        result = create_maintenance_record(
+            vehicle_id=vehicle_id,
+            date=date_str,
+            description="Mileage Update",
+            cost=0.0,
+            mileage=new_mileage
+        )
+        
+        if result["success"]:
+            return {
+                "success": True,
+                "message": "Mileage updated successfully",
+                "new_mileage": new_mileage,
+                "previous_mileage": current_mileage,
+                "is_lower": new_mileage < current_mileage,
+                "record_id": result.get("record_id")
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result["error"])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update mileage: {str(e)}")
+
 @app.delete("/api/fuel/{entry_id}")
 async def delete_fuel_entry(entry_id: int):
     """Delete a fuel entry from the database"""
