@@ -164,6 +164,7 @@ async def home(request: Request):
     """Home page with navigation and summary using centralized data operations"""
     try:
         # Get enhanced dashboard data using centralized function
+        from data_operations import get_home_dashboard_summary
         dashboard_data = get_home_dashboard_summary()
         
         return templates.TemplateResponse("index.html", {"request": request, "dashboard": dashboard_data})
@@ -236,6 +237,7 @@ async def test_endpoint():
 async def test_dashboard():
     """Test endpoint to verify dashboard data is working"""
     try:
+        from data_operations import get_home_dashboard_summary
         dashboard_data = get_home_dashboard_summary()
         return {"success": True, "dashboard": dashboard_data}
     except Exception as e:
