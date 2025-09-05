@@ -19,8 +19,8 @@ python-dotenv==1.0.0
 # Date handling
 python-dateutil==2.8.2
 
-# PostgreSQL adapter
-psycopg2-binary==2.9.9
+# PostgreSQL adapter - using psycopg (modern version)
+psycopg[binary]==3.1.19
 
 # PDF generation
 reportlab==4.0.4
