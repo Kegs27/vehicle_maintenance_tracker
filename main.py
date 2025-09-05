@@ -882,7 +882,14 @@ async def update_maintenance_route(
         
         if result["success"]:
             # If oil analysis linking was requested, create or link oil analysis record
-            if link_oil_analysis and is_oil_change:
+            # Check if this is an oil change (either from form or existing record)
+            from data_operations import get_maintenance_by_id
+            updated_record = get_maintenance_by_id(record_id)
+            is_oil_change_record = is_oil_change or (updated_record and updated_record.is_oil_change)
+            
+            print(f"DEBUG: link_oil_analysis={link_oil_analysis}, is_oil_change={is_oil_change}, is_oil_change_record={is_oil_change_record}")
+            
+            if link_oil_analysis and is_oil_change_record:
                 try:
                     # Create a placeholder oil analysis record linked to this oil change
                     from data_operations import create_maintenance_record
