@@ -84,6 +84,9 @@
                                     {% endfor %}
                                 </select>
                             </div>
+                            {% else %}
+                            <!-- Hidden vehicle_id for existing records -->
+                            <input type="hidden" name="vehicle_id" value="{{ record.vehicle_id }}">
                             {% endif %}
 
                             <!-- FORM TYPE 1: GENERAL MAINTENANCE -->
