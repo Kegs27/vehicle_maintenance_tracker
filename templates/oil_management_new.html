@@ -795,6 +795,14 @@
             const form = event.target;
             const formData = new FormData(form);
             
+            // Ensure vehicle_id is set
+            const vehicleId = document.getElementById('oilChangeVehicleId').value;
+            if (!vehicleId) {
+                alert('Vehicle ID is missing. Please close the modal and try again.');
+                return;
+            }
+            formData.set('vehicle_id', vehicleId);
+            
             // Add required fields
             formData.append('is_oil_change', 'true');
             formData.append('form_type', 'oil_change');
@@ -827,6 +835,14 @@
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
+            
+            // Ensure vehicle_id is set
+            const vehicleId = document.getElementById('analysisVehicleId').value;
+            if (!vehicleId) {
+                alert('Vehicle ID is missing. Please close the modal and try again.');
+                return;
+            }
+            formData.set('vehicle_id', vehicleId);
             
             // Set description if empty
             if (!formData.get('description')) {
