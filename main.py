@@ -1838,6 +1838,94 @@ async def get_notifications_api():
             "has_overdue": False
         }
 
+@app.get("/cleanup-oil-analysis", response_class=HTMLResponse)
+async def cleanup_oil_analysis():
+    """Clean up oil analysis records for testing"""
+    try:
+        from data_operations import get_all_maintenance_records, delete_maintenance_record
+        
+        # Get all maintenance records
+        all_records = get_all_maintenance_records()
+        
+        # Find oil analysis records (records with oil analysis data)
+        oil_analysis_records = [
+            record for record in all_records 
+            if (record.oil_analysis_date or record.oil_analysis_cost or 
+                record.iron_level or record.aluminum_level or record.copper_level or
+                "analysis" in record.description.lower())
+        ]
+        
+        deleted_count = 0
+        errors = []
+        
+        # Delete each oil analysis record
+        for record in oil_analysis_records:
+            try:
+                result = delete_maintenance_record(record.id)
+                if result.get("success", False):
+                    deleted_count += 1
+                else:
+                    errors.append(f"Failed to delete record {record.id}: {result.get('error', 'Unknown error')}")
+            except Exception as e:
+                errors.append(f"Error deleting record {record.id}: {str(e)}")
+        
+        # Generate HTML response
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Oil Analysis Cleanup</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }}
+                .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                .success {{ color: #27ae60; background: #d5f4e6; padding: 15px; border-radius: 5px; margin: 10px 0; }}
+                .error {{ color: #e74c3c; background: #fadbd8; padding: 15px; border-radius: 5px; margin: 10px 0; }}
+                .info {{ color: #3498db; background: #ebf3fd; padding: 15px; border-radius: 5px; margin: 10px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Oil Analysis Cleanup Results</h1>
+                
+                <div class="info">
+                    <h3>Found {len(oil_analysis_records)} oil analysis records</h3>
+                </div>
+                
+                <div class="success">
+                    <h3>✅ Successfully deleted: {deleted_count} records</h3>
+                </div>
+                
+                {f'<div class="error"><h3>❌ Errors: {len(errors)}</h3><ul>{"".join(f"<li>{error}</li>" for error in errors)}</ul></div>' if errors else ''}
+                
+                <div class="info">
+                    <h3>Deleted Records:</h3>
+                    <ul>
+                        {"".join(f"<li>ID {record.id}: {record.description} (Mileage: {record.mileage:,})</li>" for record in oil_analysis_records)}
+                    </ul>
+                </div>
+                
+                <p><a href="/oil-analysis/1">← Back to Oil Analysis</a></p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return HTMLResponse(content=html_content)
+        
+    except Exception as e:
+        error_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><title>Cleanup Error</title></head>
+        <body style="font-family: Arial; margin: 40px;">
+            <h1>Error during cleanup</h1>
+            <p style="color: red;">Error: {str(e)}</p>
+            <p><a href="/">← Back to Home</a></p>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=error_html)
+
 @app.get("/migrate-database-full", response_class=HTMLResponse)
 async def migrate_database_endpoint():
     """Run database migration - adds missing columns for oil analysis features"""
