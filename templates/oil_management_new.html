@@ -797,11 +797,18 @@
             
             // Ensure vehicle_id is set
             const vehicleId = document.getElementById('oilChangeVehicleId').value;
+            console.log('Oil Change Vehicle ID:', vehicleId);
             if (!vehicleId) {
                 alert('Vehicle ID is missing. Please close the modal and try again.');
                 return;
             }
             formData.set('vehicle_id', vehicleId);
+            
+            // Debug: log all form data
+            console.log('Form data being sent:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, ':', value);
+            }
             
             // Add required fields
             formData.append('is_oil_change', 'true');
@@ -838,11 +845,18 @@
             
             // Ensure vehicle_id is set
             const vehicleId = document.getElementById('analysisVehicleId').value;
+            console.log('Analysis Vehicle ID:', vehicleId);
             if (!vehicleId) {
                 alert('Vehicle ID is missing. Please close the modal and try again.');
                 return;
             }
             formData.set('vehicle_id', vehicleId);
+            
+            // Debug: log all form data
+            console.log('Form data being sent:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, ':', value);
+            }
             
             // Set description if empty
             if (!formData.get('description')) {
