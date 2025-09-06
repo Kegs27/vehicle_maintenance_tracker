@@ -436,7 +436,6 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
                             driving_conditions: Optional[str] = None,
                             oil_consumption_notes: Optional[str] = None,
                             linked_oil_change_id: Optional[int] = None,
-                            oil_analysis_report: Optional[str] = None,
                             oil_analysis_report: Optional[str] = None) -> Dict[str, Any]:
     """Create a new maintenance record"""
     session = SessionLocal()
