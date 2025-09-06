@@ -518,7 +518,7 @@ async def create_maintenance_route(
                                                  iron_level, aluminum_level, copper_level, viscosity, tbn,
                                                  fuel_dilution, coolant_contamination, driving_conditions, oil_consumption_notes]):
                 # This was an oil analysis record, redirect to oil analysis page
-                return RedirectResponse(url=f"/oil-analysis/{vehicle_id}", status_code=303)
+                return RedirectResponse(url="/oil-management", status_code=303)
             else:
                 return RedirectResponse(url="/maintenance", status_code=303)
         else:
@@ -609,6 +609,12 @@ async def oil_changes_page_redirect(request: Request):
     """Redirect old oil-changes page to new oil management system"""
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/oil-management", status_code=301)
+
+@app.get("/oil-analysis/{record_id}")
+async def oil_analysis_redirect(record_id: int):
+    """Redirect old oil-analysis routes to new maintenance edit system"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"/maintenance/{record_id}/edit?return_url=/oil-management", status_code=301)
 
 # ============================================================================
 # OLD OIL ANALYSIS ROUTES REMOVED - Now using modal-based system in Oil Management
@@ -729,7 +735,7 @@ async def update_maintenance_route(
                                                  iron_level, aluminum_level, copper_level, viscosity, tbn,
                                                  fuel_dilution, coolant_contamination, driving_conditions, oil_consumption_notes]):
                 # This was an oil analysis record, redirect to oil analysis page
-                return RedirectResponse(url=f"/oil-analysis/{vehicle_id}", status_code=303)
+                return RedirectResponse(url="/oil-management", status_code=303)
             else:
                 return RedirectResponse(url="/maintenance", status_code=303)
         else:
