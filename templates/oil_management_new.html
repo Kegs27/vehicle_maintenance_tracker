@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oil Management - Vehicle Maintenance Tracker</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/app-styles.css" rel="stylesheet">
+    <link href="/static/icon-styles.css" rel="stylesheet">
+    
+    <style>
+        .oil-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .oil-card:hover {
+            border-color: #8b5cf6;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+        }
+        
+        .oil-card.expanded {
+            border-color: #8b5cf6;
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.2);
+        }
+        
+        .card-header-custom {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #dee2e6;
+            cursor: pointer;
+            padding: 1rem;
+        }
+        
+        .card-header-custom:hover {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+        
+        .vehicle-name {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1rem;
+        }
+        
+        .oil-summary {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        .expand-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        .expand-icon.rotated {
+            transform: rotate(180deg);
+        }
+        
+        .card-content {
+            display: none;
+            padding: 1.5rem;
+        }
+        
+        .card-content.show {
+            display: block;
+        }
+        
+        .oil-detail-row {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .oil-detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .sort-controls {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .sort-btn {
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sort-btn.active {
+            background-color: #8b5cf6;
+            border-color: #8b5cf6;
+        }
+        
+        .analysis-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .analysis-linked {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .analysis-available {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .analysis-none {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .action-buttons .btn {
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        
+        .modal-lg-custom {
+            max-width: 800px;
+        }
+        
+        .smart-detection {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .smart-detection.found {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    {% include 'nav.html' %}
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="fas fa-oil-can text-primary me-2"></i>Oil Management
+                        </h2>
+                        <p class="text-muted mb-0">Manage oil changes and analysis reports for all vehicles</p>
+                    </div>
+                </div>
+
+                <!-- Sort Controls -->
+                <div class="sort-controls">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-2">
+                                <i class="fas fa-sort me-2"></i>Sort By:
+                            </h6>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary sort-btn" data-sort="vehicle-az">
+                                    <i class="fas fa-car me-1"></i>Vehicle A-Z
+                                </button>
+                                <button type="button" class="btn btn-outline-primary sort-btn" data-sort="vehicle-za">
+                                    <i class="fas fa-car me-1"></i>Vehicle Z-A
+                                </button>
+                                <button type="button" class="btn btn-outline-primary sort-btn active" data-sort="date-recent">
+                                    <i class="fas fa-calendar-alt me-1"></i>Most Recent
+                                </button>
+                                <button type="button" class="btn btn-outline-primary sort-btn" data-sort="date-past">
+                                    <i class="fas fa-calendar-alt me-1"></i>Oldest First
+                                </button>
+                                <button type="button" class="btn btn-outline-primary sort-btn" data-sort="mileage-high">
+                                    <i class="fas fa-tachometer-alt me-1"></i>High Mileage
+                                </button>
+                                <button type="button" class="btn btn-outline-primary sort-btn" data-sort="mileage-low">
+                                    <i class="fas fa-tachometer-alt me-1"></i>Low Mileage
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Click vehicle cards to expand details
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle Oil Cards -->
+                <div id="oilCardsContainer">
+                    {% for vehicle_data in vehicles_oil_data %}
+                    <div class="oil-card" data-vehicle="{{ vehicle_data.vehicle.name }}" data-date="{{ vehicle_data.latest_date_str or '1900-01-01' }}" data-mileage="{{ vehicle_data.latest_mileage }}">
+                        <!-- Card Header (Always Visible) -->
+                        <div class="card-header-custom" onclick="toggleCard(this)">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="vehicle-name">
+                                        <i class="fas fa-car me-2 text-primary"></i>
+                                        {{ vehicle_data.vehicle.name }}
+                                    </div>
+                                    <div class="oil-summary">
+                                        {% if vehicle_data.latest_oil_change %}
+                                            <i class="fas fa-tachometer-alt me-1"></i>{{ '{:,}'.format(vehicle_data.latest_mileage) }} miles
+                                            • <i class="fas fa-calendar me-1"></i>{{ vehicle_data.latest_date.strftime('%m/%d/%Y') if vehicle_data.latest_date else 'No date' }}
+                                            • <i class="fas fa-oil-can me-1"></i>{{ vehicle_data.latest_oil_change.oil_type or 'Unknown' }} {{ vehicle_data.latest_oil_change.oil_brand or '' }}
+                                            {% if vehicle_data.latest_oil_change.cost %}• ${{ "%.2f"|format(vehicle_data.latest_oil_change.cost) }}{% endif %}
+                                        {% else %}
+                                            <i class="fas fa-info-circle me-1"></i>No oil changes recorded
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="mb-2">
+                                        {% if vehicle_data.analysis_status == 'linked' %}
+                                            <span class="analysis-status analysis-linked">
+                                                <i class="fas fa-link me-1"></i>Analysis Linked
+                                            </span>
+                                        {% elif vehicle_data.analysis_status == 'available' %}
+                                            <span class="analysis-status analysis-available">
+                                                <i class="fas fa-flask me-1"></i>Analysis Available
+                                            </span>
+                                        {% else %}
+                                            <span class="analysis-status analysis-none">
+                                                <i class="fas fa-times me-1"></i>No Analysis
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <i class="fas fa-chevron-down expand-icon text-muted"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Content (Expandable) -->
+                        <div class="card-content">
+                            <!-- Recent Oil Changes -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-oil-can me-2 text-primary"></i>Recent Oil Changes
+                                    </h6>
+                                    <button class="btn btn-primary btn-sm" onclick="openOilChangeModal({{ vehicle_data.vehicle.id }}, '{{ vehicle_data.vehicle.name }}')">
+                                        <i class="fas fa-plus me-1"></i>Add Oil Change
+                                    </button>
+                                </div>
+                                
+                                {% if vehicle_data.oil_changes %}
+                                    {% for oil_change in vehicle_data.oil_changes[:3] %}
+                                    <div class="oil-detail-row">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-6">
+                                                <strong>{{ '{:,}'.format(oil_change.mileage) }} miles</strong>
+                                                <small class="text-muted d-block">{{ oil_change.date.strftime('%m/%d/%Y') }}</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <span class="text-muted">{{ oil_change.oil_type or 'Unknown' }} {{ oil_change.oil_brand or '' }}</span>
+                                                {% if oil_change.cost %}<small class="d-block">${{ "%.2f"|format(oil_change.cost) }}</small>{% endif %}
+                                            </div>
+                                            <div class="col-md-2 text-end">
+                                                <button class="btn btn-outline-primary btn-sm" onclick="editOilChange({{ oil_change.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                    {% if vehicle_data.oil_changes|length > 3 %}
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">... and {{ vehicle_data.oil_changes|length - 3 }} more</small>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fas fa-info-circle me-2"></i>No oil changes recorded
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Divider between Oil Changes and Oil Analysis -->
+                            <div class="border-top border-2 border-secondary my-4"></div>
+
+                            <!-- Oil Analysis Section -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-flask me-2 text-success"></i>Oil Analysis
+                                    </h6>
+                                    <button class="btn btn-success btn-sm" onclick="openAnalysisModal({{ vehicle_data.vehicle.id }}, '{{ vehicle_data.vehicle.name }}')">
+                                        <i class="fas fa-plus me-1"></i>Add Analysis
+                                    </button>
+                                </div>
+
+                                {% if vehicle_data.oil_analysis %}
+                                    {% for analysis in vehicle_data.oil_analysis[:2] %}
+                                    <div class="oil-detail-row">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-6">
+                                                <strong>{{ '{:,}'.format(analysis.mileage) }} miles</strong>
+                                                <small class="text-muted d-block">Sample: {{ analysis.date.strftime('%m/%d/%Y') }}</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                {% if analysis.oil_analysis_report %}
+                                                    <a href="/oil-analysis/pdf/{{ analysis.id }}" target="_blank" class="badge bg-primary text-decoration-none">
+                                                        <i class="fas fa-file-pdf me-1"></i>View PDF
+                                                    </a>
+                                                {% endif %}
+                                                {% set matching_oil_change = None %}
+                                                {% for oil_change in vehicle_data.oil_changes %}
+                                                    {% if oil_change.mileage == analysis.mileage %}
+                                                        {% set matching_oil_change = oil_change %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% if matching_oil_change %}
+                                                    <small class="d-block text-success">
+                                                        <i class="fas fa-link me-1"></i>Linked to oil change
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-2 text-end">
+                                                <button class="btn btn-outline-success btn-sm" onclick="editAnalysis({{ analysis.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fas fa-info-circle me-2"></i>No analysis reports
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Empty State -->
+                {% if not vehicles_oil_data %}
+                <div class="text-center py-5">
+                    <i class="fas fa-oil-can fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Oil Change Data</h4>
+                    <p class="text-muted">Start by adding vehicles and their oil change records.</p>
+                    <a href="/vehicles" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Vehicles
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Oil Change Modal -->
+    <div class="modal fade" id="addOilChangeModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-oil-can me-2"></i>Add Oil Change - <span id="oilChangeVehicleName"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addOilChangeForm" onsubmit="submitOilChange(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="oilChangeVehicleId" name="vehicle_id">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Mileage *</label>
+                                    <input type="number" class="form-control" name="mileage" required min="0" step="1">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Date</label>
+                                    <input type="text" class="form-control" name="date_str" placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Oil Type</label>
+                                    <input type="text" class="form-control" name="oil_type" placeholder="e.g., 0W-20, 5W-30">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Oil Brand</label>
+                                    <input type="text" class="form-control" name="oil_brand" placeholder="e.g., Mobile1, Valvoline">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Oil Cost</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" name="oil_cost" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Filter Cost</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" name="filter_cost" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Labor Cost</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" name="labor_cost" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="Optional notes about this oil change"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Add Oil Change
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Oil Analysis Modal -->
+    <div class="modal fade" id="addAnalysisModal" tabindex="-1">
+        <div class="modal-dialog modal-lg-custom">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-flask me-2"></i>Add Oil Analysis - <span id="analysisVehicleName"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addAnalysisForm" onsubmit="submitAnalysis(event)" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" id="analysisVehicleId" name="vehicle_id">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Sample Mileage *</label>
+                                    <input type="number" class="form-control" id="analysisMileage" name="mileage" required min="0" step="1" oninput="checkOilChangeMatch()">
+                                    <div class="form-text">Mileage when oil sample was taken</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Sample Date *</label>
+                                    <input type="text" class="form-control" name="date_str" required placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
+                                    <div class="form-text">Date when sample was taken</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Smart Oil Change Detection -->
+                        <div id="smartDetection" class="smart-detection" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Smart Detection:</strong>
+                                    <span id="detectionMessage"></span>
+                                </div>
+                                <div class="ms-3">
+                                    <button type="button" class="btn btn-success btn-sm" id="linkYesBtn" onclick="setLinking(true)">
+                                        <i class="fas fa-link me-1"></i>Yes, Link
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="linkNoBtn" onclick="setLinking(false)">
+                                        <i class="fas fa-unlink me-1"></i>Standalone
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Analysis Description</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="Brief description (e.g., 'Oil analysis from Blackstone Labs')"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-file-pdf me-2"></i>Analysis Report (PDF)
+                            </label>
+                            <input type="file" class="form-control" name="oil_analysis_report" accept=".pdf">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Upload your oil analysis report from Blackstone Labs or other testing facilities
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Analysis Cost</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" name="oil_analysis_cost" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Results Date</label>
+                                    <input type="text" class="form-control" name="oil_analysis_date" placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
+                                    <div class="form-text">Date when results were received</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Oil Analysis Results Section -->
+                        <div class="mb-3">
+                            <h6 class="text-info mb-3">
+                                <i class="fas fa-microscope me-2"></i>Analysis Results (Optional)
+                            </h6>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Iron Level (ppm)</label>
+                                    <input type="number" class="form-control" name="iron_level" step="0.1" min="0" placeholder="e.g., 12.5">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Aluminum Level (ppm)</label>
+                                    <input type="number" class="form-control" name="aluminum_level" step="0.1" min="0" placeholder="e.g., 8.2">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Copper Level (ppm)</label>
+                                    <input type="number" class="form-control" name="copper_level" step="0.1" min="0" placeholder="e.g., 3.1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Viscosity (cSt)</label>
+                                    <input type="number" class="form-control" name="viscosity" step="0.1" min="0" placeholder="e.g., 95.2">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">TBN</label>
+                                    <input type="number" class="form-control" name="tbn" step="0.1" min="0" placeholder="e.g., 7.8">
+                                    <div class="form-text">Total Base Number</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Fuel Dilution (%)</label>
+                                    <input type="number" class="form-control" name="fuel_dilution" step="0.1" min="0" max="100" placeholder="e.g., 2.1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Driving Conditions</label>
+                                    <select class="form-select" name="driving_conditions">
+                                        <option value="">Select condition...</option>
+                                        <option value="Normal">Normal</option>
+                                        <option value="Severe">Severe</option>
+                                        <option value="Highway">Mostly Highway</option>
+                                        <option value="City">Mostly City</option>
+                                        <option value="Mixed">Mixed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" name="coolant_contamination" id="coolantContamination">
+                                        <label class="form-check-label" for="coolantContamination">
+                                            Coolant Contamination Detected
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea class="form-control" name="oil_consumption_notes" rows="2" placeholder="Any additional observations or notes"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Add Analysis
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let vehiclesData = {{ vehicles_json_data | tojson }};
+        let mostRecentVehicleId = {{ most_recent_vehicle_id or 'null' }};
+        let currentVehicleId = null;
+        let currentVehicleOilChanges = [];
+        let linkToOilChange = false;
+        let matchedOilChange = null;
+
+        // Card expansion functionality
+        function toggleCard(header) {
+            const card = header.closest('.oil-card');
+            const content = card.querySelector('.card-content');
+            const icon = card.querySelector('.expand-icon');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                icon.classList.remove('rotated');
+                card.classList.remove('expanded');
+            } else {
+                // Close all other cards
+                document.querySelectorAll('.oil-card').forEach(c => {
+                    c.querySelector('.card-content').classList.remove('show');
+                    c.querySelector('.expand-icon').classList.remove('rotated');
+                    c.classList.remove('expanded');
+                });
+                
+                // Open this card
+                content.classList.add('show');
+                icon.classList.add('rotated');
+                card.classList.add('expanded');
+            }
+        }
+
+        // Sorting functionality
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active state
+                document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Sort cards
+                sortCards(this.dataset.sort);
+            });
+        });
+
+        function sortCards(sortType) {
+            const container = document.getElementById('oilCardsContainer');
+            const cards = Array.from(container.querySelectorAll('.oil-card'));
+            
+            cards.sort((a, b) => {
+                switch(sortType) {
+                    case 'vehicle-az':
+                        return a.dataset.vehicle.localeCompare(b.dataset.vehicle);
+                    case 'vehicle-za':
+                        return b.dataset.vehicle.localeCompare(a.dataset.vehicle);
+                    case 'date-recent':
+                        return new Date(b.dataset.date || '1900-01-01') - new Date(a.dataset.date || '1900-01-01');
+                    case 'date-past':
+                        return new Date(a.dataset.date || '1900-01-01') - new Date(b.dataset.date || '1900-01-01');
+                    case 'mileage-high':
+                        return parseInt(b.dataset.mileage) - parseInt(a.dataset.mileage);
+                    case 'mileage-low':
+                        return parseInt(a.dataset.mileage) - parseInt(b.dataset.mileage);
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Reorder DOM elements
+            cards.forEach(card => container.appendChild(card));
+        }
+
+        // Modal functions
+        function openOilChangeModal(vehicleId, vehicleName) {
+            currentVehicleId = vehicleId;
+            document.getElementById('oilChangeVehicleId').value = vehicleId;
+            document.getElementById('oilChangeVehicleName').textContent = vehicleName;
+            
+            // Set current date as default
+            const today = new Date();
+            const dateStr = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                           today.getDate().toString().padStart(2, '0') + '/' + 
+                           today.getFullYear();
+            document.querySelector('#addOilChangeModal input[name="date_str"]').value = dateStr;
+            
+            new bootstrap.Modal(document.getElementById('addOilChangeModal')).show();
+        }
+
+        function openAnalysisModal(vehicleId, vehicleName) {
+            currentVehicleId = vehicleId;
+            document.getElementById('analysisVehicleId').value = vehicleId;
+            document.getElementById('analysisVehicleName').textContent = vehicleName;
+            
+            // Get oil changes for this vehicle
+            const vehicleData = vehiclesData.find(v => v.vehicle.id === vehicleId);
+            currentVehicleOilChanges = vehicleData && vehicleData.oil_changes ? vehicleData.oil_changes : [];
+            
+            // Set current date as default
+            const today = new Date();
+            const dateStr = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                           today.getDate().toString().padStart(2, '0') + '/' + 
+                           today.getFullYear();
+            document.querySelector('#addAnalysisModal input[name="date_str"]').value = dateStr;
+            
+            // Reset form
+            document.getElementById('smartDetection').style.display = 'none';
+            linkToOilChange = false;
+            matchedOilChange = null;
+            
+            new bootstrap.Modal(document.getElementById('addAnalysisModal')).show();
+        }
+
+        // Smart oil change detection
+        function checkOilChangeMatch() {
+            const mileage = parseInt(document.getElementById('analysisMileage').value);
+            const detection = document.getElementById('smartDetection');
+            const message = document.getElementById('detectionMessage');
+            
+            if (!mileage || !currentVehicleOilChanges.length) {
+                detection.style.display = 'none';
+                return;
+            }
+            
+            // Find exact mileage match
+            matchedOilChange = currentVehicleOilChanges.find(oc => parseInt(oc.mileage) === mileage);
+            
+            if (matchedOilChange) {
+                detection.style.display = 'block';
+                detection.classList.add('found');
+                message.innerHTML = `Found oil change at <strong>${mileage.toLocaleString()}</strong> miles on <strong>${new Date(matchedOilChange.date).toLocaleDateString()}</strong>. Link to it?`;
+            } else {
+                detection.style.display = 'none';
+                detection.classList.remove('found');
+                linkToOilChange = false;
+                matchedOilChange = null;
+            }
+        }
+
+        function setLinking(shouldLink) {
+            linkToOilChange = shouldLink;
+            const yesBtn = document.getElementById('linkYesBtn');
+            const noBtn = document.getElementById('linkNoBtn');
+            
+            if (shouldLink) {
+                yesBtn.classList.remove('btn-success');
+                yesBtn.classList.add('btn-success');
+                noBtn.classList.remove('btn-outline-secondary');
+                noBtn.classList.add('btn-outline-secondary');
+            } else {
+                yesBtn.classList.remove('btn-success');
+                yesBtn.classList.add('btn-outline-success');
+                noBtn.classList.remove('btn-outline-secondary');
+                noBtn.classList.add('btn-secondary');
+            }
+        }
+
+        // Form submissions
+        function submitOilChange(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Add required fields
+            formData.append('is_oil_change', 'true');
+            if (!formData.get('description')) {
+                const oilType = formData.get('oil_type') || 'Unknown';
+                const oilBrand = formData.get('oil_brand') || '';
+                formData.set('description', `Oil change - ${oilType} ${oilBrand}`.trim());
+            }
+            
+            fetch('/maintenance', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Close modal and reload page to stay on oil management
+                    bootstrap.Modal.getInstance(document.getElementById('addOilChangeModal')).hide();
+                    window.location.href = '/oil-management';
+                } else {
+                    throw new Error('Failed to add oil change');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add oil change. Please try again.');
+            });
+        }
+
+        function submitAnalysis(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Set description if empty
+            if (!formData.get('description')) {
+                const mileage = formData.get('mileage');
+                formData.set('description', `Oil Analysis - ${parseInt(mileage).toLocaleString()} miles`);
+            }
+            
+            // Add oil analysis marker
+            formData.append('oil_analysis_date', formData.get('date_str'));
+            
+            fetch('/maintenance', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Close modal and reload page to stay on oil management
+                    bootstrap.Modal.getInstance(document.getElementById('addAnalysisModal')).hide();
+                    window.location.href = '/oil-management';
+                } else {
+                    throw new Error('Failed to add analysis');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add oil analysis. Please try again.');
+            });
+        }
+
+        // Edit functions
+        function editOilChange(recordId) {
+            window.location.href = `/maintenance/${recordId}/edit?return_url=/oil-management`;
+        }
+
+        function editAnalysis(recordId) {
+            // Use the maintenance form which now properly handles oil analysis records
+            window.location.href = `/maintenance/${recordId}/edit?return_url=/oil-management`;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // All cards start collapsed by default
+            // Users can click to expand any card they want to view
+            console.log('Oil Management page loaded - all cards collapsed by default');
+        });
+    </script>
+</body>
+</html>

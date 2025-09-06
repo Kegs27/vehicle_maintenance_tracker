@@ -386,12 +386,17 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
         return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
 
 @app.get("/maintenance/new", response_class=HTMLResponse)
-async def new_maintenance_form(request: Request, return_url: Optional[str] = Query(None), vehicle_id: Optional[int] = Query(None)):
-    """Form to add new maintenance record using centralized data operations"""
+async def new_maintenance_form(
+    request: Request, 
+    return_url: Optional[str] = Query(None), 
+    vehicle_id: Optional[int] = Query(None),
+    form_type: Optional[str] = Query(None)
+):
+    """Unified form handler for creating new maintenance, oil changes, and oil analysis"""
     vehicles = get_vehicle_names()
     
-    # Check if this is an oil analysis form
-    is_oil_analysis = return_url and 'oil-analysis' in return_url
+    # Determine what type of form to show using unified logic
+    detected_form_type = determine_form_type(None, return_url, form_type)
     
     return templates.TemplateResponse("maintenance_form.html", {
         "request": request, 
@@ -399,7 +404,10 @@ async def new_maintenance_form(request: Request, return_url: Optional[str] = Que
         "record": None,
         "return_url": return_url or "/maintenance",
         "selected_vehicle_id": vehicle_id,
-        "is_oil_analysis": is_oil_analysis
+        "form_type": detected_form_type,
+        # Legacy compatibility for existing template logic
+        "is_oil_analysis": detected_form_type == "oil_analysis",
+        "is_oil_change": detected_form_type == "oil_change"
     })
 
 @app.post("/maintenance")
@@ -411,6 +419,15 @@ async def create_maintenance_route(
     cost: Optional[float] = Form(None),
     oil_change_interval: Optional[int] = Form(None),
     link_oil_analysis: bool = Form(False),
+    # Oil change fields
+    is_oil_change: Optional[bool] = Form(None),
+    oil_type: Optional[str] = Form(None),
+    oil_brand: Optional[str] = Form(None),
+    oil_filter_brand: Optional[str] = Form(None),
+    oil_filter_part_number: Optional[str] = Form(None),
+    oil_cost: Optional[float] = Form(None),
+    filter_cost: Optional[float] = Form(None),
+    labor_cost: Optional[float] = Form(None),
     # Oil analysis fields
     oil_analysis_date: Optional[str] = Form(None),
     next_oil_analysis_date: Optional[str] = Form(None),
@@ -431,10 +448,55 @@ async def create_maintenance_route(
         if date_str == "":
             date_str = None
         
-        # Use centralized function with validation
-        result = create_basic_maintenance_record(
-            vehicle_id, date_str or "01/01/1900", description, cost or 0.0, mileage, oil_change_interval
+        # Create the maintenance record with oil change interval to mark as oil change
+        # The create_maintenance_record function automatically sets is_oil_change=True when oil_change_interval is provided
+        result = create_maintenance_record(
+            vehicle_id=vehicle_id,
+            date=date_str or "01/01/1900", 
+            description=description,
+            cost=cost or 0.0,
+            mileage=mileage,
+            oil_change_interval=oil_change_interval or 3000,  # Default oil change interval to mark as oil change
+            oil_analysis_date=oil_analysis_date,
+            next_oil_analysis_date=next_oil_analysis_date,
+            oil_analysis_cost=oil_analysis_cost,
+            iron_level=iron_level,
+            aluminum_level=aluminum_level,
+            copper_level=copper_level,
+            viscosity=viscosity,
+            tbn=tbn,
+            fuel_dilution=fuel_dilution,
+            coolant_contamination=coolant_contamination,
+            driving_conditions=driving_conditions,
+            oil_consumption_notes=oil_consumption_notes
         )
+        
+        # If successful and oil change fields provided, update the record with oil change details
+        if result["success"] and (is_oil_change or oil_type or oil_brand):
+            try:
+                from data_operations import update_maintenance_record
+                update_result = update_maintenance_record(
+                    record_id=result["record"].id,
+                    vehicle_id=vehicle_id,
+                    date=date_str or "01/01/1900",
+                    description=description,
+                    cost=cost or 0.0,
+                    mileage=mileage,
+                    oil_change_interval=oil_change_interval or 3000,
+                    is_oil_change=True,  # Always True for oil changes from this form
+                    oil_type=oil_type,
+                    oil_brand=oil_brand,
+                    oil_filter_brand=oil_filter_brand,
+                    oil_filter_part_number=oil_filter_part_number,
+                    oil_cost=oil_cost,
+                    filter_cost=filter_cost,
+                    labor_cost=labor_cost
+                )
+                if not update_result["success"]:
+                    print(f"Warning: Failed to update oil change fields: {update_result.get('error', 'Unknown error')}")
+            except Exception as e:
+                print(f"Warning: Exception updating oil change fields: {e}")
+        
         
         if result["success"]:
             # If oil analysis linking was requested, create a placeholder oil analysis record
@@ -467,30 +529,57 @@ async def create_maintenance_route(
         print(f"❌ Error creating maintenance record: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create maintenance record: {str(e)}")
 
+def determine_form_type(record=None, return_url=None, form_type_param=None):
+    """Unified function to determine what type of form to display"""
+    
+    # 1. Explicit form type parameter takes priority
+    if form_type_param:
+        return form_type_param
+    
+    # 2. Check if editing existing record - analyze record data
+    if record:
+        # Oil analysis detection - comprehensive check
+        if (record.oil_analysis_date or record.oil_analysis_cost or 
+            record.iron_level or record.aluminum_level or record.copper_level or
+            (record.description and 'analysis' in record.description.lower())):
+            return "oil_analysis"
+        
+        # Oil change detection
+        if record.is_oil_change or record.oil_type or record.oil_brand:
+            return "oil_change"
+    
+    # 3. Check return URL context
+    if return_url:
+        if 'oil-management' in return_url:
+            # Coming from oil management - could be either, let record data decide
+            pass
+        elif 'oil-analysis' in return_url:
+            return "oil_analysis"
+    
+    # 4. Default to general maintenance
+    return "maintenance"
+
 @app.get("/maintenance/{record_id}/edit", response_class=HTMLResponse)
-async def edit_maintenance_form(request: Request, record_id: int, return_url: Optional[str] = Query(None)):
-    """Form to edit existing maintenance record using centralized data operations"""
+async def edit_maintenance_form(
+    request: Request, 
+    record_id: int, 
+    return_url: Optional[str] = Query(None),
+    form_type: Optional[str] = Query(None)
+):
+    """Unified form handler for editing maintenance, oil changes, and oil analysis"""
     try:
         record = get_maintenance_by_id(record_id)
         if not record:
             raise HTTPException(status_code=404, detail="Maintenance record not found")
         
+        # Determine what type of form to show using unified logic
+        detected_form_type = determine_form_type(record, return_url, form_type)
+        
         vehicles = get_vehicle_names()
         
-        # Check if this is an oil analysis record (either has oil analysis data OR coming from oil analysis page)
-        is_oil_analysis = (return_url and 'oil-analysis' in return_url) or (
-            record.oil_analysis_date or record.oil_analysis_cost or 
-            record.iron_level or record.aluminum_level or record.copper_level)
-        
-        # Check if this record has oil analysis data or is linked to oil analysis
+        # Check if this record has linked oil analysis (for oil change forms)
         has_linked_oil_analysis = False
-        
-        # Check if this record has oil analysis data
-        if (record.oil_analysis_date or record.oil_analysis_cost or 
-            record.iron_level or record.aluminum_level or record.copper_level):
-            has_linked_oil_analysis = True
-        elif record.is_oil_change:
-            # Look for oil analysis records that link to this oil change
+        if detected_form_type == "oil_change" and record.is_oil_change:
             from data_operations import get_maintenance_records_by_vehicle
             vehicle_records = get_maintenance_records_by_vehicle(record.vehicle_id)
             linked_analysis = [
@@ -504,7 +593,10 @@ async def edit_maintenance_form(request: Request, record_id: int, return_url: Op
             "vehicles": vehicles, 
             "record": record,
             "return_url": return_url or "/maintenance",
-            "is_oil_analysis": is_oil_analysis,
+            "form_type": detected_form_type,
+            # Legacy compatibility for existing template logic
+            "is_oil_analysis": detected_form_type == "oil_analysis",
+            "is_oil_change": detected_form_type == "oil_change",
             "has_linked_oil_analysis": has_linked_oil_analysis
         })
     except HTTPException:
@@ -513,328 +605,15 @@ async def edit_maintenance_form(request: Request, record_id: int, return_url: Op
         raise HTTPException(status_code=500, detail=f"Failed to load maintenance record: {str(e)}")
 
 @app.get("/oil-changes", response_class=HTMLResponse)
-async def oil_changes_page(request: Request):
-    """Oil change management page showing all oil change records and due dates"""
-    try:
-        # Get all vehicles and their oil change data
-        vehicles = get_all_vehicles()
-        records = get_all_maintenance_records()
-        
-        # Organize oil change data by vehicle
-        vehicle_oil_data = []
-        
-        for vehicle in vehicles:
-            # Get current mileage from all sources
-            current_mileage = get_current_mileage_from_all_sources(vehicle.id)
-            
-            # Get maintenance records for this specific vehicle
-            vehicle_records = get_maintenance_records_by_vehicle(vehicle.id)
-            
-            # Get oil change records for this vehicle (only actual oil changes)
-            oil_changes = [
-                record for record in vehicle_records 
-                if record.is_oil_change
-            ]
-            
-            # Sort oil changes by date (most recent first)
-            oil_changes.sort(key=lambda x: x.date, reverse=True)
-            
-            # Limit to 10 most recent for modal display
-            oil_changes_for_modal = oil_changes[:10]
-            total_oil_changes = len(oil_changes)
-            
-            # Calculate next due date if we have oil change records
-            next_due_info = None
-            if oil_changes and current_mileage > 0:
-                last_oil_change = oil_changes[0]  # Most recent
-                oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
-                miles_since_oil_change = current_mileage - last_oil_change.mileage
-                miles_until_next = oil_change_interval - miles_since_oil_change
-                
-                next_due_info = {
-                    "miles_until_due": miles_until_next,
-                    "miles_since_last": miles_since_oil_change,
-                    "interval": oil_change_interval,
-                    "status": "overdue" if miles_until_next < 0 else "due_soon" if miles_until_next <= 500 else "good"
-                }
-            
-            vehicle_oil_data.append({
-                "vehicle": vehicle,
-                "current_mileage": current_mileage,
-                "oil_changes": oil_changes_for_modal,
-                "total_oil_changes": total_oil_changes,
-                "next_due_info": next_due_info
-            })
-        
-        response = templates.TemplateResponse("oil_changes.html", {
-            "request": request,
-            "vehicle_oil_data": vehicle_oil_data
-        })
-        
-        # Add anti-caching headers to ensure fresh data
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-        
-        return response
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load oil change data: {str(e)}")
+async def oil_changes_page_redirect(request: Request):
+    """Redirect old oil-changes page to new oil management system"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/oil-management", status_code=301)
 
 # ============================================================================
-# OIL ANALYSIS ROUTES
+# OLD OIL ANALYSIS ROUTES REMOVED - Now using modal-based system in Oil Management
+# All oil analysis functionality is now handled through modals in /oil-management
 # ============================================================================
-
-@app.get("/oil-analysis/new", response_class=HTMLResponse)
-async def new_oil_analysis_form(request: Request, vehicle_id: Optional[int] = Query(None)):
-    """Form to add new oil analysis record"""
-    vehicles = get_vehicle_names()
-    
-    # Get oil change records for linking if vehicle_id is provided
-    oil_change_records = []
-    if vehicle_id:
-        all_records = get_maintenance_records_by_vehicle(vehicle_id)
-        oil_change_records = [
-            record for record in all_records
-            if record.is_oil_change
-        ]
-    
-    return templates.TemplateResponse("oil_analysis_form.html", {
-        "request": request, 
-        "vehicles": vehicles, 
-        "record": None,
-        "selected_vehicle_id": vehicle_id,
-        "oil_change_records": oil_change_records
-    })
-
-@app.post("/oil-analysis")
-async def create_oil_analysis_route(
-    vehicle_id: int = Form(...),
-    date_str: str = Form(default=""),
-    mileage: int = Form(...),
-    description: str = Form(...),
-    oil_analysis_date: Optional[str] = Form(None),
-    next_oil_analysis_date: Optional[str] = Form(None),
-    oil_analysis_cost: Optional[float] = Form(None),
-    iron_level: Optional[float] = Form(None),
-    aluminum_level: Optional[float] = Form(None),
-    copper_level: Optional[float] = Form(None),
-    viscosity: Optional[float] = Form(None),
-    tbn: Optional[float] = Form(None),
-    fuel_dilution: Optional[float] = Form(None),
-    coolant_contamination: Optional[bool] = Form(None),
-    driving_conditions: Optional[str] = Form(None),
-    oil_consumption_notes: Optional[str] = Form(None),
-    linked_oil_change_id: Optional[int] = Form(None),
-    oil_analysis_report: Optional[UploadFile] = File(None)
-):
-    """Create a new oil analysis record"""
-    try:
-        # Basic PDF handling - no auto-population
-        pdf_file_path = None
-        if oil_analysis_report and oil_analysis_report.filename:
-            # Create upload directory
-            import os
-            from pathlib import Path
-            upload_dir = Path("uploads/oil_analysis")
-            upload_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Generate unique filename
-            from datetime import datetime
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"oil_analysis_v{vehicle_id}_{timestamp}.pdf"
-            file_path = upload_dir / filename
-            
-            # Save file
-            with open(file_path, "wb") as buffer:
-                buffer.write(oil_analysis_report.file.read())
-            
-            pdf_file_path = str(file_path)
-            print(f"✅ PDF saved to: {pdf_file_path}")
-        
-        # Create the record
-        result = create_oil_analysis_record(
-            vehicle_id, date_str, description, mileage,
-            oil_analysis_date, next_oil_analysis_date, oil_analysis_cost,
-            iron_level, aluminum_level, copper_level, viscosity, tbn,
-            fuel_dilution, coolant_contamination, driving_conditions, oil_consumption_notes,
-            linked_oil_change_id, pdf_file_path
-        )
-        
-        if result["success"]:
-            return RedirectResponse(url=f"/oil-analysis/{vehicle_id}", status_code=303)
-        else:
-            raise HTTPException(status_code=400, detail=result["error"])
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error creating oil analysis record: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create oil analysis record: {str(e)}")
-
-@app.get("/oil-analysis/{record_id}/edit", response_class=HTMLResponse)
-async def edit_oil_analysis_form(request: Request, record_id: int):
-    """Form to edit existing oil analysis record"""
-    try:
-        record = get_maintenance_by_id(record_id)
-        if not record:
-            raise HTTPException(status_code=404, detail="Oil analysis record not found")
-        
-        vehicles = get_vehicle_names()
-        
-        # Get oil change records for linking
-        all_records = get_maintenance_records_by_vehicle(record.vehicle_id)
-        oil_change_records = [
-            r for r in all_records
-            if r.is_oil_change
-        ]
-        
-        return templates.TemplateResponse("oil_analysis_form.html", {
-            "request": request, 
-            "vehicles": vehicles, 
-            "record": record,
-            "oil_change_records": oil_change_records
-        })
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load oil analysis record: {str(e)}")
-
-@app.get("/oil-analysis/{vehicle_id}", response_class=HTMLResponse)
-async def oil_analysis_page(request: Request, vehicle_id: int):
-    """Oil analysis page for a specific vehicle"""
-    try:
-        # Get the vehicle
-        vehicle = get_vehicle_by_id(vehicle_id)
-        if not vehicle:
-            raise HTTPException(status_code=404, detail="Vehicle not found")
-        
-        # Get all maintenance records for this vehicle
-        records = get_maintenance_records_by_vehicle(vehicle_id)
-        
-        # Filter for oil analysis records (records with oil analysis data or linked to oil changes)
-        oil_analysis_records = [
-            record for record in records 
-            if (record.oil_analysis_report or record.oil_analysis_date or record.oil_analysis_cost or
-                record.iron_level or record.aluminum_level or record.copper_level or record.viscosity or record.tbn or
-                record.linked_oil_change_id is not None)
-        ]
-        
-        # Sort by analysis date (most recent first)
-        oil_analysis_records.sort(key=lambda x: x.oil_analysis_date or x.date, reverse=True)
-        
-        # Get oil change records for linking
-        oil_change_records = [
-            record for record in records 
-            if record.is_oil_change
-        ]
-        
-        # Sort oil changes by date (most recent first)
-        oil_change_records.sort(key=lambda x: x.date, reverse=True)
-        
-        response = templates.TemplateResponse("oil_analysis.html", {
-            "request": request,
-            "vehicle": vehicle,
-            "oil_analysis_records": oil_analysis_records,
-            "oil_change_records": oil_change_records
-        })
-        
-        # Add anti-caching headers
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-        
-        return response
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load oil analysis data: {str(e)}")
-
-@app.post("/oil-analysis/{record_id}")
-async def update_oil_analysis_route(
-    record_id: int,
-    vehicle_id: int = Form(...),
-    date_str: str = Form(...),
-    mileage: int = Form(...),
-    description: str = Form(...),
-    oil_analysis_date: Optional[str] = Form(None),
-    next_oil_analysis_date: Optional[str] = Form(None),
-    oil_analysis_cost: Optional[float] = Form(None),
-    iron_level: Optional[float] = Form(None),
-    aluminum_level: Optional[float] = Form(None),
-    copper_level: Optional[float] = Form(None),
-    viscosity: Optional[float] = Form(None),
-    tbn: Optional[float] = Form(None),
-    fuel_dilution: Optional[float] = Form(None),
-    coolant_contamination: Optional[bool] = Form(None),
-    driving_conditions: Optional[str] = Form(None),
-    oil_consumption_notes: Optional[str] = Form(None),
-    oil_analysis_report: Optional[UploadFile] = File(None)
-):
-    """Update an existing oil analysis record"""
-    try:
-        # Handle PDF file upload
-        pdf_file_path = None
-        if oil_analysis_report and oil_analysis_report.filename:
-            # Create upload directory
-            import os
-            from pathlib import Path
-            upload_dir = Path("uploads/oil_analysis")
-            upload_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Generate unique filename
-            from datetime import datetime
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"oil_analysis_v{vehicle_id}_{timestamp}.pdf"
-            file_path = upload_dir / filename
-            
-            # Save file
-            with open(file_path, "wb") as buffer:
-                buffer.write(oil_analysis_report.file.read())
-            
-            pdf_file_path = str(file_path)
-            print(f"✅ PDF saved to: {pdf_file_path}")
-        
-        # Use centralized function with validation
-        result = update_maintenance_record(
-            record_id, vehicle_id, date_str, description, 0.0, mileage, None,
-            oil_analysis_date, next_oil_analysis_date, oil_analysis_cost,
-            iron_level, aluminum_level, copper_level, viscosity, tbn,
-            fuel_dilution, coolant_contamination, driving_conditions, oil_consumption_notes,
-            pdf_file_path
-        )
-        
-        if result["success"]:
-            return RedirectResponse(url=f"/oil-analysis/{vehicle_id}?updated=true", status_code=303)
-        else:
-            raise HTTPException(status_code=500, detail=result["error"])
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update oil analysis record: {str(e)}")
-
-@app.get("/oil-analysis/pdf/{record_id}")
-async def view_oil_analysis_pdf(record_id: int):
-    """View uploaded oil analysis PDF"""
-    try:
-        record = get_maintenance_by_id(record_id)
-        if not record:
-            raise HTTPException(status_code=404, detail="Oil analysis record not found")
-        
-        if not record.oil_analysis_report:
-            raise HTTPException(status_code=404, detail="No PDF report found")
-        
-        # Check if file exists
-        if not os.path.exists(record.oil_analysis_report):
-            raise HTTPException(status_code=404, detail="PDF file not found")
-        
-        return FileResponse(
-            record.oil_analysis_report,
-            media_type="application/pdf",
-            filename=f"oil_analysis_{record_id}.pdf"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to serve PDF: {str(e)}")
 
 @app.post("/maintenance/{record_id}")
 async def update_maintenance_route(
@@ -1990,6 +1769,181 @@ async def debug_oil_linking(vehicle_id: int):
         
     except Exception as e:
         return {"error": str(e)}
+
+@app.get("/oil-management", response_class=HTMLResponse)
+async def oil_management_new(request: Request):
+    """New Oil Management page with collapsible cards and smart linking"""
+    try:
+        from data_operations import get_all_vehicles, get_maintenance_records_by_vehicle
+        
+        # Get all vehicles
+        vehicles = get_all_vehicles()
+        vehicles_oil_data = []
+        
+        for vehicle in vehicles:
+            # Get all maintenance records for this vehicle
+            records = get_maintenance_records_by_vehicle(vehicle.id)
+            
+            # Filter oil changes (records marked as oil changes)
+            oil_changes = [r for r in records if r.is_oil_change]
+            oil_changes.sort(key=lambda x: x.date, reverse=True)  # Most recent first
+            
+            # Filter oil analysis records
+            oil_analysis = [
+                r for r in records 
+                if (r.oil_analysis_date or r.oil_analysis_cost or 
+                    r.iron_level or r.aluminum_level or r.copper_level or
+                    (r.description and "analysis" in r.description.lower()))
+            ]
+            oil_analysis.sort(key=lambda x: x.date, reverse=True)  # Most recent first
+            
+            # Determine analysis status
+            analysis_status = 'none'
+            if oil_analysis:
+                # Check if any analysis is linked to oil changes
+                linked_analysis = []
+                for analysis in oil_analysis:
+                    matching_oil_changes = [oc for oc in oil_changes if oc.mileage == analysis.mileage]
+                    if matching_oil_changes:
+                        linked_analysis.append(analysis)
+                
+                if linked_analysis:
+                    analysis_status = 'linked'
+                else:
+                    analysis_status = 'available'
+            
+            # Get latest oil change for summary
+            latest_oil_change = oil_changes[0] if oil_changes else None
+            latest_mileage = latest_oil_change.mileage if latest_oil_change else 0
+            latest_date = latest_oil_change.date if latest_oil_change else None
+            
+            # Determine the most recent activity date for this vehicle
+            most_recent_activity = None
+            if oil_changes:
+                most_recent_activity = oil_changes[0].date
+            if oil_analysis and (not most_recent_activity or oil_analysis[0].date > most_recent_activity):
+                most_recent_activity = oil_analysis[0].date
+
+            vehicles_oil_data.append({
+                'vehicle': vehicle,
+                'oil_changes': oil_changes,
+                'oil_analysis': oil_analysis,
+                'latest_oil_change': latest_oil_change,
+                'latest_mileage': latest_mileage,
+                'latest_date': latest_date,
+                'analysis_status': analysis_status,
+                'most_recent_activity': most_recent_activity
+            })
+        
+        # Find the vehicle with the most recent activity for default expansion
+        most_recent_vehicle_id = None
+        if vehicles_oil_data:
+            # Find vehicle with most recent activity
+            most_recent_activity_date = None
+            for vehicle_data in vehicles_oil_data:
+                if vehicle_data['most_recent_activity']:
+                    if not most_recent_activity_date or vehicle_data['most_recent_activity'] > most_recent_activity_date:
+                        most_recent_activity_date = vehicle_data['most_recent_activity']
+                        most_recent_vehicle_id = vehicle_data['vehicle'].id
+        
+        # Sort by most recent activity by default (most recent first)
+        from datetime import date
+        vehicles_oil_data.sort(key=lambda x: x['most_recent_activity'] or date(1900, 1, 1), reverse=True)
+        
+        # Convert data to JSON-serializable format
+        json_safe_data = []
+        for vehicle_data in vehicles_oil_data:
+            # Convert vehicle data
+            json_vehicle_data = {
+                'vehicle': {
+                    'id': vehicle_data['vehicle'].id,
+                    'name': vehicle_data['vehicle'].name
+                },
+                'latest_mileage': vehicle_data['latest_mileage'],
+                'latest_date_str': vehicle_data['latest_date'].strftime('%Y-%m-%d') if vehicle_data['latest_date'] else None,
+                'analysis_status': vehicle_data['analysis_status'],
+                'oil_changes': [],
+                'oil_analysis': []
+            }
+            
+            # Convert latest oil change
+            if vehicle_data['latest_oil_change']:
+                latest = vehicle_data['latest_oil_change']
+                json_vehicle_data['latest_oil_change'] = {
+                    'id': latest.id,
+                    'mileage': latest.mileage,
+                    'date': latest.date.strftime('%Y-%m-%d'),
+                    'oil_type': latest.oil_type,
+                    'oil_brand': latest.oil_brand,
+                    'cost': float(latest.cost) if latest.cost else None
+                }
+            else:
+                json_vehicle_data['latest_oil_change'] = None
+                
+            # Convert oil changes
+            for oil_change in vehicle_data['oil_changes']:
+                json_vehicle_data['oil_changes'].append({
+                    'id': oil_change.id,
+                    'mileage': oil_change.mileage,
+                    'date': oil_change.date.strftime('%Y-%m-%d'),
+                    'oil_type': oil_change.oil_type,
+                    'oil_brand': oil_change.oil_brand,
+                    'cost': float(oil_change.cost) if oil_change.cost else None
+                })
+                
+            # Convert analysis records
+            for analysis in vehicle_data['oil_analysis']:
+                json_vehicle_data['oil_analysis'].append({
+                    'id': analysis.id,
+                    'mileage': analysis.mileage,
+                    'date': analysis.date.strftime('%Y-%m-%d'),
+                    'oil_analysis_report': analysis.oil_analysis_report
+                })
+                
+            json_safe_data.append(json_vehicle_data)
+        
+        return templates.TemplateResponse("oil_management_new.html", {
+            "request": request,
+            "vehicles_oil_data": vehicles_oil_data,
+            "vehicles_json_data": json_safe_data,
+            "most_recent_vehicle_id": most_recent_vehicle_id
+        })
+        
+    except Exception as e:
+        return HTMLResponse(content=f"""
+        <h1>Error Loading Oil Management</h1>
+        <p>Error: {str(e)}</p>
+        <p><a href="/">← Back to Home</a></p>
+        """)
+
+@app.get("/oil-analysis/pdf/{record_id}")
+async def view_oil_analysis_pdf(record_id: int):
+    """View uploaded oil analysis PDF"""
+    try:
+        from data_operations import get_maintenance_by_id
+        import os
+        from fastapi.responses import FileResponse
+        
+        record = get_maintenance_by_id(record_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Oil analysis record not found")
+        
+        if not record.oil_analysis_report:
+            raise HTTPException(status_code=404, detail="No PDF report found")
+        
+        # Check if file exists
+        if not os.path.exists(record.oil_analysis_report):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        return FileResponse(
+            record.oil_analysis_report,
+            media_type="application/pdf",
+            filename=f"oil_analysis_{record_id}.pdf"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to serve PDF: {str(e)}")
 
 @app.get("/migrate-database-full", response_class=HTMLResponse)
 async def migrate_database_endpoint():
