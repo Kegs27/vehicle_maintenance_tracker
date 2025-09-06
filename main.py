@@ -1926,6 +1926,71 @@ async def cleanup_oil_analysis():
         """
         return HTMLResponse(content=error_html)
 
+@app.get("/debug-oil-linking/{vehicle_id}")
+async def debug_oil_linking(vehicle_id: int):
+    """Debug oil change linking issues"""
+    try:
+        from data_operations import get_maintenance_records_by_vehicle
+        
+        # Get all maintenance records for this vehicle
+        records = get_maintenance_records_by_vehicle(vehicle_id)
+        
+        # Find oil analysis records
+        oil_analysis_records = [
+            record for record in records 
+            if (record.oil_analysis_report or record.oil_analysis_date or record.oil_analysis_cost or
+                record.iron_level or record.aluminum_level or record.copper_level or record.viscosity or record.tbn or
+                record.linked_oil_change_id is not None)
+        ]
+        
+        # Find oil change records  
+        oil_change_records = [
+            record for record in records 
+            if record.is_oil_change
+        ]
+        
+        # Create debug info
+        debug_info = {
+            "vehicle_id": vehicle_id,
+            "total_records": len(records),
+            "oil_analysis_count": len(oil_analysis_records),
+            "oil_change_count": len(oil_change_records),
+            "oil_analysis_records": [
+                {
+                    "id": r.id,
+                    "mileage": r.mileage,
+                    "description": r.description,
+                    "oil_analysis_date": str(r.oil_analysis_date) if r.oil_analysis_date else None,
+                    "is_oil_change": r.is_oil_change
+                } for r in oil_analysis_records
+            ],
+            "oil_change_records": [
+                {
+                    "id": r.id, 
+                    "mileage": r.mileage,
+                    "description": r.description,
+                    "is_oil_change": r.is_oil_change,
+                    "date": str(r.date)
+                } for r in oil_change_records
+            ],
+            "mileage_matches": []
+        }
+        
+        # Check for mileage matches
+        for analysis in oil_analysis_records:
+            matches = [oc for oc in oil_change_records if oc.mileage == analysis.mileage]
+            if matches:
+                debug_info["mileage_matches"].append({
+                    "analysis_id": analysis.id,
+                    "analysis_mileage": analysis.mileage,
+                    "matching_oil_changes": [{"id": oc.id, "mileage": oc.mileage} for oc in matches]
+                })
+        
+        return debug_info
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/migrate-database-full", response_class=HTMLResponse)
 async def migrate_database_endpoint():
     """Run database migration - adds missing columns for oil analysis features"""
