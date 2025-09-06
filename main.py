@@ -440,10 +440,31 @@ async def create_maintenance_route(
     fuel_dilution: Optional[float] = Form(None),
     coolant_contamination: Optional[bool] = Form(None),
     driving_conditions: Optional[str] = Form(None),
-    oil_consumption_notes: Optional[str] = Form(None)
+    oil_consumption_notes: Optional[str] = Form(None),
+    # PDF upload for oil analysis
+    oil_analysis_report: UploadFile = File(None)
 ):
     """Create a new maintenance record using centralized data operations"""
     try:
+        # Handle PDF file upload for oil analysis
+        pdf_file_path = None
+        if oil_analysis_report and oil_analysis_report.filename:
+            import os
+            # Create uploads directory if it doesn't exist
+            upload_dir = "uploads"
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Generate unique filename
+            import uuid
+            file_extension = os.path.splitext(oil_analysis_report.filename)[1]
+            unique_filename = f"oil_analysis_{uuid.uuid4().hex}{file_extension}"
+            pdf_file_path = os.path.join(upload_dir, unique_filename)
+            
+            # Save the uploaded file
+            with open(pdf_file_path, "wb") as buffer:
+                content = await oil_analysis_report.read()
+                buffer.write(content)
+        
         # Handle empty date string by converting to None
         if date_str == "":
             date_str = None
@@ -468,7 +489,8 @@ async def create_maintenance_route(
             fuel_dilution=fuel_dilution,
             coolant_contamination=coolant_contamination,
             driving_conditions=driving_conditions,
-            oil_consumption_notes=oil_consumption_notes
+            oil_consumption_notes=oil_consumption_notes,
+            oil_analysis_report=pdf_file_path
         )
         
         # If successful and oil change fields provided, update the record with oil change details
@@ -653,10 +675,31 @@ async def update_maintenance_route(
     coolant_contamination: Optional[bool] = Form(None),
     driving_conditions: Optional[str] = Form(None),
     oil_consumption_notes: Optional[str] = Form(None),
-    return_url: Optional[str] = Form(None)
+    return_url: Optional[str] = Form(None),
+    # PDF upload for oil analysis
+    oil_analysis_report: UploadFile = File(None)
 ):
     """Update an existing maintenance record using centralized data operations"""
     try:
+        # Handle PDF file upload for oil analysis
+        pdf_file_path = None
+        if oil_analysis_report and oil_analysis_report.filename:
+            import os
+            # Create uploads directory if it doesn't exist
+            upload_dir = "uploads"
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Generate unique filename
+            import uuid
+            file_extension = os.path.splitext(oil_analysis_report.filename)[1]
+            unique_filename = f"oil_analysis_{uuid.uuid4().hex}{file_extension}"
+            pdf_file_path = os.path.join(upload_dir, unique_filename)
+            
+            # Save the uploaded file
+            with open(pdf_file_path, "wb") as buffer:
+                content = await oil_analysis_report.read()
+                buffer.write(content)
+        
         # Use centralized function with validation
         result = update_maintenance_record(
             record_id, vehicle_id, date_str, description, cost or 0.0, mileage, oil_change_interval,
@@ -664,7 +707,8 @@ async def update_maintenance_route(
             oil_cost, filter_cost, labor_cost,
             oil_analysis_date, next_oil_analysis_date, oil_analysis_cost,
             iron_level, aluminum_level, copper_level, viscosity, tbn,
-            fuel_dilution, coolant_contamination, driving_conditions, oil_consumption_notes
+            fuel_dilution, coolant_contamination, driving_conditions, oil_consumption_notes,
+            oil_analysis_report=pdf_file_path
         )
         
         if result["success"]:
