@@ -797,6 +797,7 @@
             
             // Add required fields
             formData.append('is_oil_change', 'true');
+            formData.append('form_type', 'oil_change');
             if (!formData.get('description')) {
                 const oilType = formData.get('oil_type') || 'Unknown';
                 const oilBrand = formData.get('oil_brand') || '';
@@ -833,8 +834,9 @@
                 formData.set('description', `Oil Analysis - ${parseInt(mileage).toLocaleString()} miles`);
             }
             
-            // Add oil analysis marker
+            // Add oil analysis marker and form type
             formData.append('oil_analysis_date', formData.get('date_str'));
+            formData.append('form_type', 'oil_analysis');
             
             fetch('/maintenance', {
                 method: 'POST',
