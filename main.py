@@ -153,6 +153,18 @@ async def startup_event():
         database_url = os.getenv("DATABASE_URL")
         if database_url and database_url.startswith("postgresql"):
             print("🔗 PostgreSQL database connected successfully")
+            
+            # Run photo columns migration if needed
+            try:
+                from migrate_photo_columns import run_migration
+                print("Running photo columns migration...")
+                success = run_migration()
+                if success:
+                    print("✅ Photo columns migration completed successfully!")
+                else:
+                    print("⚠️ Photo columns migration failed, but continuing startup...")
+            except Exception as e:
+                print(f"⚠️ Photo columns migration error: {e}, but continuing startup...")
         
         print("Startup completed successfully!")
     except Exception as e:
