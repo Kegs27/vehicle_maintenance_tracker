@@ -686,6 +686,35 @@ async def oil_changes_page_redirect(request: Request):
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/oil-management", status_code=301)
 
+@app.get("/notifications", response_class=HTMLResponse)
+async def notifications_page(request: Request):
+    """Email notifications management page"""
+    try:
+        # Get all vehicles for the dropdown
+        vehicles = get_all_vehicles()
+        
+        # Get all email subscriptions (if the table exists)
+        subscriptions = []
+        try:
+            from app.models import EmailSubscription
+            from app.database import get_session
+            
+            with get_session() as session:
+                subscriptions = session.exec(select(EmailSubscription)).all()
+        except Exception as e:
+            # If EmailSubscription table doesn't exist yet, return empty list
+            print(f"EmailSubscription table not available yet: {e}")
+            subscriptions = []
+        
+        return templates.TemplateResponse("notifications.html", {
+            "request": request,
+            "vehicles": vehicles,
+            "subscriptions": subscriptions
+        })
+    except Exception as e:
+        print(f"Error loading notifications page: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to load notifications page: {str(e)}")
+
 @app.get("/oil-analysis/{record_id}")
 async def oil_analysis_redirect(record_id: int):
     """Redirect old oil-analysis routes to new maintenance edit system"""
