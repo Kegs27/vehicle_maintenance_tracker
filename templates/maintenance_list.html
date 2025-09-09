@@ -559,17 +559,17 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 {% if vehicle %}
-                    <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
+                    <button type="button" class="btn btn-primary btn-standard" onclick="goToAddRecord({{ vehicle.id }})">
                         <i class="fas fa-plus me-2"></i>Add Maintenance
                     </button>
                 {% else %}
-                    <a href="/maintenance/new" class="btn btn-primary">
+                    <a href="/maintenance/new" class="btn btn-primary btn-standard">
                         <i class="fas fa-plus me-2"></i>Add Maintenance
                     </a>
                 {% endif %}
 
                 <!-- Add Future Maintenance Button - Always Visible -->
-                <button type="button" class="btn btn-success" onclick="openFutureMaintenanceModal()">
+                <button type="button" class="btn btn-success btn-standard" onclick="openFutureMaintenanceModal()">
                     <i class="fas fa-calendar-plus me-2"></i>Add Future Maintenance
                 </button>
             </div>
@@ -1047,15 +1047,15 @@
         <div class="mt-4 text-center">
             <div class="d-flex gap-3 justify-content-center flex-wrap">
                 {% if vehicle %}
-                <button type="button" class="btn btn-primary" onclick="goToAddRecord({{ vehicle.id }})">
+                <button type="button" class="btn btn-primary btn-standard" onclick="goToAddRecord({{ vehicle.id }})">
                     <i class="fas fa-plus me-2"></i><span class="d-none d-md-inline">Add Maintenance</span><span class="d-inline d-md-none">Add</span>
                 </button>
                 {% else %}
-                <a href="/maintenance/new" class="btn btn-primary">
+                <a href="/maintenance/new" class="btn btn-primary btn-standard">
                     <i class="fas fa-plus me-2"></i><span class="d-none d-md-inline">Add Maintenance</span><span class="d-inline d-md-none">Add</span>
                 </a>
                 {% endif %}
-                <a href="/" class="btn btn-outline-secondary">
+                <a href="/" class="btn btn-outline-secondary btn-standard">
                     <i class="fas fa-home me-2"></i><span class="d-none d-md-inline">Back to Home</span><span class="d-inline d-md-none">Home</span>
                 </a>
             </div>
