@@ -398,7 +398,10 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
         
         # Get all vehicles for the future maintenance modal
         vehicles = get_all_vehicles()
-        # Debug logging removed for production
+        
+        # Get future maintenance records
+        from data_operations import get_all_future_maintenance
+        future_maintenance = get_all_future_maintenance()
         
         return templates.TemplateResponse("maintenance_list.html", {
             "request": request, 
@@ -406,7 +409,8 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
             "vehicle": vehicle,
             "vehicle_name": vehicle_name,
             "summary": summary,
-            "vehicles": vehicles
+            "vehicles": vehicles,
+            "future_maintenance": future_maintenance
         })
     except Exception as e:
         return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
