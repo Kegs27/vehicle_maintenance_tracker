@@ -697,7 +697,7 @@ async def oil_analysis_redirect(record_id: int):
 async def update_maintenance_route(
     record_id: int,
     vehicle_id: int = Form(...),
-    date_str: str = Form(...),
+    date_str: str = Form(default=""),
     mileage: Optional[int] = Form(None),
     description: str = Form(...),
     cost: Optional[float] = Form(None),
@@ -771,6 +771,17 @@ async def update_maintenance_route(
             with open(photo_path, "wb") as buffer:
                 content = await photo.read()
                 buffer.write(content)
+        
+        # Handle empty date_str by using existing record's date
+        if not date_str or date_str.strip() == "":
+            from data_operations import get_maintenance_record
+            existing_record = get_maintenance_record(record_id)
+            if existing_record and existing_record.date:
+                date_str = existing_record.date.strftime('%m/%d/%Y')
+            else:
+                # Fallback to current date if no existing date
+                from datetime import date
+                date_str = date.today().strftime('%m/%d/%Y')
         
         # Use centralized function with validation
         result = update_maintenance_record(
