@@ -1044,7 +1044,7 @@
         {% endif %}
 
         <!-- Quick Actions -->
-        <div class="mt-4 text-center">
+        <div id="quickActions" class="mt-4 text-center">
             <div class="d-flex gap-3 justify-content-center flex-wrap">
                 {% if vehicle %}
                 <button type="button" class="btn btn-primary btn-standard" onclick="goToAddRecord({{ vehicle.id }})">
@@ -1480,6 +1480,12 @@
                 mobileRecordsCards.style.display = 'none';
             }
             
+            // Hide quick actions section
+            const quickActions = document.getElementById('quickActions');
+            if (quickActions) {
+                quickActions.style.display = 'none';
+            }
+            
             // Show the future maintenance summary
             const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
             if (futureMaintenanceContent) {
@@ -1510,6 +1516,12 @@
             const mobileRecordsCards = document.getElementById('mobileRecordsCards');
             if (mobileRecordsCards) {
                 mobileRecordsCards.style.display = 'block';
+            }
+            
+            // Show quick actions section
+            const quickActions = document.getElementById('quickActions');
+            if (quickActions) {
+                quickActions.style.display = 'block';
             }
             
             // Hide the future maintenance summary
