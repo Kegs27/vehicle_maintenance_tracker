@@ -774,8 +774,8 @@ async def update_maintenance_route(
         
         # Handle empty date_str by using existing record's date
         if not date_str or date_str.strip() == "":
-            from data_operations import get_maintenance_record
-            existing_record = get_maintenance_record(record_id)
+            from data_operations import get_maintenance_by_id
+            existing_record = get_maintenance_by_id(record_id)
             if existing_record and existing_record.date:
                 date_str = existing_record.date.strftime('%m/%d/%Y')
             else:
