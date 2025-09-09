@@ -1358,6 +1358,23 @@
             }
         });
         
+        // Handle window resize to show/hide mobile cards appropriately
+        window.addEventListener('resize', function() {
+            const mobileFutureCards = document.getElementById('mobileFutureCards');
+            if (mobileFutureCards) {
+                // Check if we're currently on the future maintenance tab
+                const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
+                if (futureMaintenanceContent && futureMaintenanceContent.style.display !== 'none') {
+                    // We're on future maintenance tab, show/hide mobile cards based on screen size
+                    if (window.innerWidth <= 768) {
+                        mobileFutureCards.style.display = 'block';
+                    } else {
+                        mobileFutureCards.style.display = 'none';
+                    }
+                }
+            }
+        });
+        
         function confirmDeleteMaintenance(recordId, description) {
             if (confirm('Are you sure you want to delete this maintenance record?\n\n"' + description + '"\n\nThis action cannot be undone.')) {
                 // Send DELETE request using fetch
@@ -1517,9 +1534,15 @@
             }
             
             // Show mobile future cards
+            // Show the mobile cards only on mobile screens
             const mobileFutureCards = document.getElementById('mobileFutureCards');
             if (mobileFutureCards) {
-                mobileFutureCards.style.display = 'block';
+                // Only show mobile cards on screens smaller than 768px
+                if (window.innerWidth <= 768) {
+                    mobileFutureCards.style.display = 'block';
+                } else {
+                    mobileFutureCards.style.display = 'none';
+                }
             }
             
             // Update tab button states
