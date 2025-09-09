@@ -1450,22 +1450,11 @@
                     
                     // Handle tab content switching
                     const tabType = this.getAttribute('data-tab');
-                    handleTabSwitch(tabType);
+                    switchTab(tabType);
                 });
             });
         }
         
-        function handleTabSwitch(tabType) {
-            if (tabType === 'all-records') {
-                // Show current maintenance records (default view)
-                                    // Switch to All Records tab
-                showAllRecordsTab();
-            } else if (tabType === 'future-maintenance') {
-                // Show future maintenance summary table
-                                    // Switch to Future Maintenance tab
-                showFutureMaintenanceTab();
-            }
-        }
         
         function showFutureMaintenanceTab() {
             // Hide the maintenance records table using specific ID
