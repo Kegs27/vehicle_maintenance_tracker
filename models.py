@@ -14,6 +14,12 @@ class Vehicle(SQLModel, table=True):
     model: str = Field(max_length=50)
     vin: Optional[str] = Field(default=None, max_length=17, unique=True)  # Prevent duplicate VINs
     
+    # Email notification fields
+    email_notification_email: Optional[str] = Field(default=None, max_length=255, description="Email address for maintenance notifications")
+    email_notifications_enabled: bool = Field(default=False, description="Whether email notifications are enabled for this vehicle")
+    email_reminder_frequency: int = Field(default=7, description="Days between email reminders")
+    last_email_sent: Optional[date_type] = Field(default=None, description="Date of last email sent")
+    
     # Relationship to maintenance records with cascade delete
     maintenance_records: List["MaintenanceRecord"] = Relationship(
         back_populates="vehicle", 
@@ -123,5 +129,25 @@ class FutureMaintenance(SQLModel, table=True):
     created_at: Optional[date_type] = Field(default_factory=date_type.today)
     updated_at: Optional[date_type] = Field(default_factory=date_type.today)
     
+    # Email notification tracking
+    email_sent: bool = Field(default=False, description="Whether email notification has been sent")
+    last_email_reminder: Optional[date_type] = Field(default=None, description="Date of last email reminder sent")
+    
     # Relationship to vehicle
     vehicle: Vehicle = Relationship(back_populates="future_maintenance")
+
+
+class EmailSubscription(SQLModel, table=True):
+    """Email subscription model for vehicle notifications"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email_address: str = Field(max_length=255, description="Email address for notifications")
+    vehicle_id: int = Field(foreign_key="vehicle.id", description="Vehicle to receive notifications for")
+    is_active: bool = Field(default=True, description="Whether this subscription is active")
+    reminder_frequency: int = Field(default=7, description="Days between email reminders")
+    last_email_sent: Optional[date_type] = Field(default=None, description="Date of last email sent")
+    created_at: Optional[date_type] = Field(default_factory=date_type.today)
+    
+    # Relationship to vehicle
+    vehicle: Vehicle = Relationship()

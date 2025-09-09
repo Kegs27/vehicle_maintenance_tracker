@@ -82,6 +82,60 @@
                                 </div>
                             </div>
 
+                            <!-- Email Notification Settings -->
+                            <div class="card mt-4" style="background-color: #e7f3ff; border: 1px solid #b3d9ff;">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-envelope me-2"></i>Email Notifications
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="email_notifications_enabled" 
+                                                   name="email_notifications_enabled" 
+                                                   {% if vehicle and vehicle.email_notifications_enabled %}checked{% endif %}>
+                                            <label class="form-check-label fw-bold" for="email_notifications_enabled">
+                                                Enable email notifications for this vehicle
+                                            </label>
+                                        </div>
+                                        <div class="form-text">
+                                            Get notified about upcoming maintenance and reminders.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="email_notification_email" class="form-label fw-bold">Notification Email Address</label>
+                                        <input type="email" class="form-control" id="email_notification_email" 
+                                               name="email_notification_email" 
+                                               value="{{ vehicle.email_notification_email if vehicle else '' }}" 
+                                               placeholder="your-email@example.com">
+                                        <div class="form-text">
+                                            Enter the email address where you want to receive maintenance reminders.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="email_reminder_frequency" class="form-label fw-bold">Reminder Frequency</label>
+                                        <select class="form-select" id="email_reminder_frequency" name="email_reminder_frequency">
+                                            <option value="1" {% if vehicle and vehicle.email_reminder_frequency == 1 %}selected{% endif %}>Daily</option>
+                                            <option value="3" {% if vehicle and vehicle.email_reminder_frequency == 3 %}selected{% endif %}>Every 3 days</option>
+                                            <option value="7" {% if vehicle and vehicle.email_reminder_frequency == 7 %}selected{% endif %}>Weekly</option>
+                                            <option value="14" {% if vehicle and vehicle.email_reminder_frequency == 14 %}selected{% endif %}>Every 2 weeks</option>
+                                            <option value="30" {% if vehicle and vehicle.email_reminder_frequency == 30 %}selected{% endif %}>Monthly</option>
+                                        </select>
+                                        <div class="form-text">
+                                            How often to send reminder emails for pending maintenance.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Note:</strong> Email notifications are sent when you have future maintenance items approaching their due dates or mileage targets.
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="d-flex gap-2 justify-content-center">
                                 <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-save me-2"></i>
