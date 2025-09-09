@@ -156,9 +156,10 @@ async def startup_event():
             
             # Run photo columns migration if needed
             try:
-                from migrate_photo_columns import run_migration
+                from migrate_photo_columns import run_migration_with_existing_engine
+                from database import engine
                 print("Running photo columns migration...")
-                success = run_migration()
+                success = run_migration_with_existing_engine(engine)
                 if success:
                     print("✅ Photo columns migration completed successfully!")
                 else:
