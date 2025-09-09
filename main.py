@@ -223,6 +223,19 @@ async def home(request: Request):
         </html>
         """)
 
+@app.get("/migrate-photo-columns")
+async def migrate_photo_columns():
+    """Run migration to add photo columns to database"""
+    try:
+        from migrate_photo_columns import run_migration
+        success = run_migration()
+        if success:
+            return {"success": True, "message": "Photo columns migration completed successfully!"}
+        else:
+            return {"success": False, "message": "Migration failed. Check logs for details."}
+    except Exception as e:
+        return {"success": False, "message": f"Migration error: {str(e)}"}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for deployment platforms"""
