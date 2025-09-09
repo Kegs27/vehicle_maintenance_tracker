@@ -1329,13 +1329,6 @@
                 });
             }
             
-            // Add click handlers for tab buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tabType = this.getAttribute('data-tab');
-                    switchTab(tabType);
-                });
-            });
             
             // Check URL parameters for auto-tab switching
             const urlParams = new URLSearchParams(window.location.search);
