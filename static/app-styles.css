@@ -284,6 +284,12 @@ body::before {
         font-size: 0.875rem;
     }
     
+    /* Mobile button sizing - smaller min-width for mobile */
+    .btn-standard {
+        min-width: 120px;
+        padding: 8px 12px;
+    }
+    
     .card {
         margin-bottom: 1rem;
     }

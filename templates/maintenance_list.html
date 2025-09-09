@@ -560,17 +560,17 @@
             <div class="d-flex flex-wrap gap-2">
                 {% if vehicle %}
                     <button type="button" class="btn btn-primary btn-standard" onclick="goToAddRecord({{ vehicle.id }})">
-                        <i class="fas fa-plus me-2"></i>Add Maintenance
+                        <i class="fas fa-plus me-2"></i><span class="d-none d-md-inline">Add Maintenance</span><span class="d-inline d-md-none">Add</span>
                     </button>
                 {% else %}
                     <a href="/maintenance/new" class="btn btn-primary btn-standard">
-                        <i class="fas fa-plus me-2"></i>Add Maintenance
+                        <i class="fas fa-plus me-2"></i><span class="d-none d-md-inline">Add Maintenance</span><span class="d-inline d-md-none">Add</span>
                     </a>
                 {% endif %}
 
                 <!-- Add Future Maintenance Button - Always Visible -->
                 <button type="button" class="btn btn-success btn-standard" onclick="openFutureMaintenanceModal()">
-                    <i class="fas fa-calendar-plus me-2"></i>Add Future Maintenance
+                    <i class="fas fa-calendar-plus me-2"></i><span class="d-none d-md-inline">Add Future Maintenance</span><span class="d-inline d-md-none">Future</span>
                 </button>
             </div>
         </div>
