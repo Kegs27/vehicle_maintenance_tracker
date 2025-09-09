@@ -163,6 +163,11 @@
            MOBILE OPTIMIZATION STYLES
            ======================================== */
         
+        /* Hide mobile cards on desktop by default */
+        .mobile-maintenance-cards {
+            display: none;
+        }
+        
         /* Mobile-first responsive design */
         @media (max-width: 768px) {
             /* Container adjustments */
@@ -214,7 +219,7 @@
             
             /* Mobile card layout for maintenance records */
             .mobile-maintenance-cards {
-                display: block;
+                display: block !important;
             }
             
             .maintenance-card {
