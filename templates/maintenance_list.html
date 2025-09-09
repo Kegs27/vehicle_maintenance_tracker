@@ -883,7 +883,8 @@
                                 </td>
                                 <td>
                                     {% if record.photo_path %}
-                                        <img src="/{{ record.photo_path }}" alt="Maintenance photo" class="img-thumbnail" style="max-width: 60px; max-height: 60px; cursor: pointer;" onclick="showPhotoModal('{{ record.photo_path }}', '{{ record.photo_description or 'No description' }}')">
+                                        <img src="/{{ record.photo_path }}" alt="Maintenance photo" class="img-thumbnail" style="max-width: 60px; max-height: 60px; cursor: pointer;" onclick="showPhotoModal('{{ record.photo_path }}', '{{ record.photo_description or 'No description' }}')" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                        <span class="text-muted" style="display: none;">Photo unavailable</span>
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
@@ -964,7 +965,8 @@
                 
                 {% if record.photo_path %}
                 <div class="maintenance-card-photo">
-                    <img src="/{{ record.photo_path }}" alt="Maintenance photo" onclick="showPhotoModal('{{ record.photo_path }}', '{{ record.photo_description or 'No description' }}')">
+                    <img src="/{{ record.photo_path }}" alt="Maintenance photo" onclick="showPhotoModal('{{ record.photo_path }}', '{{ record.photo_description or 'No description' }}')" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="text-muted text-center" style="display: none;">Photo unavailable</div>
                 </div>
                 {% endif %}
                 
@@ -1893,8 +1895,22 @@
 
     <script>
     function showPhotoModal(photoPath, description) {
-        document.getElementById('photoModalImage').src = '/' + photoPath;
-        document.getElementById('photoModalDescription').textContent = description;
+        const modalImage = document.getElementById('photoModalImage');
+        const modalDescription = document.getElementById('photoModalDescription');
+        
+        // Set up error handling for the modal image
+        modalImage.onerror = function() {
+            modalImage.style.display = 'none';
+            modalDescription.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>Photo file not found: ' + photoPath + '</div>';
+        };
+        
+        modalImage.onload = function() {
+            modalImage.style.display = 'block';
+            modalDescription.innerHTML = '<p class="text-muted">' + description + '</p>';
+        };
+        
+        modalImage.src = '/' + photoPath;
+        modalDescription.textContent = description;
         var photoModal = new bootstrap.Modal(document.getElementById('photoModal'));
         photoModal.show();
     }
