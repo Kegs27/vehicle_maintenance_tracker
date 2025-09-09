@@ -1293,25 +1293,76 @@
                 });
             }
             
-                    // Handle delete maintenance record buttons
-        document.querySelectorAll('.delete-maintenance-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const recordId = this.getAttribute('data-record-id');
-                const description = this.getAttribute('data-description');
-                confirmDeleteMaintenance(recordId, description);
+            // Handle delete maintenance record buttons
+            document.querySelectorAll('.delete-maintenance-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const recordId = this.getAttribute('data-record-id');
+                    const description = this.getAttribute('data-description');
+                    confirmDeleteMaintenance(recordId, description);
+                });
             });
-        });
 
-        // Handle recurring maintenance checkbox
-        const isRecurringCheckbox = document.getElementById('is_recurring');
-        const recurrenceFields = document.getElementById('recurrenceFields');
-        if (isRecurringCheckbox && recurrenceFields) {
-            isRecurringCheckbox.addEventListener('change', function() {
-                recurrenceFields.style.display = this.checked ? 'block' : 'none';
-            });
-        }
+            // Handle recurring maintenance checkbox
+            const isRecurringCheckbox = document.getElementById('is_recurring');
+            const recurrenceFields = document.getElementById('recurrenceFields');
+            if (isRecurringCheckbox && recurrenceFields) {
+                isRecurringCheckbox.addEventListener('change', function() {
+                    recurrenceFields.style.display = this.checked ? 'block' : 'none';
+                });
+            }
             
-
+            // Reset modal when it's hidden
+            const futureMaintenanceModal = document.getElementById('futureMaintenanceModal');
+            if (futureMaintenanceModal) {
+                futureMaintenanceModal.addEventListener('hidden.bs.modal', function() {
+                    // Reset the modal title
+                    const modalTitle = document.getElementById('futureMaintenanceModalLabel');
+                    if (modalTitle) {
+                        modalTitle.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance';
+                    }
+                    
+                    // Reset the form
+                    const form = document.getElementById('futureMaintenanceForm');
+                    if (form) {
+                        form.reset();
+                    }
+                });
+            }
+            
+            // Add click handlers for tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabType = this.getAttribute('data-tab');
+                    switchTab(tabType);
+                });
+            });
+            
+            // Check URL parameters for auto-tab switching
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            const vehicleIdParam = urlParams.get('vehicle_id');
+            
+            if (tabParam === 'future-maintenance') {
+                // Auto-switch to future maintenance tab
+                setTimeout(() => {
+                    switchTab('future-maintenance');
+                    
+                    // If vehicle_id is provided, pre-populate the add form
+                    if (vehicleIdParam) {
+                        // Find the vehicle name
+                        fetch(`/api/vehicles/${vehicleIdParam}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.vehicle) {
+                                    openVehicleModal(vehicleIdParam, data.vehicle.name);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error fetching vehicle:', error);
+                            });
+                    }
+                }, 100); // Small delay to ensure DOM is ready
+            }
         });
         
         function confirmDeleteMaintenance(recordId, description) {
@@ -1343,15 +1394,6 @@
             window.location.href = url;
         }
         
-        function goToImport(vehicleId) {
-            const url = '/import?vehicle_id=' + vehicleId;
-            window.location.href = url;
-        }
-        
-        function showOilChangeMenu() {
-            // Redirect to vehicles page for oil change management
-            window.location.href = '/vehicles';
-        }
         
         function saveFutureMaintenance() {
             // Get form data
@@ -1729,61 +1771,6 @@
                 });
             }
         }
-        
-        // Reset modal when it's hidden
-        document.addEventListener('DOMContentLoaded', function() {
-            const futureMaintenanceModal = document.getElementById('futureMaintenanceModal');
-            if (futureMaintenanceModal) {
-                futureMaintenanceModal.addEventListener('hidden.bs.modal', function() {
-                    // Reset the modal title
-                    const modalTitle = document.getElementById('futureMaintenanceModalLabel');
-                    if (modalTitle) {
-                        modalTitle.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Plan Future Maintenance';
-                    }
-                    
-                    // Reset the form
-                    const form = document.getElementById('futureMaintenanceForm');
-                    if (form) {
-                        form.reset();
-                    }
-                });
-            }
-            
-            // Add click handlers for tab buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tabType = this.getAttribute('data-tab');
-                    switchTab(tabType);
-                });
-            });
-            
-            // Check URL parameters for auto-tab switching
-            const urlParams = new URLSearchParams(window.location.search);
-            const tabParam = urlParams.get('tab');
-            const vehicleIdParam = urlParams.get('vehicle_id');
-            
-            if (tabParam === 'future-maintenance') {
-                // Auto-switch to future maintenance tab
-                setTimeout(() => {
-                    switchTab('future-maintenance');
-                    
-                    // If vehicle_id is provided, pre-populate the add form
-                    if (vehicleIdParam) {
-                        // Find the vehicle name
-                        fetch(`/api/vehicles/${vehicleIdParam}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.vehicle) {
-                                    openVehicleModal(vehicleIdParam, data.vehicle.name);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error fetching vehicle:', error);
-                            });
-                    }
-                }, 100); // Small delay to ensure DOM is ready
-            }
-        });
         
         function initializeSorting() {
             // Add click handlers to sortable headers
