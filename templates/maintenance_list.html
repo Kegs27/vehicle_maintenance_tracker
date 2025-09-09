@@ -871,8 +871,8 @@
             </div>
         </div>
         
-        <!-- Mobile Maintenance Cards (hidden on desktop) -->
-        <div class="mobile-maintenance-cards">
+        <!-- Mobile Maintenance Cards - Records Tab (hidden on desktop) -->
+        <div class="mobile-maintenance-cards" id="mobileRecordsCards">
             {% for record in records %}
             <div class="maintenance-card">
                 <div class="maintenance-card-header">
@@ -928,6 +928,48 @@
                     <button type="button" class="btn btn-outline-danger btn-sm delete-maintenance-btn" 
                             data-record-id="{{ record.id }}" 
                             data-description="{{ record.description }}">
+                        <i class="fas fa-trash me-1"></i>Delete
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Mobile Future Maintenance Cards (hidden on desktop) -->
+        <div class="mobile-maintenance-cards" id="mobileFutureCards" style="display: none;">
+            {% for future_record in future_maintenance %}
+            <div class="maintenance-card">
+                <div class="maintenance-card-header">
+                    <div class="maintenance-card-title">
+                        <i class="fas fa-car text-primary me-2"></i>{{ future_record.vehicle.name }}
+                    </div>
+                    <div class="maintenance-card-date">
+                        <i class="fas fa-calendar-plus me-1"></i>Future
+                    </div>
+                </div>
+                
+                <div class="maintenance-card-body">
+                    <div class="maintenance-card-info">
+                        <i class="fas fa-tools"></i>
+                        <span>{{ future_record.maintenance_type }}</span>
+                    </div>
+                    <div class="maintenance-card-info">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>{{ "{:,}".format(future_record.target_mileage) }} mi</span>
+                    </div>
+                </div>
+                
+                {% if future_record.notes %}
+                <div class="maintenance-card-description">
+                    <i class="fas fa-clipboard-list me-2"></i>{{ future_record.notes }}
+                </div>
+                {% endif %}
+                
+                <div class="maintenance-card-actions">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="editFutureMaintenance({{ future_record.id }})">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFutureMaintenance({{ future_record.id }})">
                         <i class="fas fa-trash me-1"></i>Delete
                     </button>
                 </div>
@@ -1385,10 +1427,22 @@
                 recordsTable.style.display = 'none';
             }
             
+            // Hide mobile records cards
+            const mobileRecordsCards = document.getElementById('mobileRecordsCards');
+            if (mobileRecordsCards) {
+                mobileRecordsCards.style.display = 'none';
+            }
+            
             // Show the future maintenance summary
             const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
             if (futureMaintenanceContent) {
                 futureMaintenanceContent.style.display = 'block';
+            }
+            
+            // Show mobile future cards
+            const mobileFutureCards = document.getElementById('mobileFutureCards');
+            if (mobileFutureCards) {
+                mobileFutureCards.style.display = 'block';
             }
             
             // Update tab button states
@@ -1408,10 +1462,22 @@
                 recordsTable.style.display = 'block';
             }
             
+            // Show mobile records cards
+            const mobileRecordsCards = document.getElementById('mobileRecordsCards');
+            if (mobileRecordsCards) {
+                mobileRecordsCards.style.display = 'block';
+            }
+            
             // Hide the future maintenance summary
             const futureMaintenanceContent = document.getElementById('futureMaintenanceContent');
             if (futureMaintenanceContent) {
                 futureMaintenanceContent.style.display = 'none';
+            }
+            
+            // Hide mobile future cards
+            const mobileFutureCards = document.getElementById('mobileFutureCards');
+            if (mobileFutureCards) {
+                mobileFutureCards.style.display = 'none';
             }
             
             // Update tab button states
