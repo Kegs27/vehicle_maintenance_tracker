@@ -694,7 +694,48 @@
                                 </tr>
                             </thead>
                             <tbody id="futureMaintenanceTableBody">
-                                <!-- Future maintenance records will be loaded here dynamically -->
+                                {% if future_maintenance %}
+                                    {% for future_record in future_maintenance %}
+                                    <tr>
+                                        <td class="text-center">
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-car text-purple-600 me-2"></i>
+                                                <span class="fw-semibold">{{ future_record.vehicle.name }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary">{{ future_record.maintenance_type }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="fw-semibold">{{ "{:,}".format(future_record.target_mileage) }} mi</span>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if future_record.target_date %}
+                                                <span class="text-muted">{{ future_record.target_date.strftime('%m/%d/%Y') }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if future_record.estimated_cost %}
+                                                <span class="fw-semibold text-success">${{ "{:.2f}".format(future_record.estimated_cost) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="editFutureMaintenance({{ future_record.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFutureMaintenance({{ future_record.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
                                 <tr>
                                     <td colspan="6" class="text-center py-4">
                                         <div class="text-muted">
@@ -704,6 +745,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>
@@ -1450,9 +1492,6 @@
                 btn.classList.remove('active');
             });
             document.querySelector('[data-tab="future-maintenance"]').classList.add('active');
-            
-            // Load future maintenance records
-            loadFutureMaintenanceRecords();
         }
         
         function showAllRecordsTab() {
