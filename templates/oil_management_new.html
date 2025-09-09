@@ -878,6 +878,15 @@
             }
             formData.set('vehicle_id', vehicleId);
             
+            // Ensure date_str is set
+            if (!formData.get('date_str')) {
+                const today = new Date();
+                const dateStr = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                               today.getDate().toString().padStart(2, '0') + '/' + 
+                               today.getFullYear();
+                formData.set('date_str', dateStr);
+            }
+            
             // Debug: log all form data
             console.log('Form data being sent:');
             for (let [key, value] of formData.entries()) {
@@ -925,6 +934,15 @@
                 return;
             }
             formData.set('vehicle_id', vehicleId);
+            
+            // Ensure date_str is set
+            if (!formData.get('date_str')) {
+                const today = new Date();
+                const dateStr = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                               today.getDate().toString().padStart(2, '0') + '/' + 
+                               today.getFullYear();
+                formData.set('date_str', dateStr);
+            }
             
             // Debug: log all form data
             console.log('Form data being sent:');
