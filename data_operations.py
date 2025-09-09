@@ -436,7 +436,9 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
                             driving_conditions: Optional[str] = None,
                             oil_consumption_notes: Optional[str] = None,
                             linked_oil_change_id: Optional[int] = None,
-                            oil_analysis_report: Optional[str] = None) -> Dict[str, Any]:
+                            oil_analysis_report: Optional[str] = None,
+                            photo_path: Optional[str] = None,
+                            photo_description: Optional[str] = None) -> Dict[str, Any]:
     """Create a new maintenance record"""
     session = SessionLocal()
     try:
@@ -501,7 +503,10 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
             driving_conditions=driving_conditions,
             oil_consumption_notes=oil_consumption_notes,
             linked_oil_change_id=linked_oil_change_id,
-            oil_analysis_report=oil_analysis_report
+            oil_analysis_report=oil_analysis_report,
+            # Photo documentation fields
+            photo_path=photo_path,
+            photo_description=photo_description
         )
         
         session.add(record)
@@ -540,7 +545,10 @@ def update_maintenance_record(record_id: int, vehicle_id: int, date: str, descri
                             coolant_contamination: Optional[bool] = None,
                             driving_conditions: Optional[str] = None,
                             oil_consumption_notes: Optional[str] = None,
-                            oil_analysis_report: Optional[str] = None) -> Dict[str, Any]:
+                            oil_analysis_report: Optional[str] = None,
+                            # Photo documentation fields
+                            photo_path: Optional[str] = None,
+                            photo_description: Optional[str] = None) -> Dict[str, Any]:
     """Update an existing maintenance record"""
     session = SessionLocal()
     try:
@@ -615,6 +623,9 @@ def update_maintenance_record(record_id: int, vehicle_id: int, date: str, descri
         record.driving_conditions = driving_conditions
         record.oil_consumption_notes = oil_consumption_notes
         record.oil_analysis_report = oil_analysis_report
+        # Photo documentation fields
+        record.photo_path = photo_path
+        record.photo_description = photo_description
         
         session.commit()
         session.refresh(record)

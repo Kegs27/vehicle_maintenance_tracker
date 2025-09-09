@@ -442,7 +442,10 @@ async def create_maintenance_route(
     driving_conditions: Optional[str] = Form(None),
     oil_consumption_notes: Optional[str] = Form(None),
     # PDF upload for oil analysis
-    oil_analysis_report: UploadFile = File(None)
+    oil_analysis_report: UploadFile = File(None),
+    # Photo documentation
+    photo: UploadFile = File(None),
+    photo_description: Optional[str] = Form(None)
 ):
     """Create a new maintenance record using centralized data operations"""
     try:
@@ -463,6 +466,25 @@ async def create_maintenance_route(
             # Save the uploaded file
             with open(pdf_file_path, "wb") as buffer:
                 content = await oil_analysis_report.read()
+                buffer.write(content)
+        
+        # Handle photo upload for documentation
+        photo_path = None
+        if photo and photo.filename:
+            import os
+            # Create uploads directory if it doesn't exist
+            upload_dir = "uploads"
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Generate unique filename
+            import uuid
+            file_extension = os.path.splitext(photo.filename)[1]
+            unique_filename = f"photo_{uuid.uuid4().hex}{file_extension}"
+            photo_path = os.path.join(upload_dir, unique_filename)
+            
+            # Save the uploaded file
+            with open(photo_path, "wb") as buffer:
+                content = await photo.read()
                 buffer.write(content)
         
         # Handle empty date string by converting to None
@@ -490,7 +512,9 @@ async def create_maintenance_route(
             coolant_contamination=coolant_contamination,
             driving_conditions=driving_conditions,
             oil_consumption_notes=oil_consumption_notes,
-            oil_analysis_report=pdf_file_path
+            oil_analysis_report=pdf_file_path,
+            photo_path=photo_path,
+            photo_description=photo_description
         )
         
         # If successful and oil change fields provided, update the record with oil change details
@@ -677,7 +701,10 @@ async def update_maintenance_route(
     oil_consumption_notes: Optional[str] = Form(None),
     return_url: Optional[str] = Form(None),
     # PDF upload for oil analysis
-    oil_analysis_report: UploadFile = File(None)
+    oil_analysis_report: UploadFile = File(None),
+    # Photo documentation
+    photo: UploadFile = File(None),
+    photo_description: Optional[str] = Form(None)
 ):
     """Update an existing maintenance record using centralized data operations"""
     try:
@@ -700,6 +727,25 @@ async def update_maintenance_route(
                 content = await oil_analysis_report.read()
                 buffer.write(content)
         
+        # Handle photo upload for documentation
+        photo_path = None
+        if photo and photo.filename:
+            import os
+            # Create uploads directory if it doesn't exist
+            upload_dir = "uploads"
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Generate unique filename
+            import uuid
+            file_extension = os.path.splitext(photo.filename)[1]
+            unique_filename = f"photo_{uuid.uuid4().hex}{file_extension}"
+            photo_path = os.path.join(upload_dir, unique_filename)
+            
+            # Save the uploaded file
+            with open(photo_path, "wb") as buffer:
+                content = await photo.read()
+                buffer.write(content)
+        
         # Use centralized function with validation
         result = update_maintenance_record(
             record_id, vehicle_id, date_str, description, cost or 0.0, mileage, oil_change_interval,
@@ -708,7 +754,9 @@ async def update_maintenance_route(
             oil_analysis_date, next_oil_analysis_date, oil_analysis_cost,
             iron_level, aluminum_level, copper_level, viscosity, tbn,
             fuel_dilution, coolant_contamination, driving_conditions, oil_consumption_notes,
-            oil_analysis_report=pdf_file_path
+            oil_analysis_report=pdf_file_path,
+            photo_path=photo_path,
+            photo_description=photo_description
         )
         
         if result["success"]:
@@ -1965,6 +2013,18 @@ async def oil_management_new(request: Request):
         <p>Error: {str(e)}</p>
         <p><a href="/">← Back to Home</a></p>
         """)
+
+@app.get("/uploads/{filename}")
+async def serve_photo(filename: str):
+    """Serve uploaded photos"""
+    import os
+    from fastapi.responses import FileResponse
+    
+    file_path = f"uploads/{filename}"
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        raise HTTPException(status_code=404, detail="Photo not found")
 
 @app.get("/oil-analysis/pdf/{record_id}")
 async def view_oil_analysis_pdf(record_id: int):

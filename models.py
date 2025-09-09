@@ -73,6 +73,10 @@ class MaintenanceRecord(SQLModel, table=True):
     # Oil Analysis Linking
     linked_oil_change_id: Optional[int] = Field(default=None, description="ID of the oil change this analysis is linked to")
     
+    # Photo Documentation
+    photo_path: Optional[str] = Field(default=None, description="Path to uploaded photo file")
+    photo_description: Optional[str] = Field(default=None, max_length=500, description="Description/tags for the photo")
+    
     # Relationship to vehicle
     vehicle: Vehicle = Relationship(back_populates="maintenance_records")
 

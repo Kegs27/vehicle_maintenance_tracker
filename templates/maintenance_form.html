@@ -132,6 +132,32 @@
                                 </div>
                             </div>
 
+                            <!-- Photo Documentation -->
+                            <div class="mb-3">
+                                <label for="photo" class="form-label fw-bold">
+                                    <i class="fas fa-camera me-2"></i>Photo Documentation
+                                </label>
+                                <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Upload a photo of the work performed, parts replaced, or issues addressed
+                                </div>
+                                {% if record and record.photo_path %}
+                                <div class="mt-2">
+                                    <img src="/{{ record.photo_path }}" alt="Maintenance photo" class="img-fluid rounded" style="max-width: 300px;">
+                                    <div class="mt-1">
+                                        <small class="text-muted">{{ record.photo_description or 'No description' }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="photo_description" class="form-label">Photo Description</label>
+                                <textarea class="form-control" id="photo_description" name="photo_description" rows="2" 
+                                          placeholder="Describe what's shown in the photo">{{ record.photo_description if record else '' }}</textarea>
+                            </div>
+
                             {% endif %}
 
                             <!-- FORM TYPE 2: OIL CHANGE -->
@@ -259,6 +285,32 @@
                                 <div class="form-text">
                                     Total will auto-calculate from oil + filter + labor costs above
                                 </div>
+                            </div>
+
+                            <!-- Photo Documentation -->
+                            <div class="mb-3">
+                                <label for="photo" class="form-label fw-bold">
+                                    <i class="fas fa-camera me-2"></i>Photo Documentation
+                                </label>
+                                <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Upload a photo of the oil change work performed
+                                </div>
+                                {% if record and record.photo_path %}
+                                <div class="mt-2">
+                                    <img src="/{{ record.photo_path }}" alt="Oil change photo" class="img-fluid rounded" style="max-width: 300px;">
+                                    <div class="mt-1">
+                                        <small class="text-muted">{{ record.photo_description or 'No description' }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="photo_description" class="form-label">Photo Description</label>
+                                <textarea class="form-control" id="photo_description" name="photo_description" rows="2" 
+                                          placeholder="Describe what's shown in the photo">{{ record.photo_description if record else '' }}</textarea>
                             </div>
 
                             <!-- Hidden field to mark as oil change -->
@@ -448,6 +500,32 @@
                                 <label class="form-label">Additional Notes</label>
                                 <textarea class="form-control" name="oil_consumption_notes" rows="3" 
                                           placeholder="Any additional observations or notes">{{ record.oil_consumption_notes if record else '' }}</textarea>
+                            </div>
+
+                            <!-- Photo Documentation -->
+                            <div class="mb-3">
+                                <label for="photo" class="form-label fw-bold">
+                                    <i class="fas fa-camera me-2"></i>Photo Documentation
+                                </label>
+                                <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Upload a photo of the oil sample or analysis setup
+                                </div>
+                                {% if record and record.photo_path %}
+                                <div class="mt-2">
+                                    <img src="/{{ record.photo_path }}" alt="Oil analysis photo" class="img-fluid rounded" style="max-width: 300px;">
+                                    <div class="mt-1">
+                                        <small class="text-muted">{{ record.photo_description or 'No description' }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="photo_description" class="form-label">Photo Description</label>
+                                <textarea class="form-control" id="photo_description" name="photo_description" rows="2" 
+                                          placeholder="Describe what's shown in the photo">{{ record.photo_description if record else '' }}</textarea>
                             </div>
 
                             <!-- Hidden field to mark as oil analysis -->
