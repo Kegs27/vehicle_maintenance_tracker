@@ -476,6 +476,10 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
             except ValueError as e:
                 return {"success": False, "error": f"Invalid next oil analysis date: {str(e)}"}
         
+        # Handle empty description
+        if not description or description.strip() == "":
+            description = "N/A"
+        
         # Determine if this is an oil change based on oil_change_interval
         is_oil_change = oil_change_interval is not None
         
@@ -1227,7 +1231,7 @@ def create_future_oil_change_record(vehicle_id: int,
     finally:
         session.close()
 
-def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional[FutureMaintenance]:
+def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional['FutureMaintenance']:
     """Get a specific future maintenance record by ID"""
     try:
         session = next(get_session())

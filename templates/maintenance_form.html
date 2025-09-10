@@ -122,9 +122,9 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="description" class="form-label fw-bold">Description *</label>
+                                <label for="description" class="form-label fw-bold">Description</label>
                                 <textarea class="form-control" id="description" name="description" rows="3" 
-                                          placeholder="Describe the maintenance performed, parts replaced, or issues addressed..." required>{{ record.description if record else '' }}</textarea>
+                                          placeholder="Describe the maintenance performed, parts replaced, or issues addressed... (optional)">{{ record.description if record else '' }}</textarea>
                             </div>
 
                             <div class="mb-4">
@@ -195,7 +195,7 @@
                             <div class="mb-3">
                                 <label for="description" class="form-label fw-bold">Description</label>
                                 <textarea class="form-control" id="description" name="description" rows="2" 
-                                          placeholder="e.g., Oil Change - 5W-30 Mobil 1">{{ record.description if record else '' }}</textarea>
+                                          placeholder="e.g., Oil Change - 5W-30 Mobil 1 (optional)">{{ record.description if record else '' }}</textarea>
                             </div>
 
                             <div class="mb-3">
@@ -351,9 +351,9 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="description" class="form-label fw-bold">Analysis Description *</label>
-                                <textarea class="form-control" id="description" name="description" rows="2" 
-                                          placeholder="Brief description of the oil analysis (e.g., 'Oil analysis from Blackstone Labs')" required>{{ record.description if record else '' }}</textarea>
+                                <label for="description" class="form-label fw-bold">Analysis Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="2"
+                                          placeholder="Brief description of the oil analysis (e.g., 'Oil analysis from Blackstone Labs') (optional)">{{ record.description if record else '' }}</textarea>
                             </div>
 
                             <!-- PDF Upload -->
