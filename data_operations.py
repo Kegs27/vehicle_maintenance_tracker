@@ -1173,6 +1173,7 @@ def create_future_oil_change_record(vehicle_id: int,
     """Create a future maintenance record for the next oil change"""
     try:
         from database import get_session
+        from models import FutureMaintenance
         session = next(get_session())
         
         # Calculate next due mileage
