@@ -111,12 +111,15 @@ body::before {
     transition: all 0.2s ease;
 }
 
-/* Standard button sizes for consistency */
-.btn.btn-standard {
+/* Standard button sizes for consistency - FORCE same size */
+.btn.btn-primary.btn-standard,
+.btn.btn-success.btn-standard {
+    width: 220px !important;
     min-width: 220px !important;
+    max-width: 220px !important;
     padding: 8px 16px !important;
     text-align: center !important;
-    width: auto !important;
+    box-sizing: border-box !important;
 }
 
 .btn:hover {
@@ -285,10 +288,14 @@ body::before {
         font-size: 0.875rem;
     }
     
-    /* Mobile button sizing - smaller min-width for mobile */
-    .btn.btn-standard {
+    /* Mobile button sizing - FORCE same size on mobile */
+    .btn.btn-primary.btn-standard,
+    .btn.btn-success.btn-standard {
+        width: 120px !important;
         min-width: 120px !important;
+        max-width: 120px !important;
         padding: 8px 12px !important;
+        box-sizing: border-box !important;
     }
     
     .card {
