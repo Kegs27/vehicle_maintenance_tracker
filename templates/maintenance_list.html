@@ -219,7 +219,7 @@
             
             /* Mobile card layout for maintenance records */
             .mobile-maintenance-cards {
-                display: block !important;
+                display: none; /* Hidden by default, shown by JavaScript */
             }
             
             .maintenance-card {
@@ -920,7 +920,7 @@
         </div>
         
         <!-- Mobile Maintenance Cards - Records Tab (hidden on desktop) -->
-        <div class="mobile-maintenance-cards" id="mobileRecordsCards">
+        <div class="mobile-maintenance-cards" id="mobileRecordsCards" style="display: none;">
             {% for record in records %}
             <div class="maintenance-card">
                 <div class="maintenance-card-header">
@@ -1270,6 +1270,14 @@
             
             // Initialize tab functionality
             initializeTabs();
+            
+            // Set default tab to "All Records" on mobile
+            if (window.innerWidth <= 768) {
+                const mobileRecordsCards = document.getElementById('mobileRecordsCards');
+                if (mobileRecordsCards) {
+                    mobileRecordsCards.style.display = 'block';
+                }
+            }
             
             const descriptionModal = document.getElementById('descriptionModal');
             if (descriptionModal) {
