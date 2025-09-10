@@ -529,9 +529,9 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
             try:
                 # Extract oil type from description if possible
                 oil_type = "Conventional"  # Default
-                if "synthetic" in description.lower():
+                if description and "synthetic" in description.lower():
                     oil_type = "Synthetic"
-                elif "blend" in description.lower():
+                elif description and "blend" in description.lower():
                     oil_type = "Blend"
                 
                 future_maintenance_result = create_future_oil_change_record(

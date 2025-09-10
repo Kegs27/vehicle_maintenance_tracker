@@ -1976,7 +1976,7 @@ async def oil_management_new(request: Request):
             oil_changes.sort(key=lambda x: x.date, reverse=True)  # Most recent first
             
             # Get future maintenance records for oil changes
-            from data_operations import get_session
+            from database import get_session
             from models import FutureMaintenance
             from sqlmodel import select
             
