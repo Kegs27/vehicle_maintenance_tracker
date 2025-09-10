@@ -829,9 +829,18 @@
 
         // Modal functions
         function openOilChangeModal(vehicleId, vehicleName) {
-            // Redirect to maintenance form with oil change type
-            const url = `/maintenance/new?vehicle_id=${vehicleId}&form_type=oil_change&return_url=/oil-management`;
-            window.location.href = url;
+            currentVehicleId = vehicleId;
+            document.getElementById('oilChangeVehicleId').value = vehicleId;
+            document.getElementById('oilChangeVehicleName').textContent = vehicleName;
+            
+            // Set current date as default
+            const today = new Date();
+            const dateStr = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                           today.getDate().toString().padStart(2, '0') + '/' + 
+                           today.getFullYear();
+            document.querySelector('#addOilChangeModal input[name="date_str"]').value = dateStr;
+            
+            new bootstrap.Modal(document.getElementById('addOilChangeModal')).show();
         }
 
         function openAnalysisModal(vehicleId, vehicleName) {
