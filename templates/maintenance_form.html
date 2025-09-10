@@ -56,6 +56,14 @@
                         </h4>
                     </div>
                     <div class="card-body p-4">
+                        {% if not form_type or form_type == "maintenance" %}
+                        <!-- Oil change notice for regular maintenance records -->
+                        <div class="alert alert-info mb-4" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Oil changes should be entered on the <a href="/oil-management" class="alert-link">Oil Management</a> page.
+                        </div>
+                        {% endif %}
+                        
                         {% if record %}
                         <!-- Show vehicle info for existing records -->
                         <div class="mb-4 p-3 bg-light rounded">
