@@ -479,11 +479,6 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
         # Determine if this is an oil change based on oil_change_interval
         is_oil_change = oil_change_interval is not None
         
-        # Debug logging
-        print(f"DEBUG: create_maintenance_record called with:")
-        print(f"  - oil_change_interval: {oil_change_interval}")
-        print(f"  - is_oil_change: {is_oil_change}")
-        print(f"  - description: {description}")
         
         # Create maintenance record
         record = MaintenanceRecord(
@@ -522,10 +517,6 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
         # If this is an oil change, automatically create future maintenance record
         future_maintenance_result = None
         if is_oil_change and oil_change_interval and mileage:
-            print(f"DEBUG: Creating future maintenance record for oil change")
-            print(f"  - vehicle_id: {vehicle_id}")
-            print(f"  - current_mileage: {mileage}")
-            print(f"  - oil_change_interval: {oil_change_interval}")
             try:
                 # Extract oil type from description if possible
                 oil_type = "Conventional"  # Default
@@ -1181,6 +1172,7 @@ def create_future_oil_change_record(vehicle_id: int,
                                    estimated_cost: float = 50.0) -> Dict[str, Any]:
     """Create a future maintenance record for the next oil change"""
     try:
+        from database import get_session
         session = next(get_session())
         
         # Calculate next due mileage
