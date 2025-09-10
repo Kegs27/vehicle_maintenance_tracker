@@ -1976,9 +1976,20 @@ async def oil_management_new(request: Request):
             oil_changes.sort(key=lambda x: x.date, reverse=True)  # Most recent first
             
             # Get future maintenance records for oil changes
-            from data_operations import get_future_maintenance_by_vehicle
-            future_maintenance = get_future_maintenance_by_vehicle(vehicle.id)
-            future_oil_changes = [fm for fm in future_maintenance if fm.maintenance_type == "Oil Change" and fm.is_active]
+            from data_operations import get_session
+            from models import FutureMaintenance
+            from sqlmodel import select
+            
+            session = next(get_session())
+            try:
+                future_maintenance = session.execute(
+                    select(FutureMaintenance)
+                    .where(FutureMaintenance.vehicle_id == vehicle.id)
+                    .where(FutureMaintenance.is_active == True)
+                ).scalars().all()
+                future_oil_changes = [fm for fm in future_maintenance if fm.maintenance_type == "Oil Change"]
+            finally:
+                session.close()
             
             # Filter oil analysis records
             oil_analysis = [
