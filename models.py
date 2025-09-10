@@ -46,7 +46,7 @@ class MaintenanceRecord(SQLModel, table=True):
     vehicle_id: int = Field(foreign_key="vehicle.id")
     date: date_type = Field()  # Always required, but can be placeholder date
     mileage: int
-    description: str = Field(max_length=500)
+    description: Optional[str] = Field(default=None, max_length=500)
     cost: Optional[float] = Field(default=None, nullable=True)
     date_estimated: bool = Field(default=False)
     oil_change_interval: Optional[int] = Field(default=None, description="Miles until next oil change (for oil change records)")
