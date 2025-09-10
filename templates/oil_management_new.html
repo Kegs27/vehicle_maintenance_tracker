@@ -362,6 +362,41 @@
                                 {% endif %}
                             </div>
 
+                            <!-- Future Oil Changes -->
+                            {% if vehicle_data.future_oil_changes %}
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-calendar-plus me-2 text-success"></i>Upcoming Oil Changes
+                                    </h6>
+                                </div>
+                                
+                                {% for future_oil_change in vehicle_data.future_oil_changes %}
+                                <div class="oil-detail-row border border-success border-opacity-25 bg-light">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <strong class="text-success">{{ '{:,}'.format(future_oil_change.target_mileage) }} miles</strong>
+                                            <small class="text-muted d-block">{{ future_oil_change.target_date.strftime('%m/%d/%Y') if future_oil_change.target_date else 'Date TBD' }}</small>
+                                            {% if future_oil_change.notes %}
+                                            <small class="text-muted d-block">{{ future_oil_change.notes }}</small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3">
+                                            {% if future_oil_change.estimated_cost %}
+                                            <span class="text-success fw-semibold">${{ '{:.2f}'.format(future_oil_change.estimated_cost) }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            <button class="btn btn-success btn-sm" onclick="completeOilChange({{ future_oil_change.id }}, {{ vehicle_data.vehicle.id }}, '{{ vehicle_data.vehicle.name }}')">
+                                                <i class="fas fa-check me-1"></i>Complete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
                             <!-- Divider between Oil Changes and Oil Analysis -->
                             <div class="border-top border-2 border-secondary my-4"></div>
 
@@ -987,6 +1022,12 @@
         function editAnalysis(recordId) {
             // Use the maintenance form which now properly handles oil analysis records
             window.location.href = `/maintenance/${recordId}/edit?return_url=/oil-management`;
+        }
+
+        function completeOilChange(futureMaintenanceId, vehicleId, vehicleName) {
+            // Redirect to maintenance form with pre-populated data
+            const url = `/maintenance/new?vehicle_id=${vehicleId}&future_maintenance_id=${futureMaintenanceId}&form_type=oil_change`;
+            window.location.href = url;
         }
 
         // Initialize page

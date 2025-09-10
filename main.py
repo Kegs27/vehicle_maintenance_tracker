@@ -420,13 +420,31 @@ async def new_maintenance_form(
     request: Request, 
     return_url: Optional[str] = Query(None), 
     vehicle_id: Optional[int] = Query(None),
-    form_type: Optional[str] = Query(None)
+    form_type: Optional[str] = Query(None),
+    future_maintenance_id: Optional[int] = Query(None)
 ):
     """Unified form handler for creating new maintenance, oil changes, and oil analysis"""
     vehicles = get_vehicle_names()
     
     # Determine what type of form to show using unified logic
     detected_form_type = determine_form_type(None, return_url, form_type)
+    
+    # Pre-populate data from future maintenance if provided
+    pre_populated_data = None
+    if future_maintenance_id:
+        try:
+            from data_operations import get_future_maintenance_by_id
+            future_maintenance = get_future_maintenance_by_id(future_maintenance_id)
+            if future_maintenance:
+                pre_populated_data = {
+                    "description": f"Oil Change - {future_maintenance.notes or 'Regular maintenance'}",
+                    "estimated_cost": future_maintenance.estimated_cost,
+                    "target_mileage": future_maintenance.target_mileage,
+                    "target_date": future_maintenance.target_date,
+                    "notes": future_maintenance.notes
+                }
+        except Exception as e:
+            print(f"Error loading future maintenance data: {e}")
     
     return templates.TemplateResponse("maintenance_form.html", {
         "request": request, 
@@ -435,6 +453,7 @@ async def new_maintenance_form(
         "return_url": return_url or "/maintenance",
         "selected_vehicle_id": vehicle_id,
         "form_type": detected_form_type,
+        "pre_populated_data": pre_populated_data,
         # Legacy compatibility for existing template logic
         "is_oil_analysis": detected_form_type == "oil_analysis",
         "is_oil_change": detected_form_type == "oil_change"
@@ -1956,6 +1975,11 @@ async def oil_management_new(request: Request):
             oil_changes = [r for r in records if r.is_oil_change]
             oil_changes.sort(key=lambda x: x.date, reverse=True)  # Most recent first
             
+            # Get future maintenance records for oil changes
+            from data_operations import get_future_maintenance_by_vehicle
+            future_maintenance = get_future_maintenance_by_vehicle(vehicle.id)
+            future_oil_changes = [fm for fm in future_maintenance if fm.maintenance_type == "Oil Change" and fm.is_active]
+            
             # Filter oil analysis records
             oil_analysis = [
                 r for r in records 
@@ -1995,6 +2019,7 @@ async def oil_management_new(request: Request):
             vehicles_oil_data.append({
                 'vehicle': vehicle,
                 'oil_changes': oil_changes,
+                'future_oil_changes': future_oil_changes,
                 'oil_analysis': oil_analysis,
                 'latest_oil_change': latest_oil_change,
                 'latest_mileage': latest_mileage,

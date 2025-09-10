@@ -513,7 +513,33 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
         session.commit()
         session.refresh(record)
         
-        return {"success": True, "record": record}
+        # If this is an oil change, automatically create future maintenance record
+        future_maintenance_result = None
+        if is_oil_change and oil_change_interval and mileage:
+            try:
+                # Extract oil type from description if possible
+                oil_type = "Conventional"  # Default
+                if "synthetic" in description.lower():
+                    oil_type = "Synthetic"
+                elif "blend" in description.lower():
+                    oil_type = "Blend"
+                
+                future_maintenance_result = create_future_oil_change_record(
+                    vehicle_id=vehicle_id,
+                    current_mileage=mileage,
+                    oil_change_interval=oil_change_interval,
+                    oil_type=oil_type,
+                    estimated_cost=cost
+                )
+            except Exception as e:
+                print(f"Warning: Could not create future oil change record: {e}")
+                future_maintenance_result = {"success": False, "error": str(e)}
+        
+        return {
+            "success": True, 
+            "record": record,
+            "future_maintenance": future_maintenance_result
+        }
     except Exception as e:
         session.rollback()
         print(f"Error creating maintenance record: {e}")
@@ -1137,6 +1163,73 @@ def get_oil_change_interval_from_record(record: MaintenanceRecord) -> int:
     # Fallback to default intervals based on vehicle type/age
     # This could be enhanced with vehicle-specific logic
     return 5000  # Default 5,000 miles
+
+def create_future_oil_change_record(vehicle_id: int, 
+                                   current_mileage: int, 
+                                   oil_change_interval: int,
+                                   oil_type: str = "Conventional",
+                                   estimated_cost: float = 50.0) -> Dict[str, Any]:
+    """Create a future maintenance record for the next oil change"""
+    try:
+        session = next(get_session())
+        
+        # Calculate next due mileage
+        next_due_mileage = current_mileage + oil_change_interval
+        
+        # Calculate next due date (6 months from now as fallback)
+        from datetime import date, timedelta
+        next_due_date = date.today() + timedelta(days=180)  # 6 months
+        
+        # Create future maintenance record
+        future_maintenance = FutureMaintenance(
+            vehicle_id=vehicle_id,
+            maintenance_type="Oil Change",
+            target_mileage=next_due_mileage,
+            target_date=next_due_date,
+            mileage_reminder=100,  # Remind 100 miles before
+            date_reminder=30,      # Remind 30 days before
+            estimated_cost=estimated_cost,
+            notes=f"Next oil change - {oil_type} oil, {oil_change_interval:,} mile interval",
+            is_recurring=True,
+            recurrence_interval_miles=oil_change_interval,
+            recurrence_interval_months=6,  # 6 months as time-based fallback
+            is_active=True
+        )
+        
+        session.add(future_maintenance)
+        session.commit()
+        session.refresh(future_maintenance)
+        
+        return {
+            "success": True,
+            "future_maintenance_id": future_maintenance.id,
+            "next_due_mileage": next_due_mileage,
+            "next_due_date": next_due_date,
+            "message": f"Next oil change scheduled for {next_due_mileage:,} miles or {next_due_date}"
+        }
+        
+    except Exception as e:
+        print(f"Error creating future oil change record: {e}")
+        return {
+            "success": False,
+            "error": f"Failed to create future oil change record: {str(e)}"
+        }
+    finally:
+        session.close()
+
+def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional[FutureMaintenance]:
+    """Get a specific future maintenance record by ID"""
+    try:
+        session = next(get_session())
+        future_maintenance = session.execute(
+            select(FutureMaintenance).where(FutureMaintenance.id == future_maintenance_id)
+        ).scalar_one_or_none()
+        return future_maintenance
+    except Exception as e:
+        print(f"Error getting future maintenance by ID: {e}")
+        return None
+    finally:
+        session.close()
 
 def get_home_dashboard_summary() -> Dict[str, Any]:
     """Get enhanced summary statistics for home page dashboard using centralized mileage tracking"""
