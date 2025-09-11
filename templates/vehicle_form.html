@@ -39,6 +39,9 @@
                     </div>
                     <div class="card-body p-4">
                         <form method="post" action="{% if vehicle %}/vehicles/{{ vehicle.id }}{% else %}/vehicles{% endif %}">
+                            {% if return_url %}
+                            <input type="hidden" name="return_url" value="{{ return_url }}">
+                            {% endif %}
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="name" class="form-label fw-bold">Vehicle Name *</label>

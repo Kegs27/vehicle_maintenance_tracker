@@ -78,6 +78,12 @@
                         {% endif %}
 
                         <form method="post" action="{% if record %}/maintenance/{{ record.id }}{% else %}/maintenance{% endif %}" enctype="multipart/form-data">
+                            {% if return_url %}
+                            <input type="hidden" name="return_url" value="{{ return_url }}">
+                            {% endif %}
+                            {% if future_maintenance_id %}
+                            <input type="hidden" name="future_maintenance_id" value="{{ future_maintenance_id }}">
+                            {% endif %}
                             
                             {% if not record %}
                             <!-- Vehicle selection for new records -->
@@ -102,7 +108,7 @@
                             <div class="mb-3">
                                 <label for="date" class="form-label fw-bold">Date</label>
                                 <input type="text" class="form-control" id="date" name="date_str" 
-                                       value="{{ record.date.strftime('%m/%d/%Y') if record and record.date and record.date.year > 1900 else '' }}"
+                                       value="{{ record.date.strftime('%m/%d/%Y') if record and record.date and record.date.year > 1900 else (pre_populated_data.target_date.strftime('%m/%d/%Y') if pre_populated_data and pre_populated_data.target_date else '') }}"
                                        placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
@@ -113,7 +119,7 @@
                             <div class="mb-3">
                                 <label for="mileage" class="form-label fw-bold">Mileage</label>
                                 <input type="number" class="form-control" id="mileage" name="mileage" 
-                                       value="{{ record.mileage if record else '' }}" 
+                                       value="{{ pre_populated_data.target_mileage if pre_populated_data else '' }}" 
                                        min="0" step="1">
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
@@ -124,7 +130,7 @@
                             <div class="mb-3">
                                 <label for="description" class="form-label fw-bold">Description</label>
                                 <textarea class="form-control" id="description" name="description" rows="3" 
-                                          placeholder="Describe the maintenance performed, parts replaced, or issues addressed...">{{ record.description if record else '' }}</textarea>
+                                          placeholder="Describe the maintenance performed, parts replaced, or issues addressed...">{{ record.description if record else (pre_populated_data.description if pre_populated_data else '') }}</textarea>
                             </div>
 
                             <div class="mb-4">
@@ -132,7 +138,7 @@
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
                                     <input type="number" class="form-control" id="cost" name="cost" 
-                                           value="{{ record.cost if record else '' }}" 
+                                           value="{{ pre_populated_data.estimated_cost if pre_populated_data else '' }}" 
                                            step="0.01" min="0" placeholder="0.00">
                                 </div>
                                 <div class="form-text">
@@ -173,7 +179,7 @@
                             <div class="mb-3">
                                 <label for="date" class="form-label fw-bold">Oil Change Date</label>
                                 <input type="text" class="form-control" id="date" name="date_str" 
-                                       value="{{ record.date.strftime('%m/%d/%Y') if record and record.date and record.date.year > 1900 else '' }}"
+                                       value="{{ record.date.strftime('%m/%d/%Y') if record and record.date and record.date.year > 1900 else (pre_populated_data.target_date.strftime('%m/%d/%Y') if pre_populated_data and pre_populated_data.target_date else '') }}"
                                        placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
@@ -184,7 +190,7 @@
                             <div class="mb-3">
                                 <label for="mileage" class="form-label fw-bold">Mileage *</label>
                                 <input type="number" class="form-control" id="mileage" name="mileage" 
-                                       value="{{ record.mileage if record else '' }}" 
+                                       value="{{ record.mileage if record else (pre_populated_data.target_mileage if pre_populated_data else '') }}" 
                                        min="0" step="1" required>
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
@@ -195,7 +201,7 @@
                             <div class="mb-3">
                                 <label for="description" class="form-label fw-bold">Description</label>
                                 <textarea class="form-control" id="description" name="description" rows="2" 
-                                          placeholder="e.g., Oil Change - 5W-30 Mobil 1">{{ record.description if record else '' }}</textarea>
+                                          placeholder="e.g., Oil Change - 5W-30 Mobil 1">{% if record %}{{ record.description }}{% elif pre_populated_data %}{{ pre_populated_data.description }}{% endif %}</textarea>
                             </div>
 
                             <div class="mb-3">
@@ -287,7 +293,7 @@
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
                                     <input type="number" class="form-control" id="cost" name="cost" 
-                                           value="{{ record.cost if record and record.cost else '' }}"
+                                           value="{{ record.cost if record and record.cost else (pre_populated_data.estimated_cost if pre_populated_data else '') }}"
                                            step="0.01" min="0" placeholder="0.00">
                                 </div>
                                 <div class="form-text">

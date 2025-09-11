@@ -421,7 +421,7 @@ def create_placeholder_oil_analysis(vehicle_id: int, date: str, description: str
         linked_oil_change_id=linked_oil_change_id
     )
 
-def create_maintenance_record(vehicle_id: int, date: str, description: str, cost: float, mileage: Optional[int], 
+def create_maintenance_record(vehicle_id: int, date: str, description: Optional[str], cost: float, mileage: Optional[int], 
                             oil_change_interval: Optional[int] = None,
                             oil_analysis_date: Optional[str] = None,
                             next_oil_analysis_date: Optional[str] = None,
@@ -517,6 +517,7 @@ def create_maintenance_record(vehicle_id: int, date: str, description: str, cost
         # If this is an oil change, automatically create future maintenance record
         future_maintenance_result = None
         if is_oil_change and oil_change_interval and mileage:
+            print(f"DEBUG: Creating future maintenance - is_oil_change: {is_oil_change}, oil_change_interval: {oil_change_interval}, mileage: {mileage}")
             try:
                 # Extract oil type from description if possible
                 oil_type = "Conventional"  # Default
@@ -1172,9 +1173,9 @@ def create_future_oil_change_record(vehicle_id: int,
                                    estimated_cost: float = 50.0) -> Dict[str, Any]:
     """Create a future maintenance record for the next oil change"""
     try:
-        from database import get_session
+        from database import SessionLocal
         from models import FutureMaintenance
-        session = next(get_session())
+        session = SessionLocal()
         
         # Calculate next due mileage
         next_due_mileage = current_mileage + oil_change_interval
@@ -1220,10 +1221,12 @@ def create_future_oil_change_record(vehicle_id: int,
     finally:
         session.close()
 
-def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional['FutureMaintenance']:
+def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional[Any]:
     """Get a specific future maintenance record by ID"""
     try:
-        session = next(get_session())
+        from database import SessionLocal
+        from models import FutureMaintenance
+        session = SessionLocal()
         future_maintenance = session.execute(
             select(FutureMaintenance).where(FutureMaintenance.id == future_maintenance_id)
         ).scalar_one_or_none()
@@ -1888,8 +1891,9 @@ def get_future_maintenance_by_vehicle(vehicle_id: int) -> List[Dict[str, Any]]:
     finally:
         session.close()
 
-def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional[Dict[str, Any]]:
-    """Get a specific future maintenance reminder by ID"""
+
+def mark_future_maintenance_completed(future_maintenance_id: int) -> Dict[str, Any]:
+    """Mark a future maintenance record as completed (inactive)"""
     session = SessionLocal()
     try:
         from models import FutureMaintenance
@@ -1899,32 +1903,17 @@ def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional[Dict[st
         ).scalar_one_or_none()
         
         if not future_maintenance:
-            return None
+            return {"success": False, "error": "Future maintenance record not found"}
         
-        # Convert to dictionary
-        result = {
-            'id': future_maintenance.id,
-            'vehicle_id': future_maintenance.vehicle_id,
-            'maintenance_type': future_maintenance.maintenance_type,
-            'target_mileage': future_maintenance.target_mileage,
-            'target_date': future_maintenance.target_date,
-            'mileage_reminder': future_maintenance.mileage_reminder,
-            'date_reminder': future_maintenance.date_reminder,
-            'estimated_cost': future_maintenance.estimated_cost,
-            'parts_link': future_maintenance.parts_link,
-            'notes': future_maintenance.notes,
-            'is_recurring': future_maintenance.is_recurring,
-            'recurrence_interval_miles': future_maintenance.recurrence_interval_miles,
-            'recurrence_interval_months': future_maintenance.recurrence_interval_months,
-            'is_active': future_maintenance.is_active,
-            'created_at': future_maintenance.created_at,
-            'updated_at': future_maintenance.updated_at
-        }
+        # Mark as inactive (completed)
+        future_maintenance.is_active = False
+        session.commit()
         
-        return result
+        return {"success": True, "message": "Future maintenance record marked as completed"}
         
     except Exception as e:
-        return None
+        session.rollback()
+        return {"success": False, "error": f"Failed to mark future maintenance as completed: {str(e)}"}
     finally:
         session.close()
 

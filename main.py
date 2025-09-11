@@ -293,9 +293,13 @@ async def list_vehicles(request: Request):
         """)
 
 @app.get("/vehicles/new", response_class=HTMLResponse)
-async def new_vehicle_form(request: Request):
+async def new_vehicle_form(request: Request, return_url: Optional[str] = Query(None)):
     """Form to add new vehicle"""
-    return templates.TemplateResponse("vehicle_form.html", {"request": request, "vehicle": None})
+    return templates.TemplateResponse("vehicle_form.html", {
+        "request": request, 
+        "vehicle": None,
+        "return_url": return_url or "/vehicles"
+    })
 
 @app.post("/vehicles")
 async def create_vehicle_route(
@@ -303,7 +307,8 @@ async def create_vehicle_route(
     year: int = Form(...),
     make: str = Form(...),
     model: str = Form(...),
-    vin: Optional[str] = Form(None)
+    vin: Optional[str] = Form(None),
+    return_url: Optional[str] = Form(None)
 ):
     """Create a new vehicle using centralized data operations"""
     try:
@@ -315,7 +320,7 @@ async def create_vehicle_route(
         result = create_vehicle(name, make, model, year, vin)
         
         if result["success"]:
-            return RedirectResponse(url="/vehicles", status_code=303)
+            return RedirectResponse(url=return_url or "/vehicles", status_code=303)
         else:
             raise HTTPException(status_code=400, detail=result["error"])
     except HTTPException:
@@ -327,6 +332,7 @@ async def create_vehicle_route(
 async def edit_vehicle_form(
     request: Request,
     vehicle_id: int,
+    return_url: Optional[str] = Query(None),
     session: Session = Depends(get_session)
 ):
     """Form to edit existing vehicle"""
@@ -334,7 +340,11 @@ async def edit_vehicle_form(
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
     
-    return templates.TemplateResponse("vehicle_form.html", {"request": request, "vehicle": vehicle})
+    return templates.TemplateResponse("vehicle_form.html", {
+        "request": request, 
+        "vehicle": vehicle,
+        "return_url": return_url or "/vehicles"
+    })
 
 @app.post("/vehicles/{vehicle_id}")
 async def update_vehicle_route(
@@ -343,7 +353,8 @@ async def update_vehicle_route(
     year: int = Form(...),
     make: str = Form(...),
     model: str = Form(...),
-    vin: Optional[str] = Form(None)
+    vin: Optional[str] = Form(None),
+    return_url: Optional[str] = Form(None)
 ):
     """Update an existing vehicle using centralized data operations"""
     try:
@@ -355,7 +366,7 @@ async def update_vehicle_route(
         result = update_vehicle(vehicle_id, name, make, model, year, vin)
         
         if result["success"]:
-            return RedirectResponse(url="/vehicles", status_code=303)
+            return RedirectResponse(url=return_url or "/vehicles", status_code=303)
         else:
             raise HTTPException(status_code=400, detail=result["error"])
     except HTTPException:
@@ -401,7 +412,13 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
         
         # Get future maintenance records
         from data_operations import get_all_future_maintenance
-        future_maintenance = get_all_future_maintenance()
+        try:
+            future_maintenance = get_all_future_maintenance()
+            if future_maintenance is None:
+                future_maintenance = []
+        except Exception as e:
+            print(f"Error getting future maintenance: {e}")
+            future_maintenance = []
         
         return templates.TemplateResponse("maintenance_list.html", {
             "request": request, 
@@ -441,7 +458,8 @@ async def new_maintenance_form(
                     "estimated_cost": future_maintenance.estimated_cost,
                     "target_mileage": future_maintenance.target_mileage,
                     "target_date": future_maintenance.target_date,
-                    "notes": future_maintenance.notes
+                    "notes": future_maintenance.notes,
+                    "future_maintenance_id": future_maintenance.id
                 }
         except Exception as e:
             print(f"Error loading future maintenance data: {e}")
@@ -454,6 +472,7 @@ async def new_maintenance_form(
         "selected_vehicle_id": vehicle_id,
         "form_type": detected_form_type,
         "pre_populated_data": pre_populated_data,
+        "future_maintenance_id": future_maintenance_id,
         # Legacy compatibility for existing template logic
         "is_oil_analysis": detected_form_type == "oil_analysis",
         "is_oil_change": detected_form_type == "oil_change"
@@ -494,7 +513,9 @@ async def create_maintenance_route(
     oil_analysis_report: UploadFile = File(None),
     # Photo documentation
     photo: UploadFile = File(None),
-    photo_description: Optional[str] = Form(None)
+    photo_description: Optional[str] = Form(None),
+    return_url: Optional[str] = Form(None),
+    future_maintenance_id: Optional[int] = Form(None)
 ):
     """Create a new maintenance record using centralized data operations"""
     try:
@@ -608,6 +629,15 @@ async def create_maintenance_route(
                 except Exception as e:
                     pass  # Error creating placeholder oil analysis
             
+            # Mark future maintenance record as completed if this was completing a future maintenance
+            if future_maintenance_id:
+                try:
+                    from data_operations import mark_future_maintenance_completed
+                    result = mark_future_maintenance_completed(future_maintenance_id)
+                    print(f"Marked future maintenance {future_maintenance_id} as completed")
+                except Exception as e:
+                    print(f"Error marking future maintenance as completed: {e}")
+            
             # Redirect back to oil analysis page if that's where we came from
             if any(field is not None for field in [oil_analysis_date, next_oil_analysis_date, oil_analysis_cost, 
                                                  iron_level, aluminum_level, copper_level, viscosity, tbn,
@@ -615,7 +645,7 @@ async def create_maintenance_route(
                 # This was an oil analysis record, redirect to oil analysis page
                 return RedirectResponse(url="/oil-management", status_code=303)
             else:
-                return RedirectResponse(url="/maintenance", status_code=303)
+                return RedirectResponse(url=return_url or "/maintenance", status_code=303)
         else:
             raise HTTPException(status_code=400, detail=result["error"])
     except HTTPException:
@@ -918,7 +948,7 @@ async def update_maintenance_route(
                 # This was an oil analysis record, redirect to oil analysis page
                 return RedirectResponse(url="/oil-management", status_code=303)
             else:
-                return RedirectResponse(url="/maintenance", status_code=303)
+                return RedirectResponse(url=return_url or "/maintenance", status_code=303)
         else:
             raise HTTPException(status_code=500, detail=result["error"])
     except HTTPException:

@@ -1030,7 +1030,7 @@
 
         function completeOilChange(futureMaintenanceId, vehicleId, vehicleName) {
             // Redirect to maintenance form with pre-populated data
-            const url = `/maintenance/new?vehicle_id=${vehicleId}&future_maintenance_id=${futureMaintenanceId}&form_type=oil_change`;
+            const url = `/maintenance/new?vehicle_id=${vehicleId}&future_maintenance_id=${futureMaintenanceId}&form_type=oil_change&return_url=/oil-management`;
             window.location.href = url;
         }
 
