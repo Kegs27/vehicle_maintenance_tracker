@@ -304,10 +304,13 @@ def create_basic_maintenance_record(vehicle_id: int, date: str, description: str
         is_oil_change = oil_change_interval is not None
         
         # Create record
+        # Ensure description is never None for database compatibility
+        safe_description = description if description and description.strip() else "N/A"
+        
         record = MaintenanceRecord(
             vehicle_id=vehicle_id,
             date=parsed_date,
-            description=description,
+            description=safe_description,
             cost=cost,
             mileage=mileage,
             date_estimated=date_estimated,
@@ -481,10 +484,13 @@ def create_maintenance_record(vehicle_id: int, date: str, description: Optional[
         
         
         # Create maintenance record
+        # Ensure description is never None for database compatibility
+        safe_description = description if description and description.strip() else "N/A"
+        
         record = MaintenanceRecord(
             vehicle_id=vehicle_id,
             date=parsed_date,
-            description=description,
+            description=safe_description,
             cost=cost,
             mileage=mileage,
             date_estimated=date_estimated,
@@ -621,9 +627,12 @@ def update_maintenance_record(record_id: int, vehicle_id: int, date: str, descri
                 return {"success": False, "error": f"Invalid next oil analysis date: {str(e)}"}
         
         # Update record
+        # Ensure description is never None for database compatibility
+        safe_description = description if description and description.strip() else "N/A"
+        
         record.vehicle_id = vehicle_id
         record.date = parsed_date
-        record.description = description
+        record.description = safe_description
         record.cost = cost
         record.mileage = mileage
         record.date_estimated = date_estimated
