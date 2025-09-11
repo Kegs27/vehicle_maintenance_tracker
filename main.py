@@ -561,15 +561,15 @@ async def create_maintenance_route(
         if date_str == "":
             date_str = None
         
-        # Create the maintenance record with oil change interval to mark as oil change
-        # The create_maintenance_record function automatically sets is_oil_change=True when oil_change_interval is provided
+        # Create the maintenance record
         result = create_maintenance_record(
             vehicle_id=vehicle_id,
             date=date_str or "01/01/1900", 
             description=description,
             cost=cost or 0.0,
             mileage=mileage,
-            oil_change_interval=oil_change_interval or 3000,  # Default oil change interval to mark as oil change
+            oil_change_interval=oil_change_interval,
+            is_oil_change=is_oil_change,  # Use explicit parameter
             oil_analysis_date=oil_analysis_date,
             next_oil_analysis_date=next_oil_analysis_date,
             oil_analysis_cost=oil_analysis_cost,
@@ -919,6 +919,7 @@ async def update_maintenance_route(
                                 description=f"Oil Analysis - {mileage:,} miles",
                                 cost=0.0,  # Analysis cost separate from oil change cost
                                 mileage=mileage,  # Same mileage as oil change - this creates the link!
+                                is_oil_change=False,  # This is an analysis record, not an oil change
                                 # Set as analysis record with oil change data for reference
                                 oil_analysis_date=date_str,  # Mark as analysis record
                                 oil_type=oil_type,  # Copy oil change data
@@ -991,7 +992,8 @@ async def update_vehicle_mileage(
             date=date_str,
             description="Mileage Update",
             cost=0.0,
-            mileage=new_mileage
+            mileage=new_mileage,
+            is_oil_change=False  # This is a mileage update, not an oil change
         )
         
         if result["success"]:

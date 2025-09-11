@@ -274,7 +274,7 @@ def sort_maintenance_records(records: List[MaintenanceRecord], sort_by: str = 'd
         return records
 
 def create_basic_maintenance_record(vehicle_id: int, date: str, description: str, cost: float, mileage: Optional[int], 
-                                   oil_change_interval: Optional[int] = None) -> Dict[str, Any]:
+                                   oil_change_interval: Optional[int] = None, is_oil_change: Optional[bool] = None) -> Dict[str, Any]:
     """Create a basic maintenance record (regular maintenance or oil change)"""
     session = SessionLocal()
     try:
@@ -300,8 +300,8 @@ def create_basic_maintenance_record(vehicle_id: int, date: str, description: str
         else:
             date_estimated = False
         
-        # Determine if this is an oil change
-        is_oil_change = oil_change_interval is not None
+        # Use the explicitly passed is_oil_change parameter
+        is_oil_change_flag = is_oil_change if is_oil_change is not None else False
         
         # Create record
         # Ensure description is never None for database compatibility
@@ -315,7 +315,7 @@ def create_basic_maintenance_record(vehicle_id: int, date: str, description: str
             mileage=mileage,
             date_estimated=date_estimated,
             oil_change_interval=oil_change_interval,
-            is_oil_change=is_oil_change
+            is_oil_change=is_oil_change_flag
         )
         
         session.add(record)
@@ -426,6 +426,7 @@ def create_placeholder_oil_analysis(vehicle_id: int, date: str, description: str
 
 def create_maintenance_record(vehicle_id: int, date: str, description: Optional[str], cost: float, mileage: Optional[int], 
                             oil_change_interval: Optional[int] = None,
+                            is_oil_change: Optional[bool] = None,
                             oil_analysis_date: Optional[str] = None,
                             next_oil_analysis_date: Optional[str] = None,
                             oil_analysis_cost: Optional[float] = None,
@@ -479,8 +480,8 @@ def create_maintenance_record(vehicle_id: int, date: str, description: Optional[
             except ValueError as e:
                 return {"success": False, "error": f"Invalid next oil analysis date: {str(e)}"}
         
-        # Determine if this is an oil change based on oil_change_interval
-        is_oil_change = oil_change_interval is not None
+        # Use the explicitly passed is_oil_change parameter
+        is_oil_change_flag = is_oil_change if is_oil_change is not None else False
         
         
         # Create maintenance record
@@ -495,7 +496,7 @@ def create_maintenance_record(vehicle_id: int, date: str, description: Optional[
             mileage=mileage,
             date_estimated=date_estimated,
             oil_change_interval=oil_change_interval,
-            is_oil_change=is_oil_change,  # Set based on detection logic
+            is_oil_change=is_oil_change_flag,  # Use explicit parameter
             # Oil analysis fields
             oil_analysis_date=parsed_oil_analysis_date,
             next_oil_analysis_date=parsed_next_oil_analysis_date,
