@@ -669,8 +669,15 @@ def determine_form_type(record=None, return_url=None, form_type_param=None):
             (record.description and 'analysis' in record.description.lower())):
             return "oil_analysis"
         
-        # Oil change detection
-        if record.is_oil_change or record.oil_type or record.oil_brand:
+        # Oil change detection - be more specific about what constitutes an oil change
+        # Only consider it an oil change if it has oil-specific data AND doesn't contain non-oil keywords
+        is_oil_change_by_data = (record.oil_type or record.oil_brand or record.oil_filter_brand)
+        has_non_oil_keywords = (record.description and any(keyword in record.description.lower() 
+                              for keyword in ['fuel filter', 'air filter', 'brake', 'tire', 'battery', 'spark plug', 'belt', 'hose', 'gasket', 'sensor', 'pump', 'alternator', 'starter', 'transmission', 'clutch', 'suspension', 'exhaust', 'coolant', 'thermostat', 'radiator', 'water pump']))
+        
+        if is_oil_change_by_data and not has_non_oil_keywords:
+            return "oil_change"
+        elif record.is_oil_change and not has_non_oil_keywords:
             return "oil_change"
     
     # 3. Check return URL context
@@ -699,6 +706,35 @@ async def edit_maintenance_form(
         
         # Determine what type of form to show using unified logic
         detected_form_type = determine_form_type(record, return_url, form_type)
+        
+        # Auto-fix incorrectly marked oil change records
+        if (record.is_oil_change and 
+            record.description and 
+            any(keyword in record.description.lower() 
+                for keyword in ['fuel filter', 'air filter', 'brake', 'tire', 'battery', 'spark plug', 'belt', 'hose', 'gasket', 'sensor', 'pump', 'alternator', 'starter', 'transmission', 'clutch', 'suspension', 'exhaust', 'coolant', 'thermostat', 'radiator', 'water pump'])):
+            # This is incorrectly marked as oil change - auto-fix it
+            from data_operations import update_maintenance_record
+            update_result = update_maintenance_record(
+                record_id=record_id,
+                vehicle_id=record.vehicle_id,
+                date=record.date.strftime('%m/%d/%Y'),
+                description=record.description,
+                cost=record.cost,
+                mileage=record.mileage,
+                is_oil_change=False,  # Fix the incorrect marking
+                oil_change_interval=None,
+                oil_type=None,
+                oil_brand=None,
+                oil_filter_brand=None,
+                oil_filter_part_number=None,
+                oil_cost=None,
+                filter_cost=None,
+                labor_cost=None
+            )
+            if update_result.get("success"):
+                # Refresh the record after fixing
+                record = get_maintenance_by_id(record_id)
+                detected_form_type = "maintenance"  # Now it should be detected as maintenance
         
         vehicles = get_vehicle_names()
         
