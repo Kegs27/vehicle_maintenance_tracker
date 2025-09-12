@@ -534,15 +534,20 @@
                 </div>
                 
                 <div class="vehicle-card-body">
+                    {% set health_data = vehicle_health | selectattr("vehicle.id", "equalto", vehicle.id) | first %}
                     <div class="vehicle-card-info">
                         <i class="fas fa-tachometer-alt"></i>
+                        {% if health_data %}
                         <span class="mileage-clickable" 
-                              onclick="openMileageModal({{ vehicle.id }}, '{{ vehicle.name }}', {{ vehicle_health[vehicle.id].current_mileage if vehicle_health[vehicle.id] else 0 }}, '{{ vehicle_health[vehicle.id].source_description if vehicle_health[vehicle.id] else 'Unknown source' }}')"
+                              onclick="openMileageModal({{ vehicle.id }}, '{{ vehicle.name }}', {{ health_data.current_mileage }}, '{{ health_data.source_description or 'Unknown source' }}')"
                               title="Click to update mileage"
                               data-vehicle-id="{{ vehicle.id }}"
-                              data-current-mileage="{{ vehicle_health[vehicle.id].current_mileage if vehicle_health[vehicle.id] else 0 }}">
-                            {{ "{:,}".format(vehicle_health[vehicle.id].current_mileage) if vehicle_health[vehicle.id] else 0 }} mi
+                              data-current-mileage="{{ health_data.current_mileage }}">
+                            {{ "{:,}".format(health_data.current_mileage) }} mi
                         </span>
+                        {% else %}
+                        <span class="text-muted">No mileage data</span>
+                        {% endif %}
                     </div>
                     <div class="vehicle-card-info">
                         <i class="fas fa-tools"></i>
