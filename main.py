@@ -1,5 +1,6 @@
 # Standard library imports
 import os
+import sys
 import csv
 from datetime import date, datetime
 from typing import Optional
@@ -12,10 +13,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
-
-# Local imports
-import sys
-import os
 
 # Define dummy functions at module level to ensure they're always available
 def dummy_get_all_vehicles():
@@ -522,7 +519,6 @@ async def create_maintenance_route(
         # Handle PDF file upload for oil analysis
         pdf_file_path = None
         if oil_analysis_report and oil_analysis_report.filename:
-            import os
             # Create uploads directory if it doesn't exist
             upload_dir = "uploads"
             os.makedirs(upload_dir, exist_ok=True)
@@ -541,7 +537,6 @@ async def create_maintenance_route(
         # Handle photo upload for documentation
         photo_path = None
         if photo and photo.filename:
-            import os
             # Create uploads directory if it doesn't exist
             upload_dir = "uploads"
             os.makedirs(upload_dir, exist_ok=True)
@@ -719,7 +714,7 @@ async def edit_maintenance_form(
                 vehicle_id=record.vehicle_id,
                 date=record.date.strftime('%m/%d/%Y'),
                 description=record.description,
-                cost=record.cost,
+                cost=record.cost or 0.0,  # Handle None cost
                 mileage=record.mileage,
                 is_oil_change=False,  # Fix the incorrect marking
                 oil_change_interval=None,
@@ -855,7 +850,6 @@ async def update_maintenance_route(
         # Handle PDF file upload for oil analysis
         pdf_file_path = None
         if oil_analysis_report and oil_analysis_report.filename:
-            import os
             # Create uploads directory if it doesn't exist
             upload_dir = "uploads"
             os.makedirs(upload_dir, exist_ok=True)
@@ -874,7 +868,6 @@ async def update_maintenance_route(
         # Handle photo upload for documentation
         photo_path = None
         if photo and photo.filename:
-            import os
             # Create uploads directory if it doesn't exist
             upload_dir = "uploads"
             os.makedirs(upload_dir, exist_ok=True)

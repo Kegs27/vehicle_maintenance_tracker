@@ -556,7 +556,7 @@ def create_maintenance_record(vehicle_id: int, date: str, description: Optional[
     finally:
         session.close()
 
-def update_maintenance_record(record_id: int, vehicle_id: int, date: str, description: str, cost: float, mileage: Optional[int], 
+def update_maintenance_record(record_id: int, vehicle_id: int, date: str, description: str, cost: Optional[float], mileage: Optional[int], 
                             oil_change_interval: Optional[int] = None,
                             # Oil change fields
                             is_oil_change: Optional[bool] = None,
