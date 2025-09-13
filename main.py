@@ -1112,6 +1112,40 @@ async def get_fuel_entries():
         print(f"Error getting fuel entries: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get fuel entries: {str(e)}")
 
+@app.post("/api/fuel/add-missing-entry")
+async def add_missing_fuel_entry(
+    vehicle_id: int = Form(...),
+    date: str = Form(...),
+    time: str = Form(...),
+    mileage: int = Form(...),
+    fuel_amount: float = Form(...),
+    fuel_cost: float = Form(...),
+    fuel_type: str = Form(...),
+    driving_pattern: str = Form(...),
+    notes: Optional[str] = Form(None)
+):
+    """Add a retroactive fuel entry to fill gaps in fuel tracking"""
+    try:
+        from data_operations import create_fuel_entry
+        
+        result = create_fuel_entry(
+            vehicle_id=vehicle_id,
+            date=date,
+            time=time,
+            mileage=mileage,
+            fuel_amount=fuel_amount,
+            fuel_cost=fuel_cost,
+            fuel_type=fuel_type,
+            driving_pattern=driving_pattern,
+            notes=notes or ""
+        )
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error adding missing fuel entry: {e}")
+        return {"success": False, "error": str(e)}
+
 @app.get("/api/fuel/mpg-summary")
 async def get_fuel_mpg_summary():
     """Get MPG summary for all vehicles"""
@@ -1140,41 +1174,97 @@ async def get_fuel_mpg_summary():
                 for i, entry in enumerate(sorted_by_mileage):
                     print(f"    Mileage {i}: {entry['mileage']}, Fuel={entry['fuel_amount']}")
                 
-                # Simple MPG: (Highest Mileage - Lowest Mileage) ÷ Total Fuel (skip first)
+                # Enhanced MPG calculation with gap detection
                 lowest_mileage = sorted_by_mileage[0]['mileage']
                 highest_mileage = sorted_by_mileage[-1]['mileage']
                 total_miles = highest_mileage - lowest_mileage
                 
-                # Skip first entry (fuel already in tank), sum all other fuel
-                fuel_used = sorted_by_mileage[1:]
-                total_gallons = sum(entry['fuel_amount'] for entry in fuel_used)
+                # Detect potential missing entries (gaps > 500 miles between consecutive entries)
+                gaps_detected = []
+                for i in range(len(sorted_by_mileage) - 1):
+                    current_mileage = sorted_by_mileage[i]['mileage']
+                    next_mileage = sorted_by_mileage[i + 1]['mileage']
+                    gap = next_mileage - current_mileage
+                    
+                    if gap > 500:  # Assume missing entry if gap > 500 miles
+                        gaps_detected.append({
+                            'between_entries': f"{current_mileage:,} and {next_mileage:,}",
+                            'gap_miles': gap,
+                            'suggested_missing_fuel': gap / 25  # Assume 25 MPG average for missing entry
+                        })
                 
                 print(f"  MPG Math:")
                 print(f"    Lowest mileage: {lowest_mileage}")
                 print(f"    Highest mileage: {highest_mileage}")
                 print(f"    Total miles: {highest_mileage} - {lowest_mileage} = {total_miles}")
-                print(f"    Fuel used: {[entry['fuel_amount'] for entry in fuel_used]} = {total_gallons} gallons")
                 
-                if total_gallons > 0:
-                    mpg = total_miles / total_gallons
-                    print(f"    MPG = {total_miles} ÷ {total_gallons} = {mpg:.2f}")
+                # Calculate fuel with gap handling
+                if gaps_detected:
+                    print(f"    ⚠️  GAPS DETECTED:")
+                    for gap in gaps_detected:
+                        print(f"      Gap between {gap['between_entries']}: {gap['gap_miles']} miles")
+                        print(f"      Suggested missing fuel: ~{gap['suggested_missing_fuel']:.1f} gallons")
+                    
+                    # Use conservative calculation: only calculate MPG for entries without gaps
+                    valid_entries = []
+                    for i, entry in enumerate(sorted_by_mileage):
+                        # Include entry if it doesn't have a large gap before it
+                        if i == 0 or (sorted_by_mileage[i]['mileage'] - sorted_by_mileage[i-1]['mileage']) <= 500:
+                            valid_entries.append(entry)
+                    
+                    if len(valid_entries) >= 2:
+                        # Recalculate with only valid entries
+                        valid_lowest = valid_entries[0]['mileage']
+                        valid_highest = valid_entries[-1]['mileage']
+                        valid_miles = valid_highest - valid_lowest
+                        valid_fuel = sum(entry['fuel_amount'] for entry in valid_entries[1:])
+                        
+                        print(f"    Using gap-safe calculation:")
+                        print(f"    Valid entries: {len(valid_entries)} (excluding gaps)")
+                        print(f"    Valid miles: {valid_miles}")
+                        print(f"    Valid fuel: {valid_fuel} gallons")
+                        
+                        if valid_fuel > 0:
+                            mpg = valid_miles / valid_fuel
+                            mpg_confidence = "LOW (gaps detected)"
+                        else:
+                            mpg = None
+                            mpg_confidence = "ERROR"
+                    else:
+                        mpg = None
+                        mpg_confidence = "ERROR (insufficient valid data)"
+                        print(f"    ERROR: Not enough valid entries after gap removal")
                 else:
-                    mpg = None
-                    print(f"    ERROR: No fuel data")
+                    # No gaps detected - use standard calculation
+                    fuel_used = sorted_by_mileage[1:]
+                    total_gallons = sum(entry['fuel_amount'] for entry in fuel_used)
+                    print(f"    Fuel used: {[entry['fuel_amount'] for entry in fuel_used]} = {total_gallons} gallons")
+                    
+                    if total_gallons > 0:
+                        mpg = total_miles / total_gallons
+                        mpg_confidence = "HIGH"
+                        print(f"    MPG = {total_miles} ÷ {total_gallons} = {mpg:.2f}")
+                    else:
+                        mpg = None
+                        mpg_confidence = "ERROR"
+                        print(f"    ERROR: No fuel data")
                 
                 summary.append({
                     "vehicle_id": vehicle.id,
                     "vehicle_name": vehicle.name,
                     "mpg": mpg,
+                    "mpg_confidence": mpg_confidence if 'mpg_confidence' in locals() else "UNKNOWN",
                     "entries_count": len(fuel_entries),
+                    "gaps_detected": gaps_detected if 'gaps_detected' in locals() else [],
                     "calculation_details": {
                         "total_miles": total_miles,
-                        "total_gallons": total_gallons,
-                        "formula": f"({highest_mileage} - {lowest_mileage}) ÷ {total_gallons}",
+                        "total_gallons": total_gallons if 'total_gallons' in locals() else 0,
+                        "formula": f"({highest_mileage} - {lowest_mileage}) ÷ {total_gallons if 'total_gallons' in locals() else 0}",
                         "debug_info": {
                             "lowest_mileage": lowest_mileage,
                             "highest_mileage": highest_mileage,
-                            "fuel_entries_used": len(fuel_used)
+                            "fuel_entries_used": len(fuel_used) if 'fuel_used' in locals() else 0,
+                            "valid_entries_used": len(valid_entries) if 'valid_entries' in locals() else 0
                         }
                     }
                 })
