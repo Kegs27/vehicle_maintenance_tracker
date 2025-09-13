@@ -1140,41 +1140,87 @@ async def get_fuel_mpg_summary():
                 for i, entry in enumerate(sorted_by_mileage):
                     print(f"    Mileage {i}: {entry['mileage']}, Fuel={entry['fuel_amount']}")
                 
-                # Simple MPG: (Highest Mileage - Lowest Mileage) ÷ Total Fuel (skip first)
-                lowest_mileage = sorted_by_mileage[0]['mileage']
-                highest_mileage = sorted_by_mileage[-1]['mileage']
-                total_miles = highest_mileage - lowest_mileage
+                # Enhanced MPG calculation with three types
+                print(f"  🚗 {vehicle.name} MPG Calculations:")
                 
-                # Skip first entry (fuel already in tank), sum all other fuel
-                fuel_used = sorted_by_mileage[1:]
-                total_gallons = sum(entry['fuel_amount'] for entry in fuel_used)
+                # 1. LIFETIME MPG (never resets, accumulates from first entry)
+                lifetime_miles = sorted_by_mileage[-1]['mileage'] - sorted_by_mileage[0]['mileage']
+                lifetime_gallons = sum(entry['fuel_amount'] for entry in sorted_by_mileage[1:])
+                lifetime_mpg = lifetime_miles / lifetime_gallons if lifetime_gallons > 0 else None
                 
-                print(f"  MPG Math:")
-                print(f"    Lowest mileage: {lowest_mileage}")
-                print(f"    Highest mileage: {highest_mileage}")
-                print(f"    Total miles: {highest_mileage} - {lowest_mileage} = {total_miles}")
-                print(f"    Fuel used: {[entry['fuel_amount'] for entry in fuel_used]} = {total_gallons} gallons")
+                print(f"    Lifetime MPG: {lifetime_miles:,} miles ÷ {lifetime_gallons} gallons = {lifetime_mpg:.2f} MPG")
                 
-                if total_gallons > 0:
-                    mpg = total_miles / total_gallons
-                    print(f"    MPG = {total_miles} ÷ {total_gallons} = {mpg:.2f}")
+                # 2. DETECT GAPS (>500 miles between consecutive entries)
+                gaps_detected = []
+                for i in range(len(sorted_by_mileage) - 1):
+                    current_mileage = sorted_by_mileage[i]['mileage']
+                    next_mileage = sorted_by_mileage[i + 1]['mileage']
+                    gap = next_mileage - current_mileage
+                    
+                    if gap > 500:
+                        gaps_detected.append({
+                            'between_entries': f"{current_mileage:,} and {next_mileage:,}",
+                            'gap_miles': gap,
+                            'suggested_missing_fuel': gap / 25  # Assume 25 MPG average
+                        })
+                
+                # 3. CURRENT MPG (last 2 entries only, resets on gaps)
+                current_mpg = None
+                if len(sorted_by_mileage) >= 2:
+                    # Check if last entry has a gap
+                    last_gap = sorted_by_mileage[-1]['mileage'] - sorted_by_mileage[-2]['mileage']
+                    if last_gap <= 500:  # No gap detected
+                        current_miles = sorted_by_mileage[-1]['mileage'] - sorted_by_mileage[-2]['mileage']
+                        current_gallons = sorted_by_mileage[-1]['fuel_amount']
+                        current_mpg = current_miles / current_gallons if current_gallons > 0 else None
+                        print(f"    Current MPG: {current_miles:,} miles ÷ {current_gallons} gallons = {current_mpg:.2f} MPG")
+                    else:
+                        print(f"    Current MPG: RESET (gap detected: {last_gap:,} miles)")
                 else:
-                    mpg = None
-                    print(f"    ERROR: No fuel data")
+                    print(f"    Current MPG: Need at least 2 entries")
+                
+                # 4. ENTRIES-BASED MPG (last 5 entries, resets on gaps)
+                entries_mpg = None
+                entries_count = min(5, len(sorted_by_mileage))
+                
+                if entries_count >= 2:
+                    # Check for gaps in the last 5 entries
+                    valid_entries = []
+                    for i in range(len(sorted_by_mileage) - entries_count, len(sorted_by_mileage)):
+                        if i == 0 or (sorted_by_mileage[i]['mileage'] - sorted_by_mileage[i-1]['mileage']) <= 500:
+                            valid_entries.append(sorted_by_mileage[i])
+                        else:
+                            break  # Stop at first gap
+                    
+                    if len(valid_entries) >= 2:
+                        entries_miles = valid_entries[-1]['mileage'] - valid_entries[0]['mileage']
+                        entries_gallons = sum(entry['fuel_amount'] for entry in valid_entries[1:])
+                        entries_mpg = entries_miles / entries_gallons if entries_gallons > 0 else None
+                        print(f"    Entries MPG ({len(valid_entries)} entries): {entries_miles:,} miles ÷ {entries_gallons} gallons = {entries_mpg:.2f} MPG")
+                    else:
+                        print(f"    Entries MPG: RESET (insufficient valid entries after gap removal)")
+                else:
+                    print(f"    Entries MPG: Need at least 2 entries")
+                
+                # Store results
+                mpg = lifetime_mpg  # Keep backward compatibility for now
                 
                 summary.append({
                     "vehicle_id": vehicle.id,
                     "vehicle_name": vehicle.name,
-                    "mpg": mpg,
+                    "mpg": mpg,  # Lifetime MPG for backward compatibility
+                    "lifetime_mpg": lifetime_mpg,
+                    "current_mpg": current_mpg,
+                    "entries_mpg": entries_mpg,
                     "entries_count": len(fuel_entries),
+                    "gaps_detected": gaps_detected,
                     "calculation_details": {
-                        "total_miles": total_miles,
-                        "total_gallons": total_gallons,
-                        "formula": f"({highest_mileage} - {lowest_mileage}) ÷ {total_gallons}",
+                        "lifetime_miles": lifetime_miles,
+                        "lifetime_gallons": lifetime_gallons,
+                        "gaps_count": len(gaps_detected),
                         "debug_info": {
-                            "lowest_mileage": lowest_mileage,
-                            "highest_mileage": highest_mileage,
-                            "fuel_entries_used": len(fuel_used)
+                            "total_entries": len(sorted_by_mileage),
+                            "valid_entries_for_entries_mpg": len(valid_entries) if 'valid_entries' in locals() else 0
                         }
                     }
                 })
@@ -1460,6 +1506,27 @@ async def create_fuel_entry(
                 "error": str(e)
             }
         
+        # Check for gaps before creating entry
+        from data_operations import get_fuel_entries_for_vehicle
+        existing_entries = get_fuel_entries_for_vehicle(vehicle_id)
+        gaps_detected = []
+        
+        if existing_entries:
+            # Sort by mileage to find the closest previous entry
+            sorted_entries = sorted(existing_entries, key=lambda x: x['mileage'])
+            last_entry = sorted_entries[-1]
+            
+            # Check for gap
+            gap = mileage - last_entry['mileage']
+            if gap > 500:
+                gaps_detected.append({
+                    'gap_miles': gap,
+                    'previous_mileage': last_entry['mileage'],
+                    'current_mileage': mileage,
+                    'suggested_missing_fuel': gap / 25  # Assume 25 MPG average
+                })
+                print(f"⚠️ GAP DETECTED: {gap:,} miles between {last_entry['mileage']:,} and {mileage:,}")
+        
         # Create the fuel entry
         session = SessionLocal()
         try:
@@ -1484,13 +1551,21 @@ async def create_fuel_entry(
             
             print(f"Fuel entry created: Vehicle {vehicle_id}, Mileage {mileage:,}, Date {parsed_date}")
             
-            return {
+            result = {
                 "success": True,
                 "message": "Fuel entry created successfully",
                 "entry_id": fuel_entry.id,
                 "mileage": mileage,
                 "date": str(parsed_date)
             }
+            
+            # Add gap detection info to result
+            if gaps_detected:
+                result["gaps_detected"] = gaps_detected
+                result["gap_warning"] = f"Gap detected: {gap:,} miles between {last_entry['mileage']:,} and {mileage:,}"
+                result["requires_user_choice"] = True
+            
+            return result
             
         except Exception as e:
             session.rollback()

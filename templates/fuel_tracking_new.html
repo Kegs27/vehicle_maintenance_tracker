@@ -461,18 +461,23 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert(successMessage);
-                    
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('fuelEntryModal'));
-                    modal.hide();
-                    
-                    // Reset modal to create mode
-                    resetModalToCreate();
-                    
-                    // Reload data
-                    loadFuelEntries();
-                    loadMPGSummary();
+                    // Check if gap was detected and user choice is required
+                    if (data.requires_user_choice && data.gaps_detected) {
+                        showGapDetectionDialog(data);
+                    } else {
+                        alert(successMessage);
+                        
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('fuelEntryModal'));
+                        modal.hide();
+                        
+                        // Reset modal to create mode
+                        resetModalToCreate();
+                        
+                        // Reload data
+                        loadFuelEntries();
+                        loadMPGSummary();
+                    }
                 } else {
                     alert('Error saving fuel entry: ' + data.error);
                 }
@@ -543,10 +548,50 @@
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <h6 class="card-title">${vehicle.vehicle_name}</h6>
-                                ${vehicle.mpg ? 
-                                    `<p class="h4 text-success mb-1">${vehicle.mpg.toFixed(1)} MPG</p>
-                                     <small class="text-muted">Based on ${vehicle.entries_count} entries</small>` :
-                                    `<p class="text-muted">Need at least 2 fuel entries</p>`
+                                
+                                <!-- Lifetime MPG (always shown if available) -->
+                                ${vehicle.lifetime_mpg ? 
+                                    `<div class="mb-2">
+                                        <div class="h5 text-primary mb-0">${vehicle.lifetime_mpg.toFixed(1)} MPG</div>
+                                        <small class="text-muted">Lifetime (${vehicle.entries_count} entries)</small>
+                                    </div>` : ''
+                                }
+                                
+                                <!-- Current MPG (last 2 entries) -->
+                                ${vehicle.current_mpg ? 
+                                    `<div class="mb-2">
+                                        <div class="h6 text-success mb-0">${vehicle.current_mpg.toFixed(1)} MPG</div>
+                                        <small class="text-muted">Current (last 2 entries)</small>
+                                    </div>` : 
+                                    `<div class="mb-2">
+                                        <small class="text-muted">Current: Need 2+ entries</small>
+                                    </div>`
+                                }
+                                
+                                <!-- Entries-based MPG (last 5 entries) -->
+                                ${vehicle.entries_mpg ? 
+                                    `<div class="mb-2">
+                                        <div class="h6 text-info mb-0">${vehicle.entries_mpg.toFixed(1)} MPG</div>
+                                        <small class="text-muted">Last 5 entries</small>
+                                    </div>` : 
+                                    `<div class="mb-2">
+                                        <small class="text-muted">Last 5: Need 2+ entries</small>
+                                    </div>`
+                                }
+                                
+                                <!-- Gap warnings -->
+                                ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
+                                    `<div class="mt-2">
+                                        <small class="text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            ${vehicle.gaps_detected.length} gap(s) detected
+                                        </small>
+                                        <div class="small text-muted mt-1">
+                                            ${vehicle.gaps_detected.map(gap => 
+                                                `${gap.gap_miles} miles`
+                                            ).join(', ')}
+                                        </div>
+                                    </div>` : ''
                                 }
                             </div>
                         </div>
@@ -781,6 +826,103 @@
             const now = new Date();
             const timeString = now.toTimeString().slice(0, 5);
             document.getElementById('fuelTime').value = timeString;
+        }
+
+        // Show gap detection dialog
+        function showGapDetectionDialog(data) {
+            const gap = data.gaps_detected[0]; // Get first gap
+            const message = `
+                ⚠️ GAP DETECTED!
+                
+                A gap of ${gap.gap_miles.toLocaleString()} miles was detected between:
+                • Previous entry: ${gap.previous_mileage.toLocaleString()} miles
+                • Current entry: ${gap.current_mileage.toLocaleString()} miles
+                
+                This suggests you may have missed entering a fuel receipt.
+                
+                Would you like to:
+                1. Enter the missing fuel information now, OR
+                2. Continue without it (will reset Current and Entries-based MPG)?
+            `;
+            
+            // Create custom dialog with buttons
+            const dialogHtml = `
+                <div class="modal fade" id="gapDetectionModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning text-dark">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Gap Detected
+                                </h5>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning">
+                                    <h6 class="alert-heading">Missing Fuel Entry Detected</h6>
+                                    <p class="mb-2">A gap of <strong>${gap.gap_miles.toLocaleString()} miles</strong> was detected between:</p>
+                                    <ul class="mb-2">
+                                        <li>Previous entry: <strong>${gap.previous_mileage.toLocaleString()} miles</strong></li>
+                                        <li>Current entry: <strong>${gap.current_mileage.toLocaleString()} miles</strong></li>
+                                    </ul>
+                                    <p class="mb-0">This suggests you may have missed entering a fuel receipt.</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="mb-3">What would you like to do?</p>
+                                    <button class="btn btn-info me-2" onclick="handleGapChoice('add_missing')">
+                                        <i class="fas fa-plus-circle me-2"></i>Add Missing Entry
+                                    </button>
+                                    <button class="btn btn-warning" onclick="handleGapChoice('continue')">
+                                        <i class="fas fa-forward me-2"></i>Continue Without It
+                                    </button>
+                                </div>
+                                <div class="mt-3 text-muted small">
+                                    <strong>Note:</strong> If you continue without it, your Current MPG and Entries-based MPG will reset to ensure accurate calculations.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if present
+            const existingModal = document.getElementById('gapDetectionModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', dialogHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('gapDetectionModal'));
+            modal.show();
+            
+            // Store gap data for later use
+            window.gapData = data;
+        }
+
+        // Handle gap choice
+        function handleGapChoice(choice) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('gapDetectionModal'));
+            modal.hide();
+            
+            if (choice === 'add_missing') {
+                // Show missing entry modal
+                showMissingEntryModal();
+            } else if (choice === 'continue') {
+                // Continue without missing entry - reset MPG calculations
+                alert('Current MPG and Entries-based MPG have been reset due to the detected gap.');
+                
+                // Close fuel entry modal
+                const fuelModal = bootstrap.Modal.getInstance(document.getElementById('fuelEntryModal'));
+                fuelModal.hide();
+                
+                // Reset modal to create mode
+                resetModalToCreate();
+                
+                // Reload data
+                loadFuelEntries();
+                loadMPGSummary();
+            }
         }
 
         // Format date for display in MM/DD/YYYY format
