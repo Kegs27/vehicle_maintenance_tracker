@@ -549,18 +549,10 @@
                             <div class="card-body text-center">
                                 <h6 class="card-title">${vehicle.vehicle_name}</h6>
                                 
-                                <!-- Lifetime MPG (always shown if available) -->
-                                ${vehicle.lifetime_mpg ? 
-                                    `<div class="mb-2">
-                                        <div class="h5 text-primary mb-0">${vehicle.lifetime_mpg.toFixed(1)} MPG</div>
-                                        <small class="text-muted">Lifetime (${vehicle.entries_count} entries)</small>
-                                    </div>` : ''
-                                }
-                                
-                                <!-- Current MPG (last 2 entries) -->
+                                <!-- Current MPG (last 2 entries) - TOP PRIORITY -->
                                 ${vehicle.current_mpg ? 
                                     `<div class="mb-2">
-                                        <div class="h6 text-success mb-0">${vehicle.current_mpg.toFixed(1)} MPG</div>
+                                        <div class="h5 text-success mb-0">${vehicle.current_mpg.toFixed(1)} MPG</div>
                                         <small class="text-muted">Current (last 2 entries)</small>
                                     </div>` : 
                                     `<div class="mb-2">
@@ -568,7 +560,7 @@
                                     </div>`
                                 }
                                 
-                                <!-- Entries-based MPG (last 5 entries) -->
+                                <!-- Entries-based MPG (last 5 entries) - MIDDLE -->
                                 ${vehicle.entries_mpg ? 
                                     `<div class="mb-2">
                                         <div class="h6 text-info mb-0">${vehicle.entries_mpg.toFixed(1)} MPG</div>
@@ -577,6 +569,14 @@
                                     `<div class="mb-2">
                                         <small class="text-muted">Last 5: Need 2+ entries</small>
                                     </div>`
+                                }
+                                
+                                <!-- Lifetime MPG (always shown if available) - BOTTOM -->
+                                ${vehicle.lifetime_mpg ? 
+                                    `<div class="mb-2">
+                                        <div class="h6 text-primary mb-0">${vehicle.lifetime_mpg.toFixed(1)} MPG</div>
+                                        <small class="text-muted">Lifetime (${vehicle.entries_count} entries)</small>
+                                    </div>` : ''
                                 }
                                 
                                 <!-- Gap warnings -->
