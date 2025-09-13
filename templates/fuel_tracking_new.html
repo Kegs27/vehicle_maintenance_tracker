@@ -41,9 +41,6 @@
                         <button class="btn btn-warning" onclick="showQuickFillModal()">
                             <i class="fas fa-bolt me-2"></i>Quick Fill-Up
                         </button>
-                        <button class="btn btn-info" onclick="showMissingEntryModal()">
-                            <i class="fas fa-plus-circle me-2"></i>Add Missing Entry
-                        </button>
                         <button class="btn btn-success" onclick="showFuelEntryModal()">
                             <i class="fas fa-plus me-2"></i>New Fuel Entry
                         </button>
@@ -235,128 +232,6 @@
         </div>
     </div>
 
-    <!-- Missing Entry Modal -->
-    <div class="modal fade" id="missingEntryModal" tabindex="-1" aria-labelledby="missingEntryModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title" id="missingEntryModalLabel">
-                        <i class="fas fa-plus-circle me-2"></i>Add Missing Fuel Entry
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <h6 class="alert-heading mb-2">
-                            <i class="fas fa-exclamation-triangle me-2"></i>Retroactive Entry
-                        </h6>
-                        <p class="mb-0">This is for adding a fuel entry you forgot to record earlier. Make sure to use the actual date and mileage from when you filled up.</p>
-                    </div>
-                    
-                    <form id="missingEntryForm">
-                        <!-- Vehicle Selection -->
-                        <div class="mb-3">
-                            <label for="missingVehicleSelect" class="form-label fw-bold">
-                                <i class="fas fa-car me-2"></i>Vehicle
-                            </label>
-                            <select class="form-select" id="missingVehicleSelect" name="vehicle_id" required>
-                                <option value="">Select a vehicle...</option>
-                                {% for vehicle in vehicles %}
-                                <option value="{{ vehicle.id }}">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.name }})</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <!-- Date and Time -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="missingFuelDate" class="form-label fw-bold">
-                                    <i class="fas fa-calendar me-2"></i>Date (When you filled up)
-                                </label>
-                                <input type="text" class="form-control" id="missingFuelDate" name="date" required
-                                       placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="missingFuelTime" class="form-label fw-bold">
-                                    <i class="fas fa-clock me-2"></i>Time (Approximate)
-                                </label>
-                                <input type="time" class="form-control" id="missingFuelTime" name="time" required>
-                            </div>
-                        </div>
-
-                        <!-- Mileage and Fuel Amount -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="missingMileage" class="form-label fw-bold">
-                                    <i class="fas fa-tachometer-alt me-2"></i>Mileage (When you filled up)
-                                </label>
-                                <input type="number" class="form-control" id="missingMileage" name="mileage" required min="0">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="missingFuelAmount" class="form-label fw-bold">
-                                    <i class="fas fa-gas-pump me-2"></i>Fuel Amount (Gallons)
-                                </label>
-                                <input type="number" class="form-control" id="missingFuelAmount" name="fuel_amount" required min="0" step="0.1">
-                            </div>
-                        </div>
-
-                        <!-- Cost and Type -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="missingFuelCost" class="form-label fw-bold">
-                                    <i class="fas fa-dollar-sign me-2"></i>Total Cost
-                                </label>
-                                <input type="number" class="form-control" id="missingFuelCost" name="fuel_cost" required min="0" step="0.01">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="missingFuelType" class="form-label fw-bold">
-                                    <i class="fas fa-gas-pump me-2"></i>Fuel Type
-                                </label>
-                                <select class="form-select" id="missingFuelType" name="fuel_type" required>
-                                    <option value="">Select fuel type...</option>
-                                    <option value="87">87 Octane</option>
-                                    <option value="89">89 Octane</option>
-                                    <option value="91">91 Octane</option>
-                                    <option value="93">93 Octane</option>
-                                    <option value="diesel">Diesel</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Driving Pattern and Notes -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="missingDrivingPattern" class="form-label fw-bold">
-                                    <i class="fas fa-route me-2"></i>Driving Pattern
-                                </label>
-                                <select class="form-select" id="missingDrivingPattern" name="driving_pattern" required>
-                                    <option value="">Select pattern...</option>
-                                    <option value="highway">Highway</option>
-                                    <option value="city">City</option>
-                                    <option value="mixed">Mixed</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="missingNotes" class="form-label fw-bold">
-                                    <i class="fas fa-sticky-note me-2"></i>Notes (Optional)
-                                </label>
-                                <input type="text" class="form-control" id="missingNotes" name="notes" placeholder="e.g., 'Forgot to enter this fill-up'">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Cancel
-                    </button>
-                    <button type="button" class="btn btn-info" onclick="submitMissingEntry()">
-                        <i class="fas fa-plus-circle me-2"></i>Add Missing Entry
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -388,25 +263,6 @@
         function showFuelEntryModal() {
             resetModalToCreate();
             const modal = new bootstrap.Modal(document.getElementById('fuelEntryModal'));
-            modal.show();
-        }
-
-        // Show missing entry modal
-        function showMissingEntryModal() {
-            // Reset form and set default date/time
-            document.getElementById('missingEntryForm').reset();
-            
-            const today = new Date();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const year = today.getFullYear();
-            document.getElementById('missingFuelDate').value = `${month}/${day}/${year}`;
-            
-            const now = new Date();
-            const timeString = now.toTimeString().slice(0, 5);
-            document.getElementById('missingFuelTime').value = timeString;
-            
-            const modal = new bootstrap.Modal(document.getElementById('missingEntryModal'));
             modal.show();
         }
 
@@ -682,48 +538,15 @@
             let html = '<div class="row g-3">';
             
             summary.forEach(vehicle => {
-                let confidenceClass = 'text-success';
-                let confidenceIcon = '';
-                let confidenceText = '';
-                
-                // Determine confidence level and styling
-                if (vehicle.mpg_confidence === 'HIGH') {
-                    confidenceClass = 'text-success';
-                    confidenceIcon = '✅';
-                    confidenceText = 'High Confidence';
-                } else if (vehicle.mpg_confidence === 'LOW (gaps detected)') {
-                    confidenceClass = 'text-warning';
-                    confidenceIcon = '⚠️';
-                    confidenceText = 'Low Confidence';
-                } else if (vehicle.mpg_confidence === 'ERROR') {
-                    confidenceClass = 'text-danger';
-                    confidenceIcon = '❌';
-                    confidenceText = 'Calculation Error';
-                }
-                
                 html += `
                     <div class="col-md-4">
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <h6 class="card-title">${vehicle.vehicle_name}</h6>
                                 ${vehicle.mpg ? 
-                                    `<p class="h4 ${confidenceClass} mb-1">${vehicle.mpg.toFixed(1)} MPG ${confidenceIcon}</p>
-                                     <small class="text-muted">Based on ${vehicle.entries_count} entries</small>
-                                     <br><small class="text-muted">${confidenceText}</small>` :
+                                    `<p class="h4 text-success mb-1">${vehicle.mpg.toFixed(1)} MPG</p>
+                                     <small class="text-muted">Based on ${vehicle.entries_count} entries</small>` :
                                     `<p class="text-muted">Need at least 2 fuel entries</p>`
-                                }
-                                ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
-                                    `<div class="mt-2">
-                                        <small class="text-warning">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>
-                                            ${vehicle.gaps_detected.length} gap(s) detected
-                                        </small>
-                                        <div class="small text-muted mt-1">
-                                            ${vehicle.gaps_detected.map(gap => 
-                                                `Gap: ${gap.gap_miles} miles`
-                                            ).join(', ')}
-                                        </div>
-                                    </div>` : ''
                                 }
                             </div>
                         </div>
@@ -958,49 +781,6 @@
             const now = new Date();
             const timeString = now.toTimeString().slice(0, 5);
             document.getElementById('fuelTime').value = timeString;
-        }
-
-        // Submit missing entry
-        async function submitMissingEntry() {
-            const form = document.getElementById('missingEntryForm');
-            const formData = new FormData(form);
-            
-            // Validate required fields
-            if (!formData.get('vehicle_id') || !formData.get('date') || !formData.get('mileage') || 
-                !formData.get('fuel_amount') || !formData.get('fuel_cost') || !formData.get('fuel_type') || 
-                !formData.get('driving_pattern')) {
-                alert('Please fill in all required fields');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/fuel/add-missing-entry', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('Missing fuel entry added successfully!');
-                    
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('missingEntryModal'));
-                    modal.hide();
-                    
-                    // Reset form
-                    form.reset();
-                    
-                    // Reload data
-                    loadFuelEntries();
-                    loadMPGSummary();
-                } else {
-                    alert('Error adding missing fuel entry: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error submitting missing entry:', error);
-                alert('Error adding missing fuel entry. Please try again.');
-            }
         }
 
         // Format date for display in MM/DD/YYYY format
