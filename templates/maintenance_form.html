@@ -205,13 +205,14 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="oil_change_interval" class="form-label fw-bold">Oil Change Interval (Miles)</label>
+                                <label for="oil_change_interval" class="form-label fw-bold" title="Reminders are only created on save when an interval is provided. Leave blank for historical entries.">Oil Change Interval (Miles)</label>
                                 <input type="number" class="form-control" id="oil_change_interval" name="oil_change_interval" 
                                        value="{{ record.oil_change_interval if record and record.oil_change_interval else '5000' }}"
                                        min="1000" max="10000" step="100" placeholder="5000">
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    Set the mileage interval for the next oil change. Default is 5,000 miles.
+                                    Set the mileage interval for the next oil change. Default is 5,000 miles.<br>
+                                    <strong>Adding a past oil change?</strong> Leave this field <em>blank</em> to avoid creating an upcoming reminder. Do not enter 0. You can edit later to add an interval without creating a reminder.
                                 </div>
                             </div>
 

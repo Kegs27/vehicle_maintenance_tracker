@@ -1835,7 +1835,11 @@ async def delete_future_maintenance_api(future_maintenance_id: int):
 async def get_notifications_api():
     """Get all maintenance notifications (oil changes + future maintenance)"""
     try:
-        from data_operations import get_all_vehicles, get_triggered_future_maintenance, get_vehicle_current_mileage
+        from data_operations import (
+            get_all_vehicles,
+            get_triggered_future_maintenance,
+            get_vehicle_current_mileage,
+        )
         
         notifications = []
         total_count = 0
