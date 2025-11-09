@@ -173,6 +173,51 @@ body::before {
 }
 
 /* ============================================================================
+   MODAL STYLES
+   ============================================================================ */
+
+/* Fuel entry modal sizing and scrollbar */
+#fuelEntryModal .fuel-entry-modal {
+    max-height: 80vh;
+}
+
+#fuelEntryModal .modal-content {
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#fuelEntryModal .modal-header,
+#fuelEntryModal .modal-footer {
+    flex-shrink: 0;
+}
+
+#fuelEntryModal .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding-right: 0.75rem;
+    scrollbar-color: rgba(108, 117, 125, 0.5) transparent;
+    scrollbar-width: thin;
+}
+
+#fuelEntryModal .modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+#fuelEntryModal .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#fuelEntryModal .modal-body::-webkit-scrollbar-thumb {
+    background-color: rgba(108, 117, 125, 0.5);
+    border-radius: 8px;
+}
+
+#fuelEntryModal .modal-body::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(108, 117, 125, 0.65);
+}
+
+/* ============================================================================
    ICON STYLES
    ============================================================================ */
 

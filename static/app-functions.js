@@ -146,6 +146,94 @@ function saveToLocalStorage(key, data) {
     }
 }
 
+// ============================================================================
+// ACCOUNT (TESTER) SELECTION HELPERS
+// ============================================================================
+
+const ACCOUNT_COOKIE_NAME = 'selected_account';
+const ACCOUNTS_STORAGE_KEY = 'accounts_list_v1';
+
+function setCookie(name, value, days = 365) {
+    const d = new Date();
+    d.setTime(d.getTime() + (days*24*60*60*1000));
+    const expires = 'expires=' + d.toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + ';' + expires + ';path=/';
+}
+
+function getCookie(name) {
+    const decoded = decodeURIComponent(document.cookie);
+    const parts = decoded.split(';');
+    for (let c of parts) {
+        c = c.trim();
+        if (c.indexOf(name + '=') === 0) {
+            return c.substring(name.length + 1);
+        }
+    }
+    return '';
+}
+
+function getAccountsList() {
+    const list = loadFromLocalStorage(ACCOUNTS_STORAGE_KEY, []);
+    // Ensure unique, simple strings
+    const unique = Array.from(new Set((list || []).filter(Boolean)));
+    // Provide a sensible starter set if empty
+    if (unique.length === 0) {
+        return ['kory'];
+    }
+    return unique;
+}
+
+function saveAccountsList(list) {
+    const cleaned = Array.from(new Set((list || []).map(s => (s || '').trim()).filter(Boolean)));
+    return saveToLocalStorage(ACCOUNTS_STORAGE_KEY, cleaned);
+}
+
+function getSelectedAccount() {
+    return getCookie(ACCOUNT_COOKIE_NAME) || 'All';
+}
+
+function setSelectedAccount(name) {
+    setCookie(ACCOUNT_COOKIE_NAME, name || 'All');
+}
+
+function buildAccountDropdown(menuId, buttonId) {
+    const menu = document.getElementById(menuId);
+    const button = document.getElementById(buttonId);
+    if (!menu || !button) return;
+
+    const accounts = getAccountsList();
+    const current = getSelectedAccount();
+    button.innerHTML = `<i class="fas fa-user-circle me-2"></i>${current === 'All' ? 'All Accounts' : current}`;
+
+    let html = '';
+    html += `<li><a class="dropdown-item" href="#" data-account="All">All Accounts</a></li>`;
+    html += '<li><hr class="dropdown-divider"></li>';
+    accounts.forEach(acc => {
+        html += `<li><a class="dropdown-item" href="#" data-account="${acc}"><i class=\"fas fa-user me-2 text-purple-600\"></i>${acc}</a></li>`;
+    });
+    html += '<li><hr class="dropdown-divider"></li>';
+    html += `<li><a class="dropdown-item" href="/accounts"><i class=\"fas fa-users-cog me-2 text-purple-600\"></i>Manage Accounts</a></li>`;
+
+    menu.innerHTML = html;
+
+    menu.querySelectorAll('a[data-account]').forEach(a => {
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            const selected = a.getAttribute('data-account');
+            setSelectedAccount(selected);
+            // Update button label
+            button.innerHTML = `<i class=\"fas fa-user-circle me-2\"></i>${selected === 'All' ? 'All Accounts' : selected}`;
+            // Simple reload to apply filters across pages (server/client can read cookie)
+            window.location.reload();
+        });
+    });
+}
+
+// Initialize account switcher if present on a page
+function initializeAccountSwitcher() {
+    buildAccountDropdown('accountDropdownMenu', 'accountDropdownButton');
+}
+
 /**
  * Load data from localStorage with error handling
  */

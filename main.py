@@ -795,6 +795,11 @@ async def notifications_page(request: Request):
         print(f"Error loading notifications page: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to load notifications page: {str(e)}")
 
+@app.get("/accounts", response_class=HTMLResponse)
+async def accounts_page(request: Request):
+    """Manage Accounts (soft multi-tenancy labels stored client-side)."""
+    return templates.TemplateResponse("accounts.html", {"request": request})
+
 @app.get("/oil-analysis/{record_id}")
 async def oil_analysis_redirect(record_id: int):
     """Redirect old oil-analysis routes to new maintenance edit system"""
