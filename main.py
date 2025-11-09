@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 # Define dummy functions at module level to ensure they're always available
 def dummy_get_all_vehicles():
@@ -287,8 +287,7 @@ class AccountCreateRequest(BaseModel):
     name: str
     set_default: bool = Field(False, alias="setDefault")
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class AccountRenameRequest(BaseModel):
@@ -298,8 +297,7 @@ class AccountRenameRequest(BaseModel):
 class VehicleTransferRequest(BaseModel):
     account_id: str = Field(..., alias="accountId")
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 @app.on_event("startup")
 async def startup_event():
