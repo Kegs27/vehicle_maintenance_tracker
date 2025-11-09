@@ -1,0 +1,24 @@
+/Users/kory/vehicle_maintenance/main.py:136: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Started server process [72780]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('0.0.0.0', 8000): address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+Environment check - DATABASE_URL: NOT SET
+Using SQLite fallback
+✅ Successfully imported all modules
+Starting Vehicle Maintenance Tracker...
+Current working directory: /Users/kory/vehicle_maintenance
+Templates directory exists: True
+Static directory exists: True
+App directory exists: True
+App directory contents: ['add_email_notifications.py', 'migrate_live_database.py', 'data_operations_refactored.py', 'render.yaml', 'config.py', 'importer.py', 'app', 'models.py', 'requirements.txt', 'runtime.txt', 'database.py', 'test_add_fuel.py', 'test_fuel_retrieval.py', 'uploads', '__pycache__', 'database_utils.py', 'README.md', 'fix_bad_oil_change_records.py', 'utils.py', 'migrate_photo_columns.py', 'static', 'migrate_live_description_nullable.py', 'templates', 'create_email_subscriptions.py', 'Procfile', 'email_notifications.py', '.git', 'main.py', 'vehicle_maintenance_tracker', 'main_refactored.py', 'server.log', 'test_all_fuel_retrieval.py', 'vehicle_maintenance.db', 'data_operations.py', 'migrate_live_email_notifications.py', 'run_migration.py']
+Database initialized successfully: sqlite:////Users/kory/vehicle_maintenance/vehicle_maintenance.db
+Startup completed successfully!

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Accounts - Vehicle Maintenance Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    {% include 'nav.html' %}
+
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Manage Accounts</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Add Account</label>
+                            <div class="input-group">
+                                <input type="text" id="newAccountName" class="form-control" placeholder="e.g., alice">
+                                <button class="btn btn-primary" id="addAccountBtn"><i class="fas fa-plus me-1"></i>Add</button>
+                            </div>
+                            <div class="form-text">Simple label used to partition data during testing.</div>
+                        </div>
+
+                        <hr>
+
+                        <h6 class="fw-bold mb-3">Accounts</h6>
+                        <ul class="list-group" id="accountsList"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const STORAGE_KEY = 'accounts_list_v1';
+
+        function loadAccounts() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || ['kory']; } catch { return ['kory']; }
+        }
+        function saveAccounts(list) {
+            const cleaned = Array.from(new Set((list||[]).map(s => (s||'').trim()).filter(Boolean)));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+        }
+
+        function render() {
+            const listEl = document.getElementById('accountsList');
+            const accounts = loadAccounts();
+            if (accounts.length === 0) {
+                listEl.innerHTML = '<li class="list-group-item text-muted">No accounts yet.</li>';
+                return;
+            }
+            listEl.innerHTML = accounts.map(name => `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-user me-2 text-purple-600"></i>${name}</span>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" data-action="rename" data-name="${name}"><i class="fas fa-pen"></i></button>
+                        <button class="btn btn-outline-danger" data-action="delete" data-name="${name}"><i class="fas fa-trash"></i></button>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            render();
+            document.getElementById('addAccountBtn').addEventListener('click', () => {
+                const input = document.getElementById('newAccountName');
+                const val = (input.value || '').trim();
+                if (!val) return;
+                const accounts = loadAccounts();
+                accounts.push(val);
+                saveAccounts(accounts);
+                input.value = '';
+                render();
+            });
+
+            document.getElementById('accountsList').addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const action = btn.getAttribute('data-action');
+                const name = btn.getAttribute('data-name');
+                let accounts = loadAccounts();
+                if (action === 'delete') {
+                    accounts = accounts.filter(a => a !== name);
+                    saveAccounts(accounts);
+                    render();
+                } else if (action === 'rename') {
+                    const newName = prompt('Rename account', name);
+                    if (newName && newName.trim() && newName !== name) {
+                        accounts = accounts.map(a => a === name ? newName.trim() : a);
+                        saveAccounts(accounts);
+                        render();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
