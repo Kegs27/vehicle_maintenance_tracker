@@ -1396,7 +1396,7 @@
                     // If vehicle_id is provided, pre-populate the add form
                     if (vehicleIdParam) {
                         // Find the vehicle name
-                        fetch(`/api/vehicles/${vehicleIdParam}`)
+                        fetch(window.buildAccountAwareUrl(`/api/vehicles/${vehicleIdParam}`))
                             .then(response => response.json())
                             .then(data => {
                                 if (data.vehicle) {
@@ -1760,7 +1760,7 @@
         
         function editFutureMaintenance(recordId) {
             // Fetch the future maintenance record data
-            fetch(`/api/future-maintenance/single/${recordId}`)
+            fetch(window.buildAccountAwareUrl(`/api/future-maintenance/single/${recordId}`))
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1821,7 +1821,7 @@
         
         function deleteFutureMaintenance(recordId) {
             if (confirm('Are you sure you want to delete this future maintenance record?')) {
-                fetch(`/api/future-maintenance/${recordId}`, {
+                fetch(window.buildAccountAwareUrl(`/api/future-maintenance/${recordId}`), {
                     method: 'DELETE'
                 })
                 .then(response => response.json())

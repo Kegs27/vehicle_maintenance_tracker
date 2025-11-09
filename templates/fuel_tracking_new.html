@@ -334,7 +334,7 @@
         // Load fuel entries from database
         async function loadFuelEntries() {
             try {
-                const response = await fetch('/api/fuel/entries');
+                const response = await fetch(window.buildAccountAwareUrl('/api/fuel/entries'));
                 const data = await response.json();
                 
                 if (data.success) {
@@ -444,7 +444,7 @@
                 
                 if (entryId) {
                     // Edit existing entry
-                    response = await fetch(`/api/fuel/${entryId}`, {
+                    response = await fetch(window.buildAccountAwareUrl(`/api/fuel/${entryId}`), {
                         method: 'PUT',
                         body: formData
                     });
@@ -494,7 +494,7 @@
             }
 
             try {
-                const response = await fetch(`/api/fuel/${entryId}`, {
+                const response = await fetch(window.buildAccountAwareUrl(`/api/fuel/${entryId}`), {
                     method: 'DELETE'
                 });
 
@@ -518,7 +518,7 @@
         // Load MPG summary
         async function loadMPGSummary() {
             try {
-                const response = await fetch('/api/fuel/mpg-summary');
+                const response = await fetch(window.buildAccountAwareUrl('/api/fuel/mpg-summary'));
                 const data = await response.json();
                 
                 if (data.success) {
@@ -613,7 +613,7 @@
 
             try {
                 // Get last fuel entry for this vehicle
-                const response = await fetch('/api/fuel/entries');
+                const response = await fetch(window.buildAccountAwareUrl('/api/fuel/entries'));
                 const data = await response.json();
                 
                 if (data.success && data.entries.length > 0) {

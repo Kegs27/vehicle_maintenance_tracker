@@ -929,7 +929,7 @@
             showTransferFeedback('info', '<i class="fas fa-spinner fa-spin me-2"></i>Transferring vehicle...');
 
             try {
-                const response = await fetch(`/api/vehicles/${transferState.vehicleId}/transfer`, {
+                const response = await fetch(window.buildAccountAwareUrl(`/api/vehicles/${transferState.vehicleId}/transfer`), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

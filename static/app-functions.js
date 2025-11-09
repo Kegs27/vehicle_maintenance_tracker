@@ -150,7 +150,7 @@ function saveToLocalStorage(key, data) {
 // ACCOUNT SELECTION HELPERS
 // ============================================================================
 
-const ACCOUNT_COOKIE_NAME = 'selected_account';
+const ACCOUNT_COOKIE_NAME = 'vmt.accountId';
 const ACCOUNT_STORAGE_KEY = 'vmt.selectedAccountId';
 const ACCOUNT_GLOBAL_CONTEXT = typeof window !== 'undefined' ? (window.__ACCOUNT_CONTEXT__ || {}) : {};
 let accountCache = null;
@@ -184,6 +184,38 @@ function saveAccountIdToStorage(accountId) {
 
 function loadAccountIdFromStorage() {
     return loadFromLocalStorage(ACCOUNT_STORAGE_KEY, null);
+}
+
+function getSelectedAccountId() {
+    try {
+        const urlAccount = new URL(window.location.href).searchParams.get('accountId');
+        if (urlAccount && urlAccount.toLowerCase() !== 'all') {
+            return urlAccount;
+        }
+    } catch (error) {
+        console.error('Failed to resolve accountId from URL:', error);
+    }
+
+    const stored = loadAccountIdFromStorage();
+    if (stored && stored.toLowerCase() !== 'all') {
+        return stored;
+    }
+
+    if (window.__ACCOUNT_CONTEXT__ && window.__ACCOUNT_CONTEXT__.account_id) {
+        return window.__ACCOUNT_CONTEXT__.account_id;
+    }
+
+    return null;
+}
+
+function buildAccountAwareUrl(path) {
+    const accountId = getSelectedAccountId();
+    if (!accountId) {
+        return path;
+    }
+    const url = new URL(path, window.location.origin);
+    url.searchParams.set('accountId', accountId);
+    return url.pathname + url.search;
 }
 
 async function fetchAccountsFromApi(forceRefresh = false) {
@@ -304,7 +336,7 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
 function handleAccountSelection(accountId, accountName) {
     const isAll = !accountId || accountId === 'all';
     saveAccountIdToStorage(isAll ? null : accountId);
-    setCookie(ACCOUNT_COOKIE_NAME, accountName || 'All');
+    setCookie(ACCOUNT_COOKIE_NAME, isAll ? 'all' : accountId);
 
     window.dispatchEvent(new CustomEvent('account:change', {
         detail: {
@@ -448,3 +480,5 @@ window.initializeCommonFeatures = initializeCommonFeatures;
 window.initializePageFeatures = initializePageFeatures;
 window.initializeAccountSwitcher = initializeAccountSwitcher;
 window.fetchAccountsFromApi = fetchAccountsFromApi;
+window.getSelectedAccountId = getSelectedAccountId;
+window.buildAccountAwareUrl = buildAccountAwareUrl;

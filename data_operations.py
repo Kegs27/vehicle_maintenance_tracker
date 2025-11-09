@@ -310,16 +310,27 @@ def get_all_vehicles(
     """Get vehicles scoped to the owner and optionally filtered by account."""
     session = SessionLocal()
     try:
-        # Use selectinload to eagerly load the maintenance_records relationship
         from sqlalchemy.orm import selectinload
+
         query = (
             select(Vehicle)
-            .options(selectinload(Vehicle.maintenance_records))
+            .options(
+                selectinload(Vehicle.account),
+                selectinload(Vehicle.maintenance_records),
+            )
             .outerjoin(Account, Account.id == Vehicle.account_id)
             .order_by(Vehicle.name)
         )
-        if account_id and account_id.lower() not in ("all", "null"):
-            query = query.where(Vehicle.account_id == account_id)
+
+        normalized_account_id = (
+            account_id if account_id and account_id.lower() not in ("all", "null") else None
+        )
+
+        if normalized_account_id:
+            query = query.where(
+                Vehicle.account_id == normalized_account_id,
+                or_(Account.owner_user_id == owner_user_id, Account.id.is_(None)),
+            )
         else:
             query = query.where(
                 or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None))
@@ -347,8 +358,14 @@ def get_vehicle_by_id(
                 or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None)),
             )
         )
-        if account_id and account_id.lower() not in ("all", "null"):
-            query = query.where(Vehicle.account_id == account_id)
+        normalized_account_id = (
+            account_id if account_id and account_id.lower() not in ("all", "null") else None
+        )
+        if normalized_account_id:
+            query = query.where(
+                Vehicle.account_id == normalized_account_id,
+                or_(Account.owner_user_id == owner_user_id, Account.id.is_(None)),
+            )
 
         vehicle = session.execute(query).scalar_one_or_none()
         return vehicle
@@ -493,17 +510,37 @@ def delete_vehicle(vehicle_id: int) -> Dict[str, Any]:
 # MAINTENANCE OPERATIONS
 # ============================================================================
 
-def get_all_maintenance_records() -> List[MaintenanceRecord]:
-    """Get all maintenance records with vehicle information"""
+def get_all_maintenance_records(
+    account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[MaintenanceRecord]:
+    """Get maintenance records with optional account filtering."""
     session = SessionLocal()
     try:
-        # Use selectinload to eagerly load the vehicle relationship
         from sqlalchemy.orm import selectinload
-        records = session.execute(
+
+        normalized_account_id = (
+            account_id if account_id and account_id.lower() not in ("all", "null") else None
+        )
+
+        query = (
             select(MaintenanceRecord)
-            .options(selectinload(MaintenanceRecord.vehicle))
-            .order_by(MaintenanceRecord.date.desc())
-        ).scalars().all()
+            .options(selectinload(MaintenanceRecord.vehicle).selectinload(Vehicle.account))
+            .join(Vehicle, Vehicle.id == MaintenanceRecord.vehicle_id)
+            .outerjoin(Account, Account.id == Vehicle.account_id)
+            .order_by(MaintenanceRecord.date.desc(), MaintenanceRecord.id.desc())
+        )
+
+        if normalized_account_id:
+            query = query.where(
+                Vehicle.account_id == normalized_account_id,
+                or_(Account.owner_user_id == owner_user_id, Account.id.is_(None)),
+            )
+        else:
+            query = query.where(
+                or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None))
+            )
+
+        records = session.execute(query).scalars().all()
         return records
     except Exception as e:
         print(f"Error getting maintenance records: {e}")
@@ -511,18 +548,39 @@ def get_all_maintenance_records() -> List[MaintenanceRecord]:
     finally:
         session.close()
 
-def get_maintenance_records_by_vehicle(vehicle_id: int) -> List[MaintenanceRecord]:
-    """Get maintenance records for a specific vehicle ordered by date (newest first) with vehicle eagerly loaded"""
+
+def get_maintenance_records_by_vehicle(
+    vehicle_id: int, account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[MaintenanceRecord]:
+    """Get maintenance records for a specific vehicle ordered by date (newest first) with vehicle eagerly loaded."""
     session = SessionLocal()
     try:
-        # Use selectinload to eagerly load the vehicle relationship
         from sqlalchemy.orm import selectinload
-        records = session.execute(
+
+        normalized_account_id = (
+            account_id if account_id and account_id.lower() not in ("all", "null") else None
+        )
+
+        query = (
             select(MaintenanceRecord)
-            .options(selectinload(MaintenanceRecord.vehicle))
+            .options(selectinload(MaintenanceRecord.vehicle).selectinload(Vehicle.account))
+            .join(Vehicle, Vehicle.id == MaintenanceRecord.vehicle_id)
+            .outerjoin(Account, Account.id == Vehicle.account_id)
             .where(MaintenanceRecord.vehicle_id == vehicle_id)
             .order_by(MaintenanceRecord.date.desc(), MaintenanceRecord.mileage.desc())
-        ).scalars().all()
+        )
+
+        if normalized_account_id:
+            query = query.where(
+                Vehicle.account_id == normalized_account_id,
+                or_(Account.owner_user_id == owner_user_id, Account.id.is_(None)),
+            )
+        else:
+            query = query.where(
+                or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None))
+            )
+
+        records = session.execute(query).scalars().all()
         return records
     except Exception as e:
         print(f"Error getting maintenance records for vehicle {vehicle_id}: {e}")
@@ -1795,78 +1853,122 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
 # FUEL TRACKING OPERATIONS
 # ============================================================================
 
-def get_fuel_entries_for_vehicle(vehicle_id: int) -> List[Dict[str, Any]]:
-    """Get all fuel entries for a specific vehicle"""
+def get_fuel_entries_for_vehicle(
+    vehicle_id: int, account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[Dict[str, Any]]:
+    """Get all fuel entries for a specific vehicle with optional account scoping."""
+    session = SessionLocal()
     try:
-        session = SessionLocal()
         from models import FuelEntry
-        
-        fuel_entries = session.execute(
-            select(FuelEntry).where(FuelEntry.vehicle_id == vehicle_id).order_by(FuelEntry.date.desc(), FuelEntry.mileage.desc())
-        ).scalars().all()
-        
-        # Convert to dictionaries for easier handling
-        entries = []
+
+        normalized_account_id = (
+            account_id if account_id and account_id.lower() not in ("all", "null") else None
+        )
+
+        query = (
+            select(FuelEntry)
+            .join(Vehicle, Vehicle.id == FuelEntry.vehicle_id)
+            .outerjoin(Account, Account.id == Vehicle.account_id)
+            .where(FuelEntry.vehicle_id == vehicle_id)
+            .order_by(FuelEntry.date.desc(), FuelEntry.mileage.desc())
+        )
+
+        if normalized_account_id:
+            query = query.where(
+                Vehicle.account_id == normalized_account_id,
+                or_(Account.owner_user_id == owner_user_id, Account.id.is_(None)),
+            )
+        else:
+            query = query.where(
+                or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None))
+            )
+
+        fuel_entries = session.execute(query).scalars().all()
+
+        entries: List[Dict[str, Any]] = []
         for entry in fuel_entries:
-            entries.append({
-                'id': entry.id,
-                'date': entry.date,
-                'time': getattr(entry, 'time', None),  # Handle missing time column gracefully
-                'mileage': entry.mileage,
-                'fuel_amount': entry.fuel_amount,
-                'fuel_cost': entry.fuel_cost,
-                'fuel_type': entry.fuel_type,
-                'driving_pattern': entry.driving_pattern,
-                'notes': entry.notes,
-                'odometer_photo': entry.odometer_photo,
-                'created_at': entry.created_at,
-                'updated_at': entry.updated_at
-            })
-        
+            entries.append(
+                {
+                    "id": entry.id,
+                    "date": entry.date,
+                    "time": getattr(entry, "time", None),
+                    "mileage": entry.mileage,
+                    "fuel_amount": entry.fuel_amount,
+                    "fuel_cost": entry.fuel_cost,
+                    "fuel_type": entry.fuel_type,
+                    "driving_pattern": entry.driving_pattern,
+                    "notes": entry.notes,
+                    "odometer_photo": entry.odometer_photo,
+                    "created_at": entry.created_at,
+                    "updated_at": entry.updated_at,
+                }
+            )
+
         return entries
-        
+
     except Exception as e:
         print(f"Error getting fuel entries for vehicle {vehicle_id}: {e}")
         return []
     finally:
         session.close()
 
-def get_all_fuel_entries() -> List[Dict[str, Any]]:
-    """Get all fuel entries across all vehicles"""
+
+def get_all_fuel_entries(
+    account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[Dict[str, Any]]:
+    """Get all fuel entries across all vehicles with optional account filter."""
+    session = SessionLocal()
     try:
-        session = SessionLocal()
         from models import FuelEntry
-        
-        fuel_entries = session.execute(
-            select(FuelEntry).order_by(FuelEntry.date.desc(), FuelEntry.mileage.desc())
-        ).scalars().all()
-        
-        # Convert to dictionaries with vehicle info
-        entries = []
-        for entry in fuel_entries:
-            vehicle = session.execute(
-                select(Vehicle).where(Vehicle.id == entry.vehicle_id)
-            ).scalar_one_or_none()
-            
-            entries.append({
-                'id': entry.id,
-                'vehicle_id': entry.vehicle_id,
-                'vehicle_name': vehicle.name if vehicle else 'Unknown Vehicle',
-                'date': entry.date,
-                'time': getattr(entry, 'time', None),  # Handle missing time column gracefully
-                'mileage': entry.mileage,
-                'fuel_amount': entry.fuel_amount,
-                'fuel_cost': entry.fuel_cost,
-                'fuel_type': entry.fuel_type,
-                'driving_pattern': entry.driving_pattern,
-                'notes': entry.notes,
-                'odometer_photo': entry.odometer_photo,
-                'created_at': entry.created_at,
-                'updated_at': entry.updated_at
-            })
-        
+
+        normalized_account_id = (
+            account_id if account_id and account_id.lower() not in ("all", "null") else None
+        )
+
+        query = (
+            select(FuelEntry, Vehicle, Account)
+            .join(Vehicle, Vehicle.id == FuelEntry.vehicle_id)
+            .outerjoin(Account, Account.id == Vehicle.account_id)
+            .order_by(FuelEntry.date.desc(), FuelEntry.mileage.desc(), FuelEntry.id.desc())
+        )
+
+        if normalized_account_id:
+            query = query.where(
+                Vehicle.account_id == normalized_account_id,
+                or_(Account.owner_user_id == owner_user_id, Account.id.is_(None)),
+            )
+        else:
+            query = query.where(
+                or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None))
+            )
+
+        fuel_entries = session.execute(query).all()
+
+        entries: List[Dict[str, Any]] = []
+        for entry, vehicle, account in fuel_entries:
+            entries.append(
+                {
+                    "id": entry.id,
+                    "vehicle_id": entry.vehicle_id,
+                    "vehicle_name": vehicle.name if vehicle else "Unknown Vehicle",
+                    "account_id": vehicle.account_id if vehicle else None,
+                    "account_name": account.name if account else None,
+                    "date": entry.date,
+                    "time": getattr(entry, "time", None),
+                    "mileage": entry.mileage,
+                    "fuel_amount": entry.fuel_amount,
+                    "fuel_cost": entry.fuel_cost,
+                    "fuel_type": entry.fuel_type,
+                    "driving_pattern": entry.driving_pattern,
+                    "notes": entry.notes,
+                    "odometer_photo": entry.odometer_photo,
+                    "created_at": entry.created_at,
+                    "updated_at": entry.updated_at,
+                }
+            )
+
         return entries
-        
+
     except Exception as e:
         print(f"Error getting all fuel entries: {e}")
         return []

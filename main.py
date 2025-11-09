@@ -226,6 +226,16 @@ def get_account_context(request: Request):
             scope = "all"
 
     if not selected_account and scope != "all":
+        account_cookie_id = request.cookies.get("vmt.accountId")
+        if account_cookie_id:
+            if account_cookie_id.lower() == "all":
+                scope = "all"
+            else:
+                selected_account = get_account_by_id(account_cookie_id)
+                if selected_account:
+                    scope = "single"
+
+    if not selected_account and scope != "all":
         cookie_value = request.cookies.get("selected_account")
         if cookie_value:
             if cookie_value.lower() == "all":
@@ -298,6 +308,74 @@ class VehicleTransferRequest(BaseModel):
     account_id: str = Field(..., alias="accountId")
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+def serialize_vehicle_for_api(vehicle: Vehicle) -> Dict[str, Any]:
+    """Serialize a vehicle object into a JSON-friendly dictionary."""
+    account = getattr(vehicle, "account", None)
+    return {
+        "id": vehicle.id,
+        "name": vehicle.name,
+        "make": vehicle.make,
+        "model": vehicle.model,
+        "year": vehicle.year,
+        "vin": vehicle.vin,
+        "account_id": vehicle.account_id,
+        "account_name": account.name if account else None,
+        "created_at": vehicle.created_at.isoformat() if getattr(vehicle, "created_at", None) else None,
+        "updated_at": vehicle.updated_at.isoformat() if getattr(vehicle, "updated_at", None) else None,
+    }
+
+
+def serialize_maintenance_record(record: MaintenanceRecord) -> Dict[str, Any]:
+    """Serialize a maintenance record including its vehicle information."""
+    vehicle = getattr(record, "vehicle", None)
+    account = getattr(vehicle, "account", None) if vehicle else None
+    return {
+        "id": record.id,
+        "vehicle_id": record.vehicle_id,
+        "vehicle_name": vehicle.name if vehicle else None,
+        "account_id": vehicle.account_id if vehicle else None,
+        "account_name": account.name if account else None,
+        "date": record.date.isoformat() if record.date else None,
+        "mileage": record.mileage,
+        "description": record.description,
+        "cost": record.cost,
+        "created_at": record.created_at.isoformat() if getattr(record, "created_at", None) else None,
+        "updated_at": record.updated_at.isoformat() if getattr(record, "updated_at", None) else None,
+        "is_oil_change": getattr(record, "is_oil_change", False),
+    }
+
+
+def serialize_fuel_entry_for_api(entry: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize fuel entry dictionaries returned from data operations."""
+    serialized = entry.copy()
+    for key in ("date", "created_at", "updated_at"):
+        value = serialized.get(key)
+        if value is not None and hasattr(value, "isoformat"):
+            serialized[key] = value.isoformat()
+        elif value is not None:
+            serialized[key] = str(value)
+    return serialized
+
+
+def resolve_account_filter(account_id: Optional[str], account_name: Optional[str]) -> Optional[str]:
+    """Resolve account id or name query parameters to a canonical account id."""
+    normalized_id = account_id.strip() if account_id else None
+    if normalized_id and normalized_id.lower() not in ("", "all", "null"):
+        account = get_account_by_id(normalized_id)
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found.")
+        return account.id
+
+    normalized_name = account_name.strip() if account_name else None
+    if normalized_name and normalized_name.lower() not in ("", "all", "null"):
+        account = get_account_by_name(normalized_name)
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found.")
+        return account.id
+
+    return None
 
 @app.on_event("startup")
 async def startup_event():
@@ -627,11 +705,9 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
             if not vehicle:
                 raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
             vehicle_name = vehicle.name
-            records = get_maintenance_records_by_vehicle(vehicle_id)
+            records = get_maintenance_records_by_vehicle(vehicle_id, account_id=account_id)
         else:
-            records = get_all_maintenance_records()
-            if allowed_vehicle_ids:
-                records = [record for record in records if record.vehicle_id in allowed_vehicle_ids]
+            records = get_all_maintenance_records(account_id=account_id)
 
         total_cost = sum(record.cost or 0 for record in records)
         total_records = len(records)
@@ -1370,45 +1446,45 @@ async def delete_fuel_entry(entry_id: int):
         raise HTTPException(status_code=500, detail=f"Failed to delete fuel entry: {str(e)}")
 
 @app.get("/api/fuel/entries")
-async def get_fuel_entries():
-    """Get all fuel entries from the database"""
+async def get_fuel_entries(
+    accountId: Optional[str] = Query(None),
+    accountName: Optional[str] = Query(None),
+):
+    """Get all fuel entries from the database with optional account filtering."""
     try:
         from data_operations import get_all_fuel_entries
-        
-        entries = get_all_fuel_entries()
-        
-        # Convert date objects to strings for JSON serialization
-        serialized_entries = []
-        for entry in entries:
-            serialized_entry = entry.copy()
-            if entry.get('date'):
-                serialized_entry['date'] = entry['date'].isoformat() if hasattr(entry['date'], 'isoformat') else str(entry['date'])
-            if entry.get('created_at'):
-                serialized_entry['created_at'] = entry['created_at'].isoformat() if hasattr(entry['created_at'], 'isoformat') else str(entry['created_at'])
-            if entry.get('updated_at'):
-                serialized_entry['updated_at'] = entry['updated_at'].isoformat() if hasattr(entry['updated_at'], 'isoformat') else str(entry['updated_at'])
-            serialized_entries.append(serialized_entry)
-        
+
+        account_id = resolve_account_filter(accountId, accountName)
+        entries = get_all_fuel_entries(account_id=account_id)
+        serialized_entries = [serialize_fuel_entry_for_api(entry) for entry in entries]
+
         return {
             "success": True,
-            "entries": serialized_entries
+            "account_id": account_id,
+            "entries": serialized_entries,
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error getting fuel entries: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get fuel entries: {str(e)}")
 
 @app.get("/api/fuel/mpg-summary")
-async def get_fuel_mpg_summary():
+async def get_fuel_mpg_summary(
+    accountId: Optional[str] = Query(None),
+    accountName: Optional[str] = Query(None),
+):
     """Get MPG summary for all vehicles"""
     try:
         from data_operations import get_all_vehicles, get_fuel_entries_for_vehicle
-        
-        vehicles = get_all_vehicles()
+
+        account_id = resolve_account_filter(accountId, accountName)
+        vehicles = get_all_vehicles(account_id=account_id)
         summary = []
         
         for vehicle in vehicles:
-            fuel_entries = get_fuel_entries_for_vehicle(vehicle.id)
+            fuel_entries = get_fuel_entries_for_vehicle(vehicle.id, account_id=account_id)
             
             if len(fuel_entries) >= 2:
                 # 🎯 SIMPLE MPG: Sort by mileage, not date!
@@ -1494,6 +1570,7 @@ async def get_fuel_mpg_summary():
                 summary.append({
                     "vehicle_id": vehicle.id,
                     "vehicle_name": vehicle.name,
+                    "account_id": vehicle.account_id,
                     "mpg": mpg,  # Lifetime MPG for backward compatibility
                     "lifetime_mpg": lifetime_mpg,
                     "current_mpg": current_mpg,
@@ -1514,6 +1591,7 @@ async def get_fuel_mpg_summary():
                 summary.append({
                     "vehicle_id": vehicle.id,
                     "vehicle_name": vehicle.name,
+                    "account_id": vehicle.account_id,
                     "mpg": None,
                     "entries_count": len(fuel_entries),
                     "calculation_details": {
@@ -1525,6 +1603,7 @@ async def get_fuel_mpg_summary():
         
         return {
             "success": True,
+            "account_id": account_id,
             "summary": summary
         }
         
@@ -1664,24 +1743,31 @@ async def fuel_redirect():
 async def fuel_tracking_new(request: Request):
     """New, clean fuel tracking page"""
     try:
-        vehicles = get_all_vehicles()
-        
-        # Convert Vehicle objects to dictionaries for JSON serialization
-        vehicles_dict = []
-        for vehicle in vehicles:
-            vehicles_dict.append({
-                'id': vehicle.id,
-                'name': vehicle.name,
-                'year': vehicle.year,
-                'make': vehicle.make,
-                'model': vehicle.model,
-                'vin': vehicle.vin
-            })
-        
-        return templates.TemplateResponse("fuel_tracking_new.html", {
-            "request": request,
-            "vehicles": vehicles_dict
-        })
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+        vehicles = get_all_vehicles(account_id=account_id)
+
+        vehicles_dict = [
+            {
+                "id": vehicle.id,
+                "name": vehicle.name,
+                "year": vehicle.year,
+                "make": vehicle.make,
+                "model": vehicle.model,
+                "vin": vehicle.vin,
+                "account_id": vehicle.account_id,
+            }
+            for vehicle in vehicles
+        ]
+
+        return templates.TemplateResponse(
+            "fuel_tracking_new.html",
+            {
+                "request": request,
+                "vehicles": vehicles_dict,
+                "account_context": account_context,
+            },
+        )
     except Exception as e:
         return HTMLResponse(content=f"<h1>Fuel Tracking Error</h1><p>{str(e)}</p>")
 
@@ -2206,6 +2292,36 @@ async def transfer_vehicle_api(vehicle_id: int, payload: VehicleTransferRequest)
             "account_id": vehicle_obj.account_id,
         },
         **payload_data,
+    }
+
+
+@app.get("/api/vehicles")
+async def list_vehicles_api(
+    accountId: Optional[str] = Query(None),
+    accountName: Optional[str] = Query(None),
+):
+    """List vehicles filtered by account when provided."""
+    account_id = resolve_account_filter(accountId, accountName)
+    vehicles = get_all_vehicles(account_id=account_id)
+    return {
+        "success": True,
+        "account_id": account_id,
+        "vehicles": [serialize_vehicle_for_api(vehicle) for vehicle in vehicles],
+    }
+
+
+@app.get("/api/maintenance")
+async def list_maintenance_api(
+    accountId: Optional[str] = Query(None),
+    accountName: Optional[str] = Query(None),
+):
+    """List maintenance records filtered by account when provided."""
+    account_id = resolve_account_filter(accountId, accountName)
+    records = get_all_maintenance_records(account_id=account_id)
+    return {
+        "success": True,
+        "account_id": account_id,
+        "records": [serialize_maintenance_record(record) for record in records],
     }
 
 @app.delete("/api/future-maintenance/{future_maintenance_id}")
