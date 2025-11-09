@@ -3,7 +3,7 @@ import os
 import sys
 import csv
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, Dict
 from io import StringIO
 
 # Third-party imports
@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
+from pydantic import BaseModel, Field
 
 # Define dummy functions at module level to ensure they're always available
 def dummy_get_all_vehicles():
@@ -81,14 +82,44 @@ try:
     from models import Vehicle, MaintenanceRecord
     from importer import import_csv, ImportResult
     from data_operations import (
-        get_all_vehicles, get_vehicle_by_id, create_vehicle, update_vehicle, delete_vehicle,
-        get_all_maintenance_records, get_maintenance_records_by_vehicle, get_maintenance_by_id,
-        create_maintenance_record, create_basic_maintenance_record, create_oil_analysis_record,
-        create_placeholder_oil_analysis, update_maintenance_record, delete_maintenance_record,
-        import_csv_data, export_vehicles_csv, export_maintenance_csv, get_vehicle_names,
-        get_maintenance_summary, get_home_dashboard_summary, get_current_mileage_from_all_sources,
-        get_oil_change_interval_from_record, get_fuel_entries_for_vehicle, get_all_fuel_entries,
-        get_vehicle_health_status, sort_maintenance_records, get_all_vehicles_triggered_maintenance
+        get_all_vehicles,
+        get_vehicle_by_id,
+        create_vehicle,
+        update_vehicle,
+        delete_vehicle,
+        get_all_maintenance_records,
+        get_maintenance_records_by_vehicle,
+        get_maintenance_by_id,
+        create_maintenance_record,
+        create_basic_maintenance_record,
+        create_oil_analysis_record,
+        create_placeholder_oil_analysis,
+        update_maintenance_record,
+        delete_maintenance_record,
+        import_csv_data,
+        export_vehicles_csv,
+        export_maintenance_csv,
+        get_vehicle_names,
+        get_maintenance_summary,
+        get_home_dashboard_summary,
+        get_current_mileage_from_all_sources,
+        get_oil_change_interval_from_record,
+        get_fuel_entries_for_vehicle,
+        get_all_fuel_entries,
+        get_vehicle_health_status,
+        sort_maintenance_records,
+        get_all_vehicles_triggered_maintenance,
+        get_accounts,
+        get_account_by_id,
+        get_account_by_name,
+        create_account,
+        rename_account,
+        delete_account,
+        set_default_account,
+        get_default_account,
+        transfer_vehicle_to_account,
+        get_account_vehicle_counts,
+        get_all_future_maintenance,
     )
     print("✅ Successfully imported all modules")
 except ImportError as e:
@@ -99,14 +130,44 @@ except ImportError as e:
         from app.models import Vehicle, MaintenanceRecord
         from app.importer import import_csv, ImportResult
         from app.data_operations import (
-            get_all_vehicles, get_vehicle_by_id, create_vehicle, update_vehicle, delete_vehicle,
-            get_all_maintenance_records, get_maintenance_records_by_vehicle, get_maintenance_by_id,
-            create_maintenance_record, create_basic_maintenance_record, create_oil_analysis_record,
-            create_placeholder_oil_analysis, update_maintenance_record, delete_maintenance_record,
-            import_csv_data, export_vehicles_csv, export_maintenance_csv, get_vehicle_names,
-            get_maintenance_summary, get_home_dashboard_summary, get_current_mileage_from_all_sources,
-            get_oil_change_interval_from_record, get_fuel_entries_for_vehicle, get_all_fuel_entries,
-            get_vehicle_health_status, sort_maintenance_records, get_all_vehicles_triggered_maintenance
+            get_all_vehicles,
+            get_vehicle_by_id,
+            create_vehicle,
+            update_vehicle,
+            delete_vehicle,
+            get_all_maintenance_records,
+            get_maintenance_records_by_vehicle,
+            get_maintenance_by_id,
+            create_maintenance_record,
+            create_basic_maintenance_record,
+            create_oil_analysis_record,
+            create_placeholder_oil_analysis,
+            update_maintenance_record,
+            delete_maintenance_record,
+            import_csv_data,
+            export_vehicles_csv,
+            export_maintenance_csv,
+            get_vehicle_names,
+            get_maintenance_summary,
+            get_home_dashboard_summary,
+            get_current_mileage_from_all_sources,
+            get_oil_change_interval_from_record,
+            get_fuel_entries_for_vehicle,
+            get_all_fuel_entries,
+            get_vehicle_health_status,
+            sort_maintenance_records,
+            get_all_vehicles_triggered_maintenance,
+            get_accounts,
+            get_account_by_id,
+            get_account_by_name,
+            create_account,
+            rename_account,
+            delete_account,
+            set_default_account,
+            get_default_account,
+            transfer_vehicle_to_account,
+            get_account_vehicle_counts,
+            get_all_future_maintenance,
         )
         print("✅ Successfully imported from app package")
     except ImportError as e2:
@@ -132,6 +193,113 @@ templates = Jinja2Templates(directory="./templates")
 # Static files
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static", check_dir=False), name="static")
+
+
+def get_account_context(request: Request):
+    """
+    Resolve the current account selection from the request.
+
+    Priority order:
+      1. Explicit query parameter ?accountId=
+      2. Cookie `selected_account` (stored as account name or 'All')
+      3. Owner default account
+
+    Returns a dict with:
+      - scope: "all" or "single"
+      - account: Account instance or None
+      - account_id: selected account id or None
+      - accounts: list of all accounts for the owner
+    """
+    if hasattr(request.state, "account_context"):
+        return request.state.account_context
+
+    scope = "all"
+    selected_account = None
+
+    account_param = request.query_params.get("accountId")
+    if account_param:
+        if account_param.lower() not in ("all", "null", "none", ""):
+            selected_account = get_account_by_id(account_param)
+            if selected_account:
+                scope = "single"
+        else:
+            scope = "all"
+
+    if not selected_account and scope != "all":
+        cookie_value = request.cookies.get("selected_account")
+        if cookie_value:
+            if cookie_value.lower() == "all":
+                scope = "all"
+            else:
+                selected_account = get_account_by_name(cookie_value)
+                if selected_account:
+                    scope = "single"
+
+    if not selected_account and scope != "all":
+        default_account = get_default_account()
+        if default_account:
+            selected_account = default_account
+            scope = "single"
+
+    accounts = get_accounts()
+    context = {
+        "scope": scope,
+        "account": selected_account,
+        "account_id": selected_account.id if selected_account else None,
+        "accounts": accounts,
+    }
+    request.state.account_context = context
+    return context
+
+
+def serialize_account(account, vehicle_count: int = 0, is_default: bool = False) -> Dict[str, Any]:
+    """Convert an Account model to a JSON-serializable dict."""
+    return {
+        "id": account.id,
+        "name": account.name,
+        "owner_user_id": account.owner_user_id,
+        "is_default": is_default or account.is_default,
+        "vehicle_count": vehicle_count,
+        "created_at": account.created_at.isoformat() if getattr(account, "created_at", None) else None,
+        "updated_at": account.updated_at.isoformat() if getattr(account, "updated_at", None) else None,
+    }
+
+
+def build_accounts_payload() -> Dict[str, Any]:
+    """Return accounts data with counts and default information."""
+    accounts = get_accounts()
+    counts = get_account_vehicle_counts()
+    default_account = get_default_account()
+    default_id = default_account.id if default_account else None
+
+    serialized = [
+        serialize_account(account, counts.get(account.id, 0), is_default=(account.id == default_id))
+        for account in accounts
+    ]
+
+    return {
+        "accounts": serialized,
+        "default_account_id": default_id,
+    }
+
+
+class AccountCreateRequest(BaseModel):
+    name: str
+    set_default: bool = Field(False, alias="setDefault")
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class AccountRenameRequest(BaseModel):
+    name: str
+
+
+class VehicleTransferRequest(BaseModel):
+    account_id: str = Field(..., alias="accountId")
+
+    class Config:
+        allow_population_by_field_name = True
 
 @app.on_event("startup")
 async def startup_event():
@@ -163,6 +331,19 @@ async def startup_event():
                     print("⚠️ Photo columns migration failed, but continuing startup...")
             except Exception as e:
                 print(f"⚠️ Photo columns migration error: {e}, but continuing startup...")
+        
+        # Ensure account and vehicle linkage migration runs for all environments
+        try:
+            from migrate_accounts import run_migration_with_existing_engine
+            from database import engine
+            print("Running account migration...")
+            account_success = run_migration_with_existing_engine(engine)
+            if account_success:
+                print("✅ Account migration completed successfully!")
+            else:
+                print("⚠️ Account migration failed, continuing startup...")
+        except Exception as e:
+            print(f"⚠️ Account migration error: {e}, continuing startup...")
         
         print("Startup completed successfully!")
     except Exception as e:
@@ -270,15 +451,32 @@ async def test_dashboard():
 async def list_vehicles(request: Request):
     """List all vehicles using centralized data operations"""
     try:
-        vehicles = get_all_vehicles()
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+
+        vehicles = get_all_vehicles(account_id=account_id)
         vehicle_health = get_vehicle_health_status()
         triggered_maintenance = get_all_vehicles_triggered_maintenance()
-        
+
+        if account_id:
+            allowed_vehicle_ids = {vehicle.id for vehicle in vehicles}
+            vehicle_health = [
+                status
+                for status in vehicle_health
+                if status.get("vehicle") and status["vehicle"].id in allowed_vehicle_ids
+            ]
+            triggered_maintenance = {
+                vehicle_id: items
+                for vehicle_id, items in triggered_maintenance.items()
+                if vehicle_id in allowed_vehicle_ids
+            }
+
         return templates.TemplateResponse("vehicles_list.html", {
             "request": request, 
             "vehicles": vehicles, 
             "vehicle_health": vehicle_health,
-            "triggered_maintenance": triggered_maintenance
+            "triggered_maintenance": triggered_maintenance,
+            "account_context": account_context,
         })
     except Exception as e:
         print(f"ERROR in list_vehicles: {e}")
@@ -300,6 +498,7 @@ async def new_vehicle_form(request: Request, return_url: Optional[str] = Query(N
 
 @app.post("/vehicles")
 async def create_vehicle_route(
+    request: Request,
     name: Optional[str] = Form(None),
     year: int = Form(...),
     make: str = Form(...),
@@ -309,12 +508,21 @@ async def create_vehicle_route(
 ):
     """Create a new vehicle using centralized data operations"""
     try:
+        account_context = get_account_context(request)
+        account = account_context.get("account")
+        if account is None:
+            account = get_default_account()
+        if account is None and account_context.get("accounts"):
+            account = account_context["accounts"][0]
+        if account is None:
+            raise HTTPException(status_code=400, detail="No account available to assign this vehicle.")
+
         # Auto-generate name if none provided
         if not name or name.strip() == "":
             name = f"{year} {make} {model}"
         
         # Use centralized function with duplicate checking
-        result = create_vehicle(name, make, model, year, vin)
+        result = create_vehicle(name, make, model, year, vin, account_id=account.id)
         
         if result["success"]:
             return RedirectResponse(url=return_url or "/vehicles", status_code=303)
@@ -329,22 +537,25 @@ async def create_vehicle_route(
 async def edit_vehicle_form(
     request: Request,
     vehicle_id: int,
-    return_url: Optional[str] = Query(None),
-    session: Session = Depends(get_session)
+    return_url: Optional[str] = Query(None)
 ):
     """Form to edit existing vehicle"""
-    vehicle = session.get(Vehicle, vehicle_id)
+    account_context = get_account_context(request)
+    account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+    vehicle = get_vehicle_by_id(vehicle_id, account_id=account_id)
     if not vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
+        raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
     
     return templates.TemplateResponse("vehicle_form.html", {
         "request": request, 
         "vehicle": vehicle,
-        "return_url": return_url or "/vehicles"
+        "return_url": return_url or "/vehicles",
+        "account_context": account_context,
     })
 
 @app.post("/vehicles/{vehicle_id}")
 async def update_vehicle_route(
+    request: Request,
     vehicle_id: int,
     name: Optional[str] = Form(None),
     year: int = Form(...),
@@ -355,6 +566,12 @@ async def update_vehicle_route(
 ):
     """Update an existing vehicle using centralized data operations"""
     try:
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+        vehicle = get_vehicle_by_id(vehicle_id, account_id=account_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
+
         # Auto-generate name if none provided
         if not name or name.strip() == "":
             name = f"{year} {make} {model}"
@@ -372,9 +589,15 @@ async def update_vehicle_route(
         raise HTTPException(status_code=500, detail=f"Failed to update vehicle: {str(e)}")
 
 @app.delete("/vehicles/{vehicle_id}/delete")
-async def delete_vehicle_route(vehicle_id: int):
+async def delete_vehicle_route(request: Request, vehicle_id: int):
     """Delete a vehicle and all its maintenance records using centralized data operations"""
     try:
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+        vehicle = get_vehicle_by_id(vehicle_id, account_id=account_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
+
         result = delete_vehicle(vehicle_id)
         
         if result["success"]:
@@ -390,25 +613,37 @@ async def delete_vehicle_route(vehicle_id: int):
 async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(None)):
     """List maintenance records using centralized data operations"""
     try:
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+
+        vehicles = get_all_vehicles(account_id=account_id)
+        allowed_vehicle_ids = {vehicle.id for vehicle in vehicles}
+
+        vehicle = None
+        vehicle_name = None
+
         if vehicle_id:
-            # Filter records for specific vehicle
+            if allowed_vehicle_ids and vehicle_id not in allowed_vehicle_ids:
+                raise HTTPException(status_code=404, detail="Vehicle not found in this account.")
+            vehicle = get_vehicle_by_id(vehicle_id, account_id=account_id)
+            if not vehicle:
+                raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
+            vehicle_name = vehicle.name
             records = get_maintenance_records_by_vehicle(vehicle_id)
-            vehicle = get_vehicle_by_id(vehicle_id)
-            vehicle_name = vehicle.name if vehicle else f"Vehicle {vehicle_id}"
         else:
-            # Show all records
             records = get_all_maintenance_records()
-            vehicle = None
-            vehicle_name = None
-        
-        # Get summary data for the maintenance page
-        summary = get_maintenance_summary()
-        
-        # Get all vehicles for the future maintenance modal
-        vehicles = get_all_vehicles()
-        
-        # Get future maintenance records
-        from data_operations import get_all_future_maintenance
+            if allowed_vehicle_ids:
+                records = [record for record in records if record.vehicle_id in allowed_vehicle_ids]
+
+        total_cost = sum(record.cost or 0 for record in records)
+        total_records = len(records)
+        summary = {
+            "total_vehicles": len(vehicles),
+            "total_records": total_records,
+            "total_cost": total_cost,
+            "average_cost_per_record": total_cost / total_records if total_records else 0,
+        }
+
         try:
             future_maintenance = get_all_future_maintenance()
             if future_maintenance is None:
@@ -416,7 +651,12 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
         except Exception as e:
             print(f"Error getting future maintenance: {e}")
             future_maintenance = []
-        
+
+        if allowed_vehicle_ids:
+            future_maintenance = [
+                record for record in future_maintenance if record.get("vehicle_id") in allowed_vehicle_ids
+            ]
+
         return templates.TemplateResponse("maintenance_list.html", {
             "request": request, 
             "records": records, 
@@ -424,7 +664,8 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
             "vehicle_name": vehicle_name,
             "summary": summary,
             "vehicles": vehicles,
-            "future_maintenance": future_maintenance
+            "future_maintenance": future_maintenance,
+            "account_context": account_context,
         })
     except Exception as e:
         return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>")
@@ -438,7 +679,11 @@ async def new_maintenance_form(
     future_maintenance_id: Optional[int] = Query(None)
 ):
     """Unified form handler for creating new maintenance, oil changes, and oil analysis"""
-    vehicles = get_vehicle_names()
+    account_context = get_account_context(request)
+    account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+    vehicles_for_account = get_all_vehicles(account_id=account_id)
+    vehicle_options = [{"id": v.id, "name": v.name} for v in vehicles_for_account]
+    allowed_vehicle_ids = {v.id for v in vehicles_for_account}
     
     # Determine what type of form to show using unified logic
     detected_form_type = determine_form_type(None, return_url, form_type)
@@ -449,7 +694,9 @@ async def new_maintenance_form(
         try:
             from data_operations import get_future_maintenance_by_id
             future_maintenance = get_future_maintenance_by_id(future_maintenance_id)
-            if future_maintenance:
+            if future_maintenance and (
+                not allowed_vehicle_ids or future_maintenance.vehicle_id in allowed_vehicle_ids
+            ):
                 pre_populated_data = {
                     "description": f"Oil Change - {future_maintenance.notes or 'Regular maintenance'}",
                     "estimated_cost": future_maintenance.estimated_cost,
@@ -458,12 +705,17 @@ async def new_maintenance_form(
                     "notes": future_maintenance.notes,
                     "future_maintenance_id": future_maintenance.id
                 }
+            else:
+                raise HTTPException(status_code=404, detail="Future maintenance not found in this account.")
         except Exception as e:
             print(f"Error loading future maintenance data: {e}")
     
+    if vehicle_id and allowed_vehicle_ids and vehicle_id not in allowed_vehicle_ids:
+        raise HTTPException(status_code=404, detail="Vehicle not found in this account.")
+
     return templates.TemplateResponse("maintenance_form.html", {
         "request": request, 
-        "vehicles": vehicles, 
+        "vehicles": vehicle_options, 
         "record": None,
         "return_url": return_url or "/maintenance",
         "selected_vehicle_id": vehicle_id,
@@ -472,11 +724,13 @@ async def new_maintenance_form(
         "future_maintenance_id": future_maintenance_id,
         # Legacy compatibility for existing template logic
         "is_oil_analysis": detected_form_type == "oil_analysis",
-        "is_oil_change": detected_form_type == "oil_change"
+        "is_oil_change": detected_form_type == "oil_change",
+        "account_context": account_context,
     })
 
 @app.post("/maintenance")
 async def create_maintenance_route(
+    request: Request,
     vehicle_id: int = Form(...),
     date_str: str = Form(default=""),
     mileage: Optional[int] = Form(None),
@@ -516,6 +770,18 @@ async def create_maintenance_route(
 ):
     """Create a new maintenance record using centralized data operations"""
     try:
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+        vehicle = get_vehicle_by_id(vehicle_id, account_id=account_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
+
+        if future_maintenance_id:
+            from data_operations import get_future_maintenance_by_id
+            future_record = get_future_maintenance_by_id(future_maintenance_id)
+            if not future_record or future_record.vehicle_id != vehicle_id:
+                raise HTTPException(status_code=404, detail="Future maintenance not found for this vehicle.")
+
         # Handle PDF file upload for oil analysis
         pdf_file_path = None
         if oil_analysis_report and oil_analysis_report.filename:
@@ -813,6 +1079,7 @@ async def oil_analysis_redirect(record_id: int):
 
 @app.post("/maintenance/{record_id}")
 async def update_maintenance_route(
+    request: Request,
     record_id: int,
     vehicle_id: int = Form(...),
     date_str: str = Form(default=""),
@@ -852,6 +1119,16 @@ async def update_maintenance_route(
 ):
     """Update an existing maintenance record using centralized data operations"""
     try:
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+        vehicle = get_vehicle_by_id(vehicle_id, account_id=account_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
+
+        existing_record = get_maintenance_by_id(record_id)
+        if not existing_record or existing_record.vehicle_id != vehicle_id:
+            raise HTTPException(status_code=404, detail="Maintenance record not found for this vehicle.")
+
         # Handle PDF file upload for oil analysis
         pdf_file_path = None
         if oil_analysis_report and oil_analysis_report.filename:
@@ -890,13 +1167,10 @@ async def update_maintenance_route(
         
         # Handle empty date_str by using existing record's date
         if not date_str or date_str.strip() == "":
-            from data_operations import get_maintenance_by_id
-            existing_record = get_maintenance_by_id(record_id)
             if existing_record and existing_record.date:
                 date_str = existing_record.date.strftime('%m/%d/%Y')
             else:
                 # Fallback to current date if no existing date
-                from datetime import date
                 date_str = date.today().strftime('%m/%d/%Y')
         
         # Use centralized function with validation
@@ -992,9 +1266,18 @@ async def update_maintenance_route(
         raise HTTPException(status_code=500, detail=f"Failed to update maintenance record: {str(e)}")
 
 @app.delete("/maintenance/{record_id}")
-async def delete_maintenance(record_id: int):
+async def delete_maintenance(request: Request, record_id: int):
     """Delete a maintenance record using centralized data operations"""
     try:
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+        record = get_maintenance_by_id(record_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Maintenance record not found.")
+        vehicle = get_vehicle_by_id(record.vehicle_id, account_id=account_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Maintenance record not accessible in this account.")
+
         result = delete_maintenance_record(record_id)
         
         if result["success"]:
@@ -1805,8 +2088,6 @@ async def get_future_maintenance_by_id_api(future_maintenance_id: int):
 async def get_future_maintenance_api():
     """Get all future maintenance reminders"""
     try:
-        from data_operations import get_all_future_maintenance
-        
         future_maintenance = get_all_future_maintenance()
         return {
             "success": True,
@@ -1819,6 +2100,115 @@ async def get_future_maintenance_api():
             "success": False,
             "error": f"Failed to get future maintenance: {str(e)}"
         }
+
+
+@app.get("/api/accounts")
+async def get_accounts_api():
+    """Return all accounts with vehicle counts and default information."""
+    payload = build_accounts_payload()
+    return {"success": True, **payload}
+
+
+@app.post("/api/accounts")
+async def create_account_api(payload: AccountCreateRequest):
+    """Create a new account for the current owner."""
+    result = create_account(payload.name, set_default=payload.set_default)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to create account."))
+
+    account_name = result["account"].name
+    payload_data = build_accounts_payload()
+    return {
+        "success": True,
+        "message": f"Account '{account_name}' created.",
+        **payload_data,
+    }
+
+
+@app.patch("/api/accounts/{account_id}")
+async def rename_account_api(account_id: str, payload: AccountRenameRequest):
+    """Rename an existing account."""
+    account = get_account_by_id(account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found.")
+
+    result = rename_account(account_id, payload.name)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to rename account."))
+
+    payload_data = build_accounts_payload()
+    return {
+        "success": True,
+        "message": "Account renamed successfully.",
+        **payload_data,
+    }
+
+
+@app.delete("/api/accounts/{account_id}")
+async def delete_account_api(account_id: str):
+    """Delete an account if it has no vehicles."""
+    account = get_account_by_id(account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found.")
+
+    result = delete_account(account_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to delete account."))
+
+    payload_data = build_accounts_payload()
+    return {
+        "success": True,
+        "message": f"Account '{account.name}' deleted.",
+        **payload_data,
+    }
+
+
+@app.post("/api/accounts/{account_id}/default")
+async def set_default_account_api(account_id: str):
+    """Mark an account as the default selection."""
+    account = get_account_by_id(account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found.")
+
+    result = set_default_account(account_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to set account as default."))
+
+    payload_data = build_accounts_payload()
+    return {
+        "success": True,
+        "message": f"'{account.name}' set as default account.",
+        **payload_data,
+    }
+
+
+@app.post("/api/vehicles/{vehicle_id}/transfer")
+async def transfer_vehicle_api(vehicle_id: int, payload: VehicleTransferRequest):
+    """Move a vehicle to another account."""
+    vehicle = get_vehicle_by_id(vehicle_id)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found.")
+
+    target_account = get_account_by_id(payload.account_id)
+    if not target_account:
+        raise HTTPException(status_code=404, detail="Target account not found.")
+
+    result = transfer_vehicle_to_account(vehicle_id, payload.account_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to transfer vehicle."))
+
+    vehicle_obj = result.get("vehicle", vehicle)
+    message = result.get("message", f"Vehicle moved to {target_account.name}.")
+    payload_data = build_accounts_payload()
+    return {
+        "success": True,
+        "message": message,
+        "vehicle": {
+            "id": vehicle_obj.id,
+            "account_id": vehicle_obj.account_id,
+        },
+        **payload_data,
+    }
 
 @app.delete("/api/future-maintenance/{future_maintenance_id}")
 async def delete_future_maintenance_api(future_maintenance_id: int):

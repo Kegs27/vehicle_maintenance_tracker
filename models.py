@@ -1,13 +1,35 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
-from datetime import date as date_type
+from datetime import date as date_type, datetime
 from pydantic import ConfigDict
+from uuid import uuid4
+
+
+def generate_uuid() -> str:
+    """Return a UUID4 string as a string value."""
+    return str(uuid4())
+
+
+class Account(SQLModel, table=True):
+    """Family account grouping vehicles for a user."""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    id: str = Field(default_factory=generate_uuid, primary_key=True, index=True, max_length=36)
+    name: str = Field(max_length=100, description="Display name for the account")
+    owner_user_id: str = Field(max_length=100, index=True, description="Identifier of owning user")
+    is_default: bool = Field(default=False, description="Whether this is the owner's default account")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow})
+
+    vehicles: List["Vehicle"] = Relationship(back_populates="account")
+
 
 class Vehicle(SQLModel, table=True):
     """Vehicle model"""
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     id: Optional[int] = Field(default=None, primary_key=True)
+    account_id: str = Field(foreign_key="account.id", description="Account the vehicle belongs to")
     name: str = Field(max_length=100, unique=True)  # Prevent duplicate vehicle names
     year: int
     make: str = Field(max_length=50)
@@ -37,6 +59,8 @@ class Vehicle(SQLModel, table=True):
         back_populates="vehicle",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )
+
+    account: Account = Relationship(back_populates="vehicles")
 
 class MaintenanceRecord(SQLModel, table=True):
     """Maintenance record model"""
