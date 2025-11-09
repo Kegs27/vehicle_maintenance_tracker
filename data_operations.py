@@ -375,10 +375,13 @@ def create_oil_analysis_record(vehicle_id: int, date: str, description: str, mil
                 return {"success": False, "error": f"Invalid next oil analysis date: {str(e)}"}
         
         # Create record
+        # Ensure description is never None for database compatibility
+        safe_description = description if description and description.strip() else "N/A"
+        
         record = MaintenanceRecord(
             vehicle_id=vehicle_id,
             date=parsed_date,
-            description=description,
+            description=safe_description,
             cost=0.0,  # Oil analysis records have no cost
             mileage=mileage,
             date_estimated=False,
