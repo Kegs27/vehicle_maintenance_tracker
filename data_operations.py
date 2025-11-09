@@ -5,7 +5,7 @@ This module contains all database operations to ensure consistency across pages
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import select, delete, text, func
+from sqlalchemy import select, delete, text, func, or_
 from models import Vehicle, MaintenanceRecord, Account
 from importer import import_csv, ImportResult
 from database import SessionLocal
@@ -314,13 +314,16 @@ def get_all_vehicles(
         from sqlalchemy.orm import selectinload
         query = (
             select(Vehicle)
-            .join(Account, Account.id == Vehicle.account_id)
-            .where(Account.owner_user_id == owner_user_id)
             .options(selectinload(Vehicle.maintenance_records))
+            .outerjoin(Account, Account.id == Vehicle.account_id)
             .order_by(Vehicle.name)
         )
         if account_id and account_id.lower() not in ("all", "null"):
             query = query.where(Vehicle.account_id == account_id)
+        else:
+            query = query.where(
+                or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None))
+            )
 
         vehicles = session.execute(query).scalars().all()
         return vehicles
@@ -338,8 +341,11 @@ def get_vehicle_by_id(
     try:
         query = (
             select(Vehicle)
-            .join(Account, Account.id == Vehicle.account_id)
-            .where(Vehicle.id == vehicle_id, Account.owner_user_id == owner_user_id)
+            .outerjoin(Account, Account.id == Vehicle.account_id)
+            .where(
+                Vehicle.id == vehicle_id,
+                or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None)),
+            )
         )
         if account_id and account_id.lower() not in ("all", "null"):
             query = query.where(Vehicle.account_id == account_id)
