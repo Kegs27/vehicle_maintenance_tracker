@@ -505,6 +505,12 @@
                                         <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit me-1"></i>Edit
                                         </a>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary transfer-vehicle-btn" 
+                                                data-vehicle-id="{{ vehicle.id }}"
+                                                data-vehicle-name="{{ vehicle.name }}"
+                                                data-account-id="{{ vehicle.account_id }}">
+                                            <i class="fas fa-exchange-alt me-1"></i>Transfer
+                                        </button>
                                         <button type="button" class="btn btn-sm btn-outline-danger delete-vehicle-btn" 
                                                 data-vehicle-id="{{ vehicle.id }}" 
                                                 data-vehicle-name="{{ vehicle.name }}">
@@ -582,6 +588,12 @@
                     <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-outline-secondary btn-sm">
                         <i class="fas fa-edit me-1"></i>Edit
                     </a>
+                    <button type="button" class="btn btn-outline-secondary btn-sm transfer-vehicle-btn"
+                            data-vehicle-id="{{ vehicle.id }}"
+                            data-vehicle-name="{{ vehicle.name }}"
+                            data-account-id="{{ vehicle.account_id }}">
+                        <i class="fas fa-exchange-alt me-1"></i>Transfer
+                    </button>
                     <button type="button" class="btn btn-outline-danger btn-sm delete-vehicle-btn"
                             data-vehicle-id="{{ vehicle.id }}" 
                             data-vehicle-name="{{ vehicle.name }}">
@@ -678,7 +690,59 @@
         </div>
     </div>
 
+    <!-- Transfer Vehicle Modal -->
+    <div class="modal fade" id="transferVehicleModal" tabindex="-1" aria-labelledby="transferVehicleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form class="modal-content" id="transferVehicleForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="transferVehicleModalLabel">
+                        <i class="fas fa-exchange-alt me-2"></i>Transfer Vehicle
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="transferFeedback" class="alert d-none" role="alert"></div>
+                    <p class="mb-3">
+                        Move <strong id="transferVehicleName"></strong> to another account.
+                        <span class="d-block text-muted small">The vehicle and its maintenance history will be visible when that account is selected.</span>
+                    </p>
+                    <div class="mb-3">
+                        <label for="transferAccountSelect" class="form-label">Destination Account <span class="text-danger">*</span></label>
+                        <select class="form-select" id="transferAccountSelect" required></select>
+                        <div class="form-text">Only your accounts are listed here.</div>
+                    </div>
+                    <input type="hidden" id="transferVehicleId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="transferSubmitBtn">
+                        <i class="fas fa-exchange-alt me-1"></i>Transfer Vehicle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        const transferState = {
+            modal: null,
+            vehicleId: null,
+            currentAccountId: null,
+            availableAccounts: [],
+        };
+
+        const transferSelectors = {
+            modalElement: document.getElementById('transferVehicleModal'),
+            form: document.getElementById('transferVehicleForm'),
+            vehicleName: document.getElementById('transferVehicleName'),
+            vehicleIdInput: document.getElementById('transferVehicleId'),
+            accountSelect: document.getElementById('transferAccountSelect'),
+            feedback: document.getElementById('transferFeedback'),
+            submitButton: document.getElementById('transferSubmitBtn'),
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             // Handle delete vehicle buttons
             document.querySelectorAll('.delete-vehicle-btn').forEach(btn => {
@@ -688,6 +752,24 @@
                     confirmDeleteVehicle(vehicleId, vehicleName);
                 });
             });
+
+            // Initialize transfer modal bindings
+            if (transferSelectors.modalElement) {
+                transferState.modal = new bootstrap.Modal(transferSelectors.modalElement);
+            }
+
+            document.querySelectorAll('.transfer-vehicle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const vehicleId = btn.getAttribute('data-vehicle-id');
+                    const vehicleName = btn.getAttribute('data-vehicle-name');
+                    const accountId = btn.getAttribute('data-account-id') || null;
+                    openTransferVehicleModal(vehicleId, vehicleName, accountId);
+                });
+            });
+
+            if (transferSelectors.form) {
+                transferSelectors.form.addEventListener('submit', handleTransferSubmit);
+            }
         });
 
         function confirmDeleteVehicle(vehicleId, vehicleName) {
@@ -772,6 +854,117 @@
         function hideVinHoverModal() {
             const modal = document.getElementById('vinHoverModal');
             modal.classList.remove('show');
+        }
+
+        function showTransferFeedback(type, message) {
+            if (!transferSelectors.feedback) return;
+            transferSelectors.feedback.classList.remove('d-none', 'alert-info', 'alert-success', 'alert-danger', 'alert-warning');
+            transferSelectors.feedback.classList.add(`alert-${type}`);
+            transferSelectors.feedback.innerHTML = message;
+        }
+
+        function hideTransferFeedback() {
+            if (!transferSelectors.feedback) return;
+            transferSelectors.feedback.classList.add('d-none');
+            transferSelectors.feedback.innerHTML = '';
+        }
+
+        async function openTransferVehicleModal(vehicleId, vehicleName, currentAccountId) {
+            if (!transferState.modal || !transferSelectors.accountSelect) return;
+
+            transferState.vehicleId = vehicleId;
+            transferState.currentAccountId = currentAccountId && currentAccountId !== 'None' ? currentAccountId : null;
+            transferState.availableAccounts = [];
+
+            transferSelectors.vehicleIdInput.value = vehicleId;
+            transferSelectors.vehicleName.textContent = vehicleName;
+            transferSelectors.accountSelect.innerHTML = '<option value="" selected disabled>Loading accounts...</option>';
+            transferSelectors.accountSelect.disabled = true;
+            if (transferSelectors.submitButton) {
+                transferSelectors.submitButton.disabled = true;
+            }
+            hideTransferFeedback();
+
+            try {
+                const data = await fetchAccountsFromApi(true);
+                const accounts = (data.accounts || []).filter(account => account.id !== transferState.currentAccountId);
+                transferState.availableAccounts = accounts;
+
+                if (!accounts.length) {
+                    showTransferFeedback('warning', '<i class="fas fa-info-circle me-2"></i>No other accounts available. Create another account first.');
+                } else {
+                    const options = accounts.map(account => {
+                        const countLabel = typeof account.vehicle_count === 'number' ? ` (${account.vehicle_count})` : '';
+                        const defaultIcon = account.is_default ? ' ⭐' : '';
+                        return `<option value="${account.id}">${account.name}${countLabel}${defaultIcon}</option>`;
+                    }).join('');
+                    transferSelectors.accountSelect.innerHTML = `<option value="" disabled selected>Select an account</option>${options}`;
+                    transferSelectors.accountSelect.disabled = false;
+                    if (transferSelectors.submitButton) {
+                        transferSelectors.submitButton.disabled = false;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load accounts:', error);
+                showTransferFeedback('danger', `<i class="fas fa-exclamation-circle me-2"></i>${error.message || 'Unable to load accounts.'}`);
+            }
+
+            transferState.modal.show();
+        }
+
+        async function handleTransferSubmit(event) {
+            event.preventDefault();
+            if (!transferState.vehicleId) return;
+
+            const targetAccountId = transferSelectors.accountSelect ? transferSelectors.accountSelect.value : '';
+            if (!targetAccountId) {
+                showTransferFeedback('warning', '<i class="fas fa-exclamation-triangle me-2"></i>Please choose an account.');
+                return;
+            }
+
+            if (transferSelectors.submitButton) {
+                transferSelectors.submitButton.disabled = true;
+            }
+            transferSelectors.accountSelect.disabled = true;
+            showTransferFeedback('info', '<i class="fas fa-spinner fa-spin me-2"></i>Transferring vehicle...');
+
+            try {
+                const response = await fetch(`/api/vehicles/${transferState.vehicleId}/transfer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ accountId: targetAccountId }),
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.error || 'Failed to transfer vehicle.');
+                }
+
+                const destination = transferState.availableAccounts.find(account => account.id === targetAccountId);
+                const destinationName = destination ? destination.name : 'selected account';
+                showTransferFeedback('success', `<i class="fas fa-check me-2"></i>Vehicle moved to ${destinationName}. Reloading...`);
+
+                if (typeof accountCache !== 'undefined') {
+                    accountCache = data;
+                }
+                if (data.default_account_id) {
+                    window.__ACCOUNT_CONTEXT__ = window.__ACCOUNT_CONTEXT__ || {};
+                    window.__ACCOUNT_CONTEXT__.account_id = data.default_account_id;
+                }
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 900);
+            } catch (error) {
+                console.error('Transfer failed:', error);
+                showTransferFeedback('danger', `<i class="fas fa-exclamation-circle me-2"></i>${error.message}`);
+                transferSelectors.accountSelect.disabled = false;
+                if (transferSelectors.submitButton) {
+                    transferSelectors.submitButton.disabled = false;
+                }
+            }
         }
 
         // Mileage Update Modal Functions

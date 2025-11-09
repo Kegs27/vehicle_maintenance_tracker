@@ -5,8 +5,8 @@ This module contains all database operations to ensure consistency across pages
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import select, delete
-from models import Vehicle, MaintenanceRecord
+from sqlalchemy import select, delete, text, func
+from models import Vehicle, MaintenanceRecord, Account
 from importer import import_csv, ImportResult
 from database import SessionLocal
 import csv
@@ -15,6 +15,276 @@ from datetime import datetime
 from pathlib import Path
 import os
 
+DEFAULT_OWNER_ID = "kory"
+
+
+# ============================================================================
+# ACCOUNT OPERATIONS
+# ============================================================================
+
+
+def get_accounts(owner_user_id: str = DEFAULT_OWNER_ID) -> List[Account]:
+    """Return accounts for the specified owner ordered by name."""
+    session = SessionLocal()
+    try:
+        accounts = (
+            session.execute(
+                select(Account).where(Account.owner_user_id == owner_user_id).order_by(Account.name)
+            )
+            .scalars()
+            .all()
+        )
+        return accounts
+    except Exception as e:
+        print(f"Error loading accounts: {e}")
+        return []
+    finally:
+        session.close()
+
+
+def get_account_by_id(account_id: str, owner_user_id: str = DEFAULT_OWNER_ID) -> Optional[Account]:
+    """Fetch a single account ensuring it belongs to the owner."""
+    session = SessionLocal()
+    try:
+        account = (
+            session.execute(
+                select(Account).where(Account.id == account_id, Account.owner_user_id == owner_user_id)
+            )
+            .scalar_one_or_none()
+        )
+        return account
+    except Exception as e:
+        print(f"Error retrieving account {account_id}: {e}")
+        return None
+    finally:
+        session.close()
+
+
+def get_account_by_name(name: str, owner_user_id: str = DEFAULT_OWNER_ID) -> Optional[Account]:
+    """Fetch an account by name for the owner."""
+    if not name:
+        return None
+
+    normalized = name.strip()
+    if not normalized:
+        return None
+
+    session = SessionLocal()
+    try:
+        account = (
+            session.execute(
+                select(Account).where(Account.owner_user_id == owner_user_id, Account.name == normalized)
+            )
+            .scalar_one_or_none()
+        )
+        return account
+    except Exception as e:
+        print(f"Error retrieving account by name '{name}': {e}")
+        return None
+    finally:
+        session.close()
+
+
+def create_account(name: str, owner_user_id: str = DEFAULT_OWNER_ID, set_default: bool = False) -> Dict[str, Any]:
+    """Create a new account for the owner."""
+    session = SessionLocal()
+    try:
+        normalized_name = (name or "").strip()
+        if not normalized_name:
+            return {"success": False, "error": "Account name cannot be empty."}
+
+        existing = session.execute(
+            select(Account).where(Account.owner_user_id == owner_user_id, Account.name == normalized_name)
+        ).scalar_one_or_none()
+        if existing:
+            return {"success": False, "error": "An account with this name already exists."}
+
+        if set_default:
+            session.execute(
+                text("UPDATE account SET is_default = 0 WHERE owner_user_id = :owner"),
+                {"owner": owner_user_id},
+            )
+
+        account = Account(name=normalized_name, owner_user_id=owner_user_id, is_default=set_default)
+        if set_default:
+            account.is_default = True
+        session.add(account)
+
+        session.commit()
+        session.refresh(account)
+        return {"success": True, "account": account}
+    except Exception as e:
+        session.rollback()
+        print(f"Error creating account: {e}")
+        return {"success": False, "error": str(e)}
+    finally:
+        session.close()
+
+
+def rename_account(account_id: str, new_name: str, owner_user_id: str = DEFAULT_OWNER_ID) -> Dict[str, Any]:
+    """Rename an account after validating ownership and uniqueness."""
+    session = SessionLocal()
+    try:
+        account = session.execute(
+            select(Account).where(Account.id == account_id, Account.owner_user_id == owner_user_id)
+        ).scalar_one_or_none()
+        if not account:
+            return {"success": False, "error": "Account not found."}
+
+        normalized_name = (new_name or "").strip()
+        if not normalized_name:
+            return {"success": False, "error": "Account name cannot be empty."}
+
+        existing = session.execute(
+            select(Account).where(
+                Account.owner_user_id == owner_user_id,
+                Account.name == normalized_name,
+                Account.id != account_id,
+            )
+        ).scalar_one_or_none()
+        if existing:
+            return {"success": False, "error": "Another account already uses that name."}
+
+        account.name = normalized_name
+        account.updated_at = datetime.utcnow()
+        session.add(account)
+        session.commit()
+        session.refresh(account)
+        return {"success": True, "account": account}
+    except Exception as e:
+        session.rollback()
+        print(f"Error renaming account {account_id}: {e}")
+        return {"success": False, "error": str(e)}
+    finally:
+        session.close()
+
+
+def delete_account(account_id: str, owner_user_id: str = DEFAULT_OWNER_ID) -> Dict[str, Any]:
+    """Delete an account if it belongs to the owner and has no vehicles."""
+    session = SessionLocal()
+    try:
+        account = session.execute(
+            select(Account).where(Account.id == account_id, Account.owner_user_id == owner_user_id)
+        ).scalar_one_or_none()
+        if not account:
+            return {"success": False, "error": "Account not found."}
+
+        vehicle_count = session.execute(
+            select(func.count(Vehicle.id)).where(Vehicle.account_id == account_id)
+        ).scalar_one()
+        if vehicle_count:
+            return {"success": False, "error": "Account still has vehicles assigned."}
+
+        session.delete(account)
+        session.commit()
+        return {"success": True}
+    except Exception as e:
+        session.rollback()
+        print(f"Error deleting account {account_id}: {e}")
+        return {"success": False, "error": str(e)}
+    finally:
+        session.close()
+
+
+def set_default_account(account_id: str, owner_user_id: str = DEFAULT_OWNER_ID) -> Dict[str, Any]:
+    """Mark the specified account as the default for the owner."""
+    session = SessionLocal()
+    try:
+        account = session.execute(
+            select(Account).where(Account.id == account_id, Account.owner_user_id == owner_user_id)
+        ).scalar_one_or_none()
+        if not account:
+            return {"success": False, "error": "Account not found."}
+
+        session.execute(
+            text("UPDATE account SET is_default = 0 WHERE owner_user_id = :owner"),
+            {"owner": owner_user_id},
+        )
+        account.is_default = True
+        account.updated_at = datetime.utcnow()
+        session.add(account)
+        session.commit()
+        session.refresh(account)
+        return {"success": True, "account": account}
+    except Exception as e:
+        session.rollback()
+        print(f"Error setting default account {account_id}: {e}")
+        return {"success": False, "error": str(e)}
+    finally:
+        session.close()
+
+
+def get_default_account(owner_user_id: str = DEFAULT_OWNER_ID) -> Optional[Account]:
+    """Return the default account for the owner, if one exists."""
+    session = SessionLocal()
+    try:
+        account = session.execute(
+            select(Account)
+            .where(Account.owner_user_id == owner_user_id, Account.is_default == True)  # noqa: E712
+            .order_by(Account.updated_at.desc())
+        ).scalar_one_or_none()
+        return account
+    except Exception as e:
+        print(f"Error retrieving default account: {e}")
+        return None
+    finally:
+        session.close()
+
+
+def get_account_vehicle_counts(owner_user_id: str = DEFAULT_OWNER_ID) -> Dict[str, int]:
+    """Return a mapping of account_id -> vehicle count for the owner."""
+    session = SessionLocal()
+    try:
+        results = session.execute(
+            select(Vehicle.account_id, func.count(Vehicle.id))
+            .join(Account, Account.id == Vehicle.account_id)
+            .where(Account.owner_user_id == owner_user_id)
+            .group_by(Vehicle.account_id)
+        ).all()
+        return {account_id: count for account_id, count in results}
+    except Exception as e:
+        print(f"Error retrieving vehicle counts by account: {e}")
+        return {}
+    finally:
+        session.close()
+
+
+def transfer_vehicle_to_account(
+    vehicle_id: int, target_account_id: str, owner_user_id: str = DEFAULT_OWNER_ID
+) -> Dict[str, Any]:
+    """Move a vehicle to another account with ownership validation."""
+    session = SessionLocal()
+    try:
+        vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
+        if not vehicle:
+            return {"success": False, "error": "Vehicle not found."}
+
+        current_account = session.execute(
+            select(Account).where(Account.id == vehicle.account_id, Account.owner_user_id == owner_user_id)
+        ).scalar_one_or_none()
+        if not current_account:
+            return {"success": False, "error": "You do not have permission to move this vehicle."}
+
+        target_account = session.execute(
+            select(Account).where(Account.id == target_account_id, Account.owner_user_id == owner_user_id)
+        ).scalar_one_or_none()
+        if not target_account:
+            return {"success": False, "error": "Target account not found."}
+
+        if vehicle.account_id == target_account.id:
+            return {"success": True, "vehicle": vehicle, "message": "Vehicle already in selected account."}
+
+        vehicle.account_id = target_account.id
+        session.add(vehicle)
+        session.commit()
+        session.refresh(vehicle)
+        return {"success": True, "vehicle": vehicle}
+    except Exception as e:
+        session.rollback()
+        print(f"Error transferring vehicle {vehicle_id} to {target_account_id}: {e}")
+        return {"success": False, "error": str(e)}
+    finally:
+        session.close()
 def parse_date_string(date_string: str) -> datetime.date:
     """Parse date string in either MM/DD/YYYY or YYYY-MM-DD format"""
     if not date_string or date_string == "0":
@@ -34,17 +304,25 @@ def parse_date_string(date_string: str) -> datetime.date:
 # VEHICLE OPERATIONS
 # ============================================================================
 
-def get_all_vehicles() -> List[Vehicle]:
-    """Get all vehicles ordered by name with maintenance records eagerly loaded"""
+def get_all_vehicles(
+    account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[Vehicle]:
+    """Get vehicles scoped to the owner and optionally filtered by account."""
     session = SessionLocal()
     try:
         # Use selectinload to eagerly load the maintenance_records relationship
         from sqlalchemy.orm import selectinload
-        vehicles = session.execute(
+        query = (
             select(Vehicle)
+            .join(Account, Account.id == Vehicle.account_id)
+            .where(Account.owner_user_id == owner_user_id)
             .options(selectinload(Vehicle.maintenance_records))
             .order_by(Vehicle.name)
-        ).scalars().all()
+        )
+        if account_id and account_id.lower() not in ("all", "null"):
+            query = query.where(Vehicle.account_id == account_id)
+
+        vehicles = session.execute(query).scalars().all()
         return vehicles
     except Exception as e:
         print(f"Error getting vehicles: {e}")
@@ -52,11 +330,21 @@ def get_all_vehicles() -> List[Vehicle]:
     finally:
         session.close()
 
-def get_vehicle_by_id(vehicle_id: int) -> Optional[Vehicle]:
-    """Get a specific vehicle by ID"""
+def get_vehicle_by_id(
+    vehicle_id: int, owner_user_id: str = DEFAULT_OWNER_ID, account_id: Optional[str] = None
+) -> Optional[Vehicle]:
+    """Get a specific vehicle by ID ensuring it belongs to the owner/account."""
     session = SessionLocal()
     try:
-        vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
+        query = (
+            select(Vehicle)
+            .join(Account, Account.id == Vehicle.account_id)
+            .where(Vehicle.id == vehicle_id, Account.owner_user_id == owner_user_id)
+        )
+        if account_id and account_id.lower() not in ("all", "null"):
+            query = query.where(Vehicle.account_id == account_id)
+
+        vehicle = session.execute(query).scalar_one_or_none()
         return vehicle
     except Exception as e:
         print(f"Error getting vehicle {vehicle_id}: {e}")
@@ -64,13 +352,29 @@ def get_vehicle_by_id(vehicle_id: int) -> Optional[Vehicle]:
     finally:
         session.close()
 
-def create_vehicle(name: str, make: str, model: str, year: int, vin: str) -> Dict[str, Any]:
-    """Create a new vehicle with duplicate checking"""
+def create_vehicle(
+    name: str,
+    make: str,
+    model: str,
+    year: int,
+    vin: str,
+    account_id: str,
+    owner_user_id: str = DEFAULT_OWNER_ID,
+) -> Dict[str, Any]:
+    """Create a new vehicle with duplicate checking within the owner's scope."""
     session = SessionLocal()
     try:
+        account = session.execute(
+            select(Account).where(Account.id == account_id, Account.owner_user_id == owner_user_id)
+        ).scalar_one_or_none()
+        if not account:
+            return {"success": False, "error": "Invalid account selected for vehicle."}
+
         # Check for duplicate name
         existing_name = session.execute(
-            select(Vehicle).where(Vehicle.name == name)
+            select(Vehicle)
+            .join(Account, Account.id == Vehicle.account_id)
+            .where(Account.owner_user_id == owner_user_id, Vehicle.name == name)
         ).scalar_one_or_none()
         if existing_name:
             return {"success": False, "error": "A vehicle with this name already exists"}
@@ -84,7 +388,7 @@ def create_vehicle(name: str, make: str, model: str, year: int, vin: str) -> Dic
                 return {"success": False, "error": "A vehicle with this VIN already exists"}
         
         # Create new vehicle
-        vehicle = Vehicle(name=name, make=make, model=model, year=year, vin=vin)
+        vehicle = Vehicle(name=name, make=make, model=model, year=year, vin=vin, account_id=account_id)
         session.add(vehicle)
         session.commit()
         session.refresh(vehicle)
@@ -97,17 +401,35 @@ def create_vehicle(name: str, make: str, model: str, year: int, vin: str) -> Dic
     finally:
         session.close()
 
-def update_vehicle(vehicle_id: int, name: str, make: str, model: str, year: int, vin: str) -> Dict[str, Any]:
-    """Update an existing vehicle with duplicate checking"""
+def update_vehicle(
+    vehicle_id: int,
+    name: str,
+    make: str,
+    model: str,
+    year: int,
+    vin: str,
+    owner_user_id: str = DEFAULT_OWNER_ID,
+) -> Dict[str, Any]:
+    """Update an existing vehicle with duplicate checking scoped to the owner."""
     session = SessionLocal()
     try:
-        vehicle = session.execute(select(Vehicle).where(Vehicle.id == vehicle_id)).scalar_one_or_none()
+        vehicle = session.execute(
+            select(Vehicle)
+            .join(Account, Account.id == Vehicle.account_id)
+            .where(Vehicle.id == vehicle_id, Account.owner_user_id == owner_user_id)
+        ).scalar_one_or_none()
         if not vehicle:
             return {"success": False, "error": "Vehicle not found"}
         
         # Check for duplicate name (excluding current vehicle)
         existing_name = session.execute(
-            select(Vehicle).where(Vehicle.name == name, Vehicle.id != vehicle_id)
+            select(Vehicle)
+            .join(Account, Account.id == Vehicle.account_id)
+            .where(
+                Account.owner_user_id == owner_user_id,
+                Vehicle.name == name,
+                Vehicle.id != vehicle_id,
+            )
         ).scalar_one_or_none()
         if existing_name:
             return {"success": False, "error": "A vehicle with this name already exists"}

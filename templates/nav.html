@@ -8,7 +8,7 @@
             <!-- Account Switcher -->
             <div class="dropdown me-2">
                 <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" id="accountDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-user-circle me-2"></i>All Accounts
+                    <i class="fas fa-user-circle me-2"></i>Accounts
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" id="accountDropdownMenu" aria-labelledby="accountDropdownButton">
                     <!-- populated by app-functions.js -->
@@ -87,6 +87,18 @@
 </div>
 
 <!-- Core app functions (needed for account dropdown) -->
+{% set __account_ctx = account_context|default({}) %}
+{% set __account_id = __account_ctx.get('account_id') if __account_ctx is mapping else None %}
+{% set __account_scope = __account_ctx.get('scope') if __account_ctx is mapping else None %}
+{% set __account_obj = __account_ctx.get('account') if __account_ctx is mapping else None %}
+{% set __account_name = __account_obj.name if __account_obj else None %}
+<script>
+    window.__ACCOUNT_CONTEXT__ = window.__ACCOUNT_CONTEXT__ || {
+        account_id: {{ __account_id|tojson }},
+        scope: {{ __account_scope|tojson }},
+        account_name: {{ __account_name|tojson }}
+    };
+</script>
 <script src="/static/app-functions.js"></script>
 <!-- Export functionality script -->
 <script src="/static/export-data.js"></script>

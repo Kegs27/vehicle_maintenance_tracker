@@ -10,28 +10,99 @@
 <body class="bg-light">
     {% include 'nav.html' %}
 
-    <div class="container py-4">
+    <div class="container py-4" id="accountsPage">
         <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
+            <div class="col-xl-8 col-lg-9 col-md-10">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Manage Accounts</h5>
+                        <span class="badge bg-light text-primary" id="totalVehiclesBadge">...</span>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Add Account</label>
-                            <div class="input-group">
-                                <input type="text" id="newAccountName" class="form-control" placeholder="e.g., alice">
-                                <button class="btn btn-primary" id="addAccountBtn"><i class="fas fa-plus me-1"></i>Add</button>
+                        <div class="alert alert-danger d-none" id="accountsError" role="alert"></div>
+                        <div class="alert alert-success d-none" id="accountsSuccess" role="alert"></div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Create Account</label>
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-7 col-sm-12">
+                                    <input type="text" id="newAccountName" class="form-control" placeholder="e.g., Kelley" autocomplete="off">
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="setDefaultSwitch">
+                                        <label class="form-check-label small" for="setDefaultSwitch">
+                                            Set as default
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-sm-6">
+                                    <button class="btn btn-primary w-100" id="addAccountBtn" type="button">
+                                        <i class="fas fa-plus me-1"></i>Add
+                                    </button>
+                                </div>
                             </div>
-                            <div class="form-text">Simple label used to partition data during testing.</div>
+                            <div class="form-text text-muted">
+                                Accounts let you keep family vehicles separate. The default account opens automatically unless you pick a different one.
+                            </div>
                         </div>
 
                         <hr>
 
-                        <h6 class="fw-bold mb-3">Accounts</h6>
-                        <ul class="list-group" id="accountsList"></ul>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0">Accounts</h6>
+                            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" id="refreshAccountsBtn" type="button">
+                                <i class="fas fa-rotate"></i>
+                                Refresh
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle" id="accountsTable">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col" class="text-center">Vehicles</th>
+                                        <th scope="col" class="text-center">Default</th>
+                                        <th scope="col" class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="accountsTableBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            Loading accounts...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="renameAccountModal" tabindex="-1" aria-labelledby="renameAccountLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renameAccountLabel"><i class="fas fa-pen me-2"></i>Rename Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="renameAccountInput" class="form-label">Account Name</label>
+                        <input type="text" class="form-control" id="renameAccountInput" autocomplete="off">
+                        <div class="form-text">
+                            Choose a unique name to identify this account.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="renameAccountSaveBtn">
+                        <i class="fas fa-save me-1"></i>Save
+                    </button>
                 </div>
             </div>
         </div>
@@ -39,68 +110,369 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const STORAGE_KEY = 'accounts_list_v1';
+        const accountsState = {
+            accounts: [],
+            defaultAccountId: null,
+            currentAccountId: (window.__ACCOUNT_CONTEXT__ && window.__ACCOUNT_CONTEXT__.account_id) || null,
+            renameTargetId: null,
+            renameModal: null,
+        };
 
-        function loadAccounts() {
-            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || ['kory']; } catch { return ['kory']; }
-        }
-        function saveAccounts(list) {
-            const cleaned = Array.from(new Set((list||[]).map(s => (s||'').trim()).filter(Boolean)));
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+        const accountsSelectors = {
+            tableBody: document.getElementById('accountsTableBody'),
+            totalVehiclesBadge: document.getElementById('totalVehiclesBadge'),
+            errorAlert: document.getElementById('accountsError'),
+            successAlert: document.getElementById('accountsSuccess'),
+            addButton: document.getElementById('addAccountBtn'),
+            nameInput: document.getElementById('newAccountName'),
+            setDefaultSwitch: document.getElementById('setDefaultSwitch'),
+            refreshButton: document.getElementById('refreshAccountsBtn'),
+            renameInput: document.getElementById('renameAccountInput'),
+            renameSaveButton: document.getElementById('renameAccountSaveBtn'),
+        };
+
+        function showAlert(alertEl, message, type = 'info', timeout = 3500) {
+            if (!alertEl) return;
+            alertEl.classList.remove('d-none', 'alert-info', 'alert-success', 'alert-danger', 'alert-warning');
+            alertEl.classList.add(`alert-${type}`);
+            alertEl.innerHTML = message;
+            stopAlertTimer(alertEl);
+            alertEl.dataset.timerId = setTimeout(() => hideAlert(alertEl), timeout);
         }
 
-        function render() {
-            const listEl = document.getElementById('accountsList');
-            const accounts = loadAccounts();
-            if (accounts.length === 0) {
-                listEl.innerHTML = '<li class="list-group-item text-muted">No accounts yet.</li>';
+        function hideAlert(alertEl) {
+            if (!alertEl) return;
+            stopAlertTimer(alertEl);
+            alertEl.classList.add('d-none');
+        }
+
+        function stopAlertTimer(alertEl) {
+            if (!alertEl || !alertEl.dataset.timerId) return;
+            clearTimeout(Number(alertEl.dataset.timerId));
+            delete alertEl.dataset.timerId;
+        }
+
+        async function loadAccounts(force = false) {
+            if (force) {
+                accountCache = null;
+            }
+            const data = await fetchAccountsFromApi(force);
+            accountsState.accounts = data.accounts || [];
+            accountsState.defaultAccountId = data.default_account_id || null;
+            const totalVehicleCount = accountsState.accounts.reduce((sum, acc) => sum + (acc.vehicle_count || 0), 0);
+            updateTotalVehiclesBadge(totalVehicleCount);
+            renderAccountsTable();
+        }
+
+        function updateTotalVehiclesBadge(total) {
+            if (!accountsSelectors.totalVehiclesBadge) return;
+            accountsSelectors.totalVehiclesBadge.innerHTML = `<i class="fas fa-car-side me-1"></i>${total} vehicle${total === 1 ? '' : 's'}`;
+        }
+
+        function renderAccountsTable() {
+            const tbody = accountsSelectors.tableBody;
+            if (!tbody) return;
+
+            const accounts = accountsState.accounts;
+            const defaultId = accountsState.defaultAccountId;
+
+            if (!accounts.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <div>No accounts yet</div>
+                            <small>Create your first family account above.</small>
+                        </td>
+                    </tr>
+                `;
                 return;
             }
-            listEl.innerHTML = accounts.map(name => `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-user me-2 text-purple-600"></i>${name}</span>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-secondary" data-action="rename" data-name="${name}"><i class="fas fa-pen"></i></button>
-                        <button class="btn btn-outline-danger" data-action="delete" data-name="${name}"><i class="fas fa-trash"></i></button>
-                    </div>
-                </li>
-            `).join('');
+
+            tbody.innerHTML = accounts.map(account => {
+                const isDefault = account.id === defaultId;
+                const isCurrent = account.id === accountsState.currentAccountId;
+                const disableDelete = (account.vehicle_count ?? 0) > 0;
+                const badgeClass = isDefault ? 'bg-warning text-dark' : 'bg-light text-muted border';
+
+                return `
+                    <tr data-account-id="${account.id}">
+                        <td class="fw-semibold">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-user text-purple-600"></i>
+                                <span>${account.name}</span>
+                                ${isCurrent ? '<span class="badge bg-primary">Selected</span>' : ''}
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-secondary">${account.vehicle_count ?? 0}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge ${badgeClass}">
+                                ${isDefault ? '<i class="fas fa-star me-1"></i>Default' : '—'}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary" data-action="rename" data-account-id="${account.id}" data-account-name="${account.name}">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="btn btn-outline-success ${isDefault ? 'disabled' : ''}" data-action="set-default" data-account-id="${account.id}" ${isDefault ? 'disabled' : ''}>
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <button class="btn btn-outline-danger ${disableDelete ? 'disabled' : ''}" data-action="delete" data-account-id="${account.id}" ${disableDelete ? 'disabled' : ''} title="${disableDelete ? 'Remove or transfer vehicles first' : 'Delete account'}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function handleCreateAccount() {
+            const input = accountsSelectors.nameInput;
+            const setDefault = accountsSelectors.setDefaultSwitch.checked;
+            if (!input) return;
+
+            const name = (input.value || '').trim();
+            if (!name) {
+                showAlert(accountsSelectors.errorAlert, '<i class="fas fa-exclamation-triangle me-2"></i>Please enter an account name.', 'warning');
+                return;
+            }
+
+            accountsSelectors.addButton.disabled = true;
+            showAlert(accountsSelectors.successAlert, '<i class="fas fa-spinner fa-spin me-2"></i>Creating account...', 'info', 6000);
+
+            try {
+                const response = await fetch('/api/accounts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        name,
+                        setDefault,
+                    }),
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.error || 'Failed to create account.');
+                }
+
+                input.value = '';
+                accountsSelectors.setDefaultSwitch.checked = false;
+                showAlert(accountsSelectors.successAlert, `<i class="fas fa-check me-2"></i>${data.message || 'Account created.'}`, 'success');
+                hideAlert(accountsSelectors.errorAlert);
+                updateContextFromResponse(data);
+                await loadAccounts(true);
+            } catch (error) {
+                console.error('Account creation failed:', error);
+                showAlert(accountsSelectors.errorAlert, `<i class="fas fa-exclamation-circle me-2"></i>${error.message}`, 'danger', 6000);
+            } finally {
+                accountsSelectors.addButton.disabled = false;
+                hideAlert(accountsSelectors.successAlert);
+            }
+        }
+
+        function updateContextFromResponse(data) {
+            if (!data) return;
+            if (!window.__ACCOUNT_CONTEXT__) {
+                window.__ACCOUNT_CONTEXT__ = {};
+            }
+            if (typeof accountCache !== 'undefined') {
+                accountCache = data;
+            }
+            if (data.default_account_id) {
+                window.__ACCOUNT_CONTEXT__.account_id = data.default_account_id;
+            }
+        }
+
+        function attachEventListeners() {
+            if (accountsSelectors.addButton) {
+                accountsSelectors.addButton.addEventListener('click', () => handleCreateAccount());
+            }
+            if (accountsSelectors.nameInput) {
+                accountsSelectors.nameInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleCreateAccount();
+                    }
+                });
+            }
+            if (accountsSelectors.refreshButton) {
+                accountsSelectors.refreshButton.addEventListener('click', () => loadAccounts(true));
+            }
+            accountsSelectors.renameModal = new bootstrap.Modal(document.getElementById('renameAccountModal'));
+            if (accountsSelectors.renameSaveButton) {
+                accountsSelectors.renameSaveButton.addEventListener('click', handleRenameSubmit);
+            }
+            const accountsTable = document.getElementById('accountsTable');
+            if (accountsTable) {
+                accountsTable.addEventListener('click', handleTableClick);
+            }
+        }
+
+        function getAccountById(accountId) {
+            if (!accountId) return null;
+            return accountsState.accounts.find(account => account.id === accountId) || null;
+        }
+
+        function openRenameModal(accountId, accountName) {
+            accountsState.renameTargetId = accountId;
+            accountsSelectors.renameInput.value = accountName || '';
+            hideAlert(accountsSelectors.errorAlert);
+            hideAlert(accountsSelectors.successAlert);
+            accountsSelectors.renameSaveButton.disabled = false;
+            accountsSelectors.renameModal.show();
+            setTimeout(() => accountsSelectors.renameInput.focus(), 150);
+        }
+
+        async function handleRenameSubmit() {
+            const accountId = accountsState.renameTargetId;
+            const newName = (accountsSelectors.renameInput.value || '').trim();
+            if (!accountId || !newName) {
+                showAlert(accountsSelectors.errorAlert, '<i class="fas fa-exclamation-triangle me-2"></i>Please enter a new account name.', 'warning');
+                return;
+            }
+
+            accountsSelectors.renameSaveButton.disabled = true;
+            showAlert(accountsSelectors.successAlert, '<i class="fas fa-spinner fa-spin me-2"></i>Saving...', 'info', 6000);
+
+            try {
+                const response = await fetch(`/api/accounts/${accountId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ name: newName }),
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.error || 'Failed to rename account.');
+                }
+
+                showAlert(accountsSelectors.successAlert, '<i class="fas fa-check me-2"></i>Account renamed.', 'success');
+                hideAlert(accountsSelectors.errorAlert);
+                accountsSelectors.renameModal.hide();
+                accountsSelectors.renameInput.value = '';
+                accountsState.renameTargetId = null;
+                updateContextFromResponse(data);
+                await loadAccounts(true);
+            } catch (error) {
+                console.error('Rename failed:', error);
+                showAlert(accountsSelectors.errorAlert, `<i class="fas fa-exclamation-circle me-2"></i>${error.message}`, 'danger', 6000);
+            } finally {
+                accountsSelectors.renameSaveButton.disabled = false;
+                hideAlert(accountsSelectors.successAlert);
+            }
+        }
+
+        async function handleSetDefaultAccount(accountId) {
+            const account = getAccountById(accountId);
+            if (!account) {
+                showAlert(accountsSelectors.errorAlert, '<i class="fas fa-exclamation-circle me-2"></i>Account not found.', 'danger');
+                return;
+            }
+
+            showAlert(accountsSelectors.successAlert, '<i class="fas fa-spinner fa-spin me-2"></i>Updating default...', 'info', 6000);
+
+            try {
+                const response = await fetch(`/api/accounts/${accountId}/default`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.error || 'Failed to set default account.');
+                }
+
+                showAlert(accountsSelectors.successAlert, `<i class="fas fa-check me-2"></i>${data.message || 'Default updated.'}`, 'success');
+                hideAlert(accountsSelectors.errorAlert);
+                updateContextFromResponse(data);
+                await loadAccounts(true);
+            } catch (error) {
+                console.error('Set default failed:', error);
+                showAlert(accountsSelectors.errorAlert, `<i class="fas fa-exclamation-circle me-2"></i>${error.message}`, 'danger', 6000);
+            } finally {
+                hideAlert(accountsSelectors.successAlert);
+            }
+        }
+
+        async function handleDeleteAccount(accountId) {
+            const account = getAccountById(accountId);
+            if (!account) {
+                showAlert(accountsSelectors.errorAlert, '<i class="fas fa-exclamation-circle me-2"></i>Account not found.', 'danger');
+                return;
+            }
+
+            if ((account.vehicle_count || 0) > 0) {
+                showAlert(accountsSelectors.errorAlert, '<i class="fas fa-ban me-2"></i>Please transfer or delete vehicles before deleting this account.', 'warning', 6000);
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete the account "${account.name}"? This cannot be undone.`)) {
+                return;
+            }
+
+            showAlert(accountsSelectors.successAlert, '<i class="fas fa-spinner fa-spin me-2"></i>Deleting account...', 'info', 6000);
+
+            try {
+                const response = await fetch(`/api/accounts/${accountId}`, {
+                    method: 'DELETE',
+                    credentials: 'same-origin',
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.error || 'Failed to delete account.');
+                }
+
+                showAlert(accountsSelectors.successAlert, `<i class="fas fa-check me-2"></i>${data.message || 'Account deleted.'}`, 'success');
+                hideAlert(accountsSelectors.errorAlert);
+                updateContextFromResponse(data);
+                await loadAccounts(true);
+            } catch (error) {
+                console.error('Delete failed:', error);
+                showAlert(accountsSelectors.errorAlert, `<i class="fas fa-exclamation-circle me-2"></i>${error.message}`, 'danger', 6000);
+            } finally {
+                hideAlert(accountsSelectors.successAlert);
+            }
+        }
+
+        function handleTableClick(event) {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+
+            const action = button.getAttribute('data-action');
+            const accountId = button.getAttribute('data-account-id');
+            const accountName = button.getAttribute('data-account-name');
+
+            switch (action) {
+                case 'rename':
+                    openRenameModal(accountId, accountName);
+                    break;
+                case 'set-default':
+                    handleSetDefaultAccount(accountId);
+                    break;
+                case 'delete':
+                    handleDeleteAccount(accountId);
+                    break;
+                default:
+                    break;
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            render();
-            document.getElementById('addAccountBtn').addEventListener('click', () => {
-                const input = document.getElementById('newAccountName');
-                const val = (input.value || '').trim();
-                if (!val) return;
-                const accounts = loadAccounts();
-                accounts.push(val);
-                saveAccounts(accounts);
-                input.value = '';
-                render();
-            });
-
-            document.getElementById('accountsList').addEventListener('click', (e) => {
-                const btn = e.target.closest('button');
-                if (!btn) return;
-                const action = btn.getAttribute('data-action');
-                const name = btn.getAttribute('data-name');
-                let accounts = loadAccounts();
-                if (action === 'delete') {
-                    accounts = accounts.filter(a => a !== name);
-                    saveAccounts(accounts);
-                    render();
-                } else if (action === 'rename') {
-                    const newName = prompt('Rename account', name);
-                    if (newName && newName.trim() && newName !== name) {
-                        accounts = accounts.map(a => a === name ? newName.trim() : a);
-                        saveAccounts(accounts);
-                        render();
-                    }
-                }
+            attachEventListeners();
+            loadAccounts(true).catch(error => {
+                console.error('Initial account load failed:', error);
+                showAlert(accountsSelectors.errorAlert, `<i class="fas fa-exclamation-circle me-2"></i>${error.message}`, 'danger', 6000);
             });
         });
     </script>
 </body>
 </html>
-

@@ -147,15 +147,17 @@ function saveToLocalStorage(key, data) {
 }
 
 // ============================================================================
-// ACCOUNT (TESTER) SELECTION HELPERS
+// ACCOUNT SELECTION HELPERS
 // ============================================================================
 
 const ACCOUNT_COOKIE_NAME = 'selected_account';
-const ACCOUNTS_STORAGE_KEY = 'accounts_list_v1';
+const ACCOUNT_STORAGE_KEY = 'vmt.selectedAccountId';
+const ACCOUNT_GLOBAL_CONTEXT = typeof window !== 'undefined' ? (window.__ACCOUNT_CONTEXT__ || {}) : {};
+let accountCache = null;
 
 function setCookie(name, value, days = 365) {
     const d = new Date();
-    d.setTime(d.getTime() + (days*24*60*60*1000));
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
     const expires = 'expires=' + d.toUTCString();
     document.cookie = name + '=' + encodeURIComponent(value) + ';' + expires + ';path=/';
 }
@@ -172,61 +174,200 @@ function getCookie(name) {
     return '';
 }
 
-function getAccountsList() {
-    const list = loadFromLocalStorage(ACCOUNTS_STORAGE_KEY, []);
-    // Ensure unique, simple strings
-    const unique = Array.from(new Set((list || []).filter(Boolean)));
-    // Provide a sensible starter set if empty
-    if (unique.length === 0) {
-        return ['kory'];
+function saveAccountIdToStorage(accountId) {
+    if (!accountId || accountId === 'all') {
+        removeFromLocalStorage(ACCOUNT_STORAGE_KEY);
+        return;
     }
-    return unique;
+    saveToLocalStorage(ACCOUNT_STORAGE_KEY, accountId);
 }
 
-function saveAccountsList(list) {
-    const cleaned = Array.from(new Set((list || []).map(s => (s || '').trim()).filter(Boolean)));
-    return saveToLocalStorage(ACCOUNTS_STORAGE_KEY, cleaned);
+function loadAccountIdFromStorage() {
+    return loadFromLocalStorage(ACCOUNT_STORAGE_KEY, null);
 }
 
-function getSelectedAccount() {
-    return getCookie(ACCOUNT_COOKIE_NAME) || 'All';
+async function fetchAccountsFromApi(forceRefresh = false) {
+    if (accountCache && !forceRefresh) {
+        return accountCache;
+    }
+
+    try {
+        const response = await fetch('/api/accounts', { credentials: 'same-origin' });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Unknown error loading accounts');
+        }
+        accountCache = data;
+        return data;
+    } catch (error) {
+        console.error('Failed to fetch accounts:', error);
+        accountCache = null;
+        throw error;
+    }
 }
 
-function setSelectedAccount(name) {
-    setCookie(ACCOUNT_COOKIE_NAME, name || 'All');
+function determineInitialAccountId(accounts, defaultAccountId) {
+    const url = new URL(window.location.href);
+    const paramId = url.searchParams.get('accountId');
+
+    const hasAccount = (id) => accounts.some((acc) => acc.id === id);
+
+    if (paramId) {
+        if (paramId.toLowerCase() === 'all' || !hasAccount(paramId)) {
+            return 'all';
+        }
+        return paramId;
+    }
+
+    const storedId = loadAccountIdFromStorage();
+    if (storedId && hasAccount(storedId)) {
+        return storedId;
+    }
+
+    if (ACCOUNT_GLOBAL_CONTEXT.account_id && hasAccount(ACCOUNT_GLOBAL_CONTEXT.account_id)) {
+        return ACCOUNT_GLOBAL_CONTEXT.account_id;
+    }
+
+    if (defaultAccountId && hasAccount(defaultAccountId)) {
+        return defaultAccountId;
+    }
+
+    return 'all';
 }
 
-function buildAccountDropdown(menuId, buttonId) {
+function updateAccountDropdownButton(button, account, totalVehicleCount, isAllSelected) {
+    if (!button) return;
+
+    if (isAllSelected) {
+        button.innerHTML = `<i class="fas fa-user-circle me-2"></i>All Accounts${typeof totalVehicleCount === 'number' ? ` (${totalVehicleCount})` : ''}`;
+        return;
+    }
+
+    if (!account) {
+        button.innerHTML = `<i class="fas fa-user-circle me-2"></i>Accounts`;
+        return;
+    }
+
+    const countLabel = typeof account.vehicle_count === 'number' ? ` (${account.vehicle_count})` : '';
+    const defaultBadge = account.is_default ? ' <i class="fas fa-star text-warning ms-1" title="Default account"></i>' : '';
+    button.innerHTML = `<i class="fas fa-user-circle me-2"></i>${account.name}${countLabel}${defaultBadge}`;
+}
+
+function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) {
+    const items = [];
+    const isAll = selectedAccountId === 'all' || !selectedAccountId;
+
+    items.push(`
+        <li>
+            <a class="dropdown-item d-flex justify-content-between align-items-center ${isAll ? 'active' : ''}"
+               href="#" data-account-id="all" data-account-name="All">
+                <span><i class="fas fa-layer-group me-2 text-purple-600"></i>All Accounts</span>
+                <span class="badge bg-light text-dark border">${typeof totalVehicleCount === 'number' ? totalVehicleCount : '-'}</span>
+            </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+    `);
+
+    if (!accounts.length) {
+        items.push('<li class="dropdown-item text-muted">No accounts yet</li>');
+    } else {
+        accounts.forEach((account) => {
+            const isActive = selectedAccountId === account.id;
+            const defaultIcon = account.is_default ? '<i class="fas fa-star text-warning ms-2" title="Default account"></i>' : '';
+            items.push(`
+                <li>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center ${isActive ? 'active' : ''}"
+                       href="#" data-account-id="${account.id}" data-account-name="${account.name}">
+                        <span><i class="fas fa-user me-2 text-purple-600"></i>${account.name}${defaultIcon}</span>
+                        <span class="badge bg-light text-dark border">${account.vehicle_count ?? 0}</span>
+                    </a>
+                </li>
+            `);
+        });
+    }
+
+    items.push('<li><hr class="dropdown-divider"></li>');
+    items.push(`
+        <li>
+            <a class="dropdown-item d-flex align-items-center" href="/accounts" data-manage-accounts="true">
+                <i class="fas fa-users-cog me-2 text-purple-600"></i>Manage Accounts
+            </a>
+        </li>
+    `);
+
+    return items.join('');
+}
+
+function handleAccountSelection(accountId, accountName) {
+    const isAll = !accountId || accountId === 'all';
+    saveAccountIdToStorage(isAll ? null : accountId);
+    setCookie(ACCOUNT_COOKIE_NAME, accountName || 'All');
+
+    window.dispatchEvent(new CustomEvent('account:change', {
+        detail: {
+            accountId: isAll ? null : accountId,
+            accountName: accountName || 'All',
+        },
+    }));
+
+    const url = new URL(window.location.href);
+    if (isAll) {
+        url.searchParams.delete('accountId');
+    } else {
+        url.searchParams.set('accountId', accountId);
+    }
+
+    window.location.href = url.toString();
+}
+
+async function buildAccountDropdown(menuId, buttonId) {
     const menu = document.getElementById(menuId);
     const button = document.getElementById(buttonId);
     if (!menu || !button) return;
 
-    const accounts = getAccountsList();
-    const current = getSelectedAccount();
-    button.innerHTML = `<i class="fas fa-user-circle me-2"></i>${current === 'All' ? 'All Accounts' : current}`;
+    try {
+        const data = await fetchAccountsFromApi();
+        const accounts = data.accounts || [];
+        const totalVehicleCount = accounts.reduce((sum, acc) => sum + (acc.vehicle_count || 0), 0);
+        const selectedAccountId = determineInitialAccountId(accounts, data.default_account_id);
+        const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
 
-    let html = '';
-    html += `<li><a class="dropdown-item" href="#" data-account="All">All Accounts</a></li>`;
-    html += '<li><hr class="dropdown-divider"></li>';
-    accounts.forEach(acc => {
-        html += `<li><a class="dropdown-item" href="#" data-account="${acc}"><i class=\"fas fa-user me-2 text-purple-600\"></i>${acc}</a></li>`;
-    });
-    html += '<li><hr class="dropdown-divider"></li>';
-    html += `<li><a class="dropdown-item" href="/accounts"><i class=\"fas fa-users-cog me-2 text-purple-600\"></i>Manage Accounts</a></li>`;
+        updateAccountDropdownButton(button, selectedAccount, totalVehicleCount, selectedAccountId === 'all');
+        menu.innerHTML = buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount);
 
-    menu.innerHTML = html;
-
-    menu.querySelectorAll('a[data-account]').forEach(a => {
-        a.addEventListener('click', (e) => {
-            e.preventDefault();
-            const selected = a.getAttribute('data-account');
-            setSelectedAccount(selected);
-            // Update button label
-            button.innerHTML = `<i class=\"fas fa-user-circle me-2\"></i>${selected === 'All' ? 'All Accounts' : selected}`;
-            // Simple reload to apply filters across pages (server/client can read cookie)
-            window.location.reload();
+        menu.querySelectorAll('a[data-account-id]').forEach((anchor) => {
+            anchor.addEventListener('click', (event) => {
+                event.preventDefault();
+                const accountId = anchor.getAttribute('data-account-id');
+                const accountName = anchor.getAttribute('data-account-name');
+                if (!accountId) return;
+                handleAccountSelection(accountId === 'all' ? 'all' : accountId, accountName);
+            });
         });
-    });
+
+        // Ensure Manage Accounts preserves selected account in query
+        const manageLink = menu.querySelector('a[data-manage-accounts]');
+        if (manageLink) {
+            manageLink.addEventListener('click', (event) => {
+                const url = new URL(manageLink.href, window.location.origin);
+                const currentId = determineInitialAccountId(accounts, data.default_account_id);
+                if (currentId && currentId !== 'all') {
+                    url.searchParams.set('accountId', currentId);
+                }
+                manageLink.href = url.toString();
+            });
+        }
+    } catch (error) {
+        console.error('Unable to populate account dropdown:', error);
+        button.innerHTML = `<i class="fas fa-user-circle me-2"></i>Accounts (offline)`;
+        menu.innerHTML = `
+            <li class="dropdown-header text-muted">Unable to load accounts</li>
+            <li><a class="dropdown-item" href="/accounts"><i class="fas fa-users-cog me-2"></i>Manage Accounts</a></li>
+        `;
+    }
 }
 
 // Initialize account switcher if present on a page
@@ -305,3 +446,5 @@ window.loadFromLocalStorage = loadFromLocalStorage;
 window.removeFromLocalStorage = removeFromLocalStorage;
 window.initializeCommonFeatures = initializeCommonFeatures;
 window.initializePageFeatures = initializePageFeatures;
+window.initializeAccountSwitcher = initializeAccountSwitcher;
+window.fetchAccountsFromApi = fetchAccountsFromApi;
