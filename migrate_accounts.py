@@ -58,23 +58,34 @@ def _ensure_account_columns(engine: Engine) -> None:
 
 
 def _ensure_vehicle_account_column(engine: Engine, inspector) -> None:
-    """Add the account_id column to vehicle table when missing."""
-    vehicle_columns = {column["name"] for column in inspector.get_columns("vehicle")}
-    if "account_id" in vehicle_columns:
-        return
+    """Ensure vehicle.account_id exists and is stored as TEXT for cross-db compatibility."""
+    vehicle_columns = {column["name"]: column for column in inspector.get_columns("vehicle")}
 
-    column_type = "UUID" if engine.dialect.name in ("postgresql", "postgresql+psycopg") else "TEXT"
-    alter_sql = f"ALTER TABLE vehicle ADD COLUMN account_id {column_type}"
-    with engine.begin() as conn:
-        conn.execute(text(alter_sql))
-
-    # Refresh inspector cache
-    inspector = inspect(engine)
-    vehicle_columns = {column["name"] for column in inspector.get_columns("vehicle")}
     if "account_id" not in vehicle_columns:
-        raise RuntimeError("Failed to add account_id column to vehicle table")
+        # Always use TEXT so it aligns with account.id (string UUID)
+        column_type = "TEXT"
+        alter_sql = f"ALTER TABLE vehicle ADD COLUMN account_id {column_type}"
+        with engine.begin() as conn:
+            conn.execute(text(alter_sql))
 
-    # Add index for faster lookups
+        # Refresh inspector cache
+        inspector = inspect(engine)
+        vehicle_columns = {column["name"]: column for column in inspector.get_columns("vehicle")}
+        if "account_id" not in vehicle_columns:
+            raise RuntimeError("Failed to add account_id column to vehicle table")
+    else:
+        # Column already exists; make sure it's TEXT (especially on PostgreSQL where it might be UUID)
+        col = vehicle_columns["account_id"]
+        column_type = getattr(col["type"], "python_type", str)
+        if engine.dialect.name.startswith("postgres") and column_type is not str:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "ALTER TABLE vehicle ALTER COLUMN account_id TYPE TEXT USING account_id::text"
+                    )
+                )
+
+    # Add index for faster lookups (runs safely even if it already exists)
     with engine.begin() as conn:
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_vehicle_account_id ON vehicle(account_id)"))
 
