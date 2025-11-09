@@ -3,7 +3,7 @@ import os
 import sys
 import csv
 from datetime import date, datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from io import StringIO
 
 # Third-party imports
