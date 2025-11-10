@@ -1,12 +1,8 @@
 {# Shared form macros for consistent field rendering #}
 
-{% macro field(id, label, required=False, help_text=None, error=None, extra_classes="", help_id=None, error_id=None, **kwargs) -%}
-  {% set _help_id = help_id or (id ~ "-help") %}
+{% macro field(id, label, required=False, help_text=None, error=None, extra_classes="", help_id=None, error_id=None) -%}
+  {% set _help_id = help_id or (help_text and (id ~ "-help")) %}
   {% set _error_id = error_id or (id ~ "-error") %}
-  {% set _describedby = [] %}
-  {% if help_text %}{% set _ = _describedby.append(_help_id) %}{% endif %}
-  {% if error %}{% set _ = _describedby.append(_error_id) %}{% endif %}
-  {% set _aria = _describedby | join(' ') %}
   <div class="mb-4 {{ extra_classes }} {% if error %}has-error{% endif %}">
     <label for="{{ id }}" class="form-label fw-bold">
       {{ label }}
@@ -15,7 +11,7 @@
         <span class="visually-hidden">required</span>
       {% endif %}
     </label>
-    {% with help_id=_help_id, error_id=_error_id, aria=_aria %}
+    {% with help_id=_help_id, error_id=_error_id %}
       {{ caller() }}
     {% endwith %}
     {% if help_text %}
