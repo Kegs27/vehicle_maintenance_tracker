@@ -1010,9 +1010,10 @@ async def create_maintenance_route(
                             ),
                             cost=0.0,
                             mileage=payload.mileage,
-                            is_oil_change=False,
-                            oil_analysis_date=payload.date_str,
-                            oil_type=payload.oil_type,
+                            is_oil_change=False,  # This is an analysis record, not an oil change
+                            # Set as analysis record with oil change data for reference
+                            oil_analysis_date=payload.date_str,  # Mark as analysis record
+                            oil_type=payload.oil_type,  # Copy oil change data
                             oil_brand=payload.oil_brand,
                             oil_filter_brand=payload.oil_filter_brand,
                             oil_filter_part_number=payload.oil_filter_part_number,
@@ -1357,8 +1358,9 @@ async def update_maintenance_route(
                     if not existing_analysis:
                         # Create new oil analysis placeholder at same mileage
                         try:
-                            from data_operations import create_maintenance_record
-                            oil_analysis_result = create_maintenance_record(
+                            from data_operations import create_maintenance_record as create_maintenance_record_fn
+
+                            create_maintenance_record_fn(
                                 vehicle_id=vehicle_id,
                                 date=date_str,  # Same date as oil change
                                 description=f"Oil Analysis - {mileage:,} miles",
