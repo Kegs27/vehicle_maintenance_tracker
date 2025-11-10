@@ -80,7 +80,7 @@
                         </div>
                         {% endif %}
 
-                        <form method="post" action="{% if record %}/maintenance/{{ record.id }}{% else %}/maintenance{% endif %}" enctype="multipart/form-data">
+                        <form method="post" action="{% if record %}/maintenance/{{ record.id }}{% else %}/maintenance{% endif %}" enctype="multipart/form-data" data-account-aware="true">
                             {% if return_url %}
                             <input type="hidden" name="return_url" value="{{ return_url }}">
                             {% endif %}

@@ -41,7 +41,7 @@
                         </h4>
                     </div>
                     <div class="card-body p-4">
-                        <form method="post" action="{% if vehicle %}/vehicles/{{ vehicle.id }}{% else %}/vehicles{% endif %}">
+                        <form method="post" action="{% if vehicle %}/vehicles/{{ vehicle.id }}{% else %}/vehicles{% endif %}" data-account-aware="true">
                             {% if return_url %}
                             <input type="hidden" name="return_url" value="{{ return_url }}">
                             {% endif %}

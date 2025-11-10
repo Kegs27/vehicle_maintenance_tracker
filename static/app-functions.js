@@ -335,7 +335,7 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
 
 function rewriteAccountAwareLinks(selectedAccountId) {
     const normalizedId = selectedAccountId && selectedAccountId !== 'all' ? selectedAccountId : null;
-    const accountAwareLinks = document.querySelectorAll('[data-account-aware=\"true\"]');
+    const accountAwareLinks = document.querySelectorAll('a[data-account-aware="true"]');
 
     accountAwareLinks.forEach((link) => {
         const baseHref = link.dataset.baseHref || link.getAttribute('href');
@@ -353,10 +353,44 @@ function rewriteAccountAwareLinks(selectedAccountId) {
             } else {
                 url.searchParams.delete('accountId');
             }
-            link.setAttribute('href', url.pathname + url.search + url.hash);
+            const query = url.search ? url.search : '';
+            link.setAttribute('href', url.pathname + query + url.hash);
         } catch (error) {
             console.warn('Unable to rewrite account-aware link:', baseHref, error);
         }
+    });
+
+    const accountAwareForms = document.querySelectorAll('form[action^="/"]:not([data-ignore-account])');
+    accountAwareForms.forEach((form) => {
+        const baseAction = form.dataset.baseAction || form.getAttribute('action');
+        if (baseAction && !form.dataset.baseAction) {
+            form.dataset.baseAction = baseAction;
+        }
+
+        if (form.dataset.baseAction) {
+            try {
+                const url = new URL(form.dataset.baseAction, window.location.origin);
+                if (normalizedId) {
+                    url.searchParams.set('accountId', normalizedId);
+                } else {
+                    url.searchParams.delete('accountId');
+                }
+                const query = url.search ? url.search : '';
+                form.setAttribute('action', url.pathname + query);
+            } catch (error) {
+                console.warn('Unable to rewrite account-aware form action:', form.dataset.baseAction, error);
+            }
+        }
+
+        let hidden = form.querySelector('input[name="accountId"][data-generated-account="true"]');
+        if (!hidden) {
+            hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'accountId';
+            hidden.dataset.generatedAccount = 'true';
+            form.appendChild(hidden);
+        }
+        hidden.value = normalizedId || '';
     });
 }
 
@@ -497,6 +531,15 @@ function initializePageFeatures() {
 // EXPORT STATEMENTS
 // ============================================================================
 
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const currentAccountId = getSelectedAccountId();
+        rewriteAccountAwareLinks(currentAccountId || 'all');
+    } catch (error) {
+        console.warn('Unable to initialize account-aware links on load:', error);
+    }
+});
+
 // Make functions available globally
 window.showOilChangeMenu = showOilChangeMenu;
 window.exportAllVehicles = exportAllVehicles;
@@ -521,3 +564,18 @@ window.fetchAccountsFromApi = fetchAccountsFromApi;
 window.getSelectedAccountId = getSelectedAccountId;
 window.buildAccountAwareUrl = buildAccountAwareUrl;
 window.rewriteAccountAwareLinks = rewriteAccountAwareLinks;
+
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const initialId = getSelectedAccountId() || (ACCOUNT_GLOBAL_CONTEXT.account_id ?? null);
+        rewriteAccountAwareLinks(initialId);
+    } catch (error) {
+        console.warn('Unable to initialize account-aware links:', error);
+    }
+});
+
+window.addEventListener('account:change', (event) => {
+    if (event && event.detail) {
+        rewriteAccountAwareLinks(event.detail.accountId || null);
+    }
+});

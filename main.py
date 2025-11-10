@@ -201,7 +201,7 @@ def get_account_context(request: Request):
 
     Priority order:
       1. Explicit query parameter ?accountId=
-      2. Cookie `selected_account` (stored as account name or 'All')
+      2. Cookie `vmt.accountId` (account id) or legacy `selected_account` (name)
       3. Owner default account
 
     Returns a dict with:
@@ -213,39 +213,36 @@ def get_account_context(request: Request):
     if hasattr(request.state, "account_context"):
         return request.state.account_context
 
-    scope = "all"
     selected_account = None
+    scope = "all"
 
-    account_param = request.query_params.get("accountId")
-    if account_param:
-        if account_param.lower() not in ("all", "null", "none", ""):
-            selected_account = get_account_by_id(account_param)
-            if selected_account:
-                scope = "single"
-        else:
+    candidate_sources = [
+        ("id", request.query_params.get("accountId")),
+        ("id", request.cookies.get("vmt.accountId")),
+        ("name", request.cookies.get("selected_account")),
+    ]
+
+    for source, raw_value in candidate_sources:
+        if not raw_value:
+            continue
+
+        value = raw_value.strip()
+        if value.lower() in ("", "all", "null", "none"):
             scope = "all"
+            selected_account = None
+            break
 
-    if not selected_account and scope != "all":
-        account_cookie_id = request.cookies.get("vmt.accountId")
-        if account_cookie_id:
-            if account_cookie_id.lower() == "all":
-                scope = "all"
-            else:
-                selected_account = get_account_by_id(account_cookie_id)
-                if selected_account:
-                    scope = "single"
+        if source == "id":
+            account = get_account_by_id(value)
+        else:
+            account = get_account_by_name(value)
 
-    if not selected_account and scope != "all":
-        cookie_value = request.cookies.get("selected_account")
-        if cookie_value:
-            if cookie_value.lower() == "all":
-                scope = "all"
-            else:
-                selected_account = get_account_by_name(cookie_value)
-                if selected_account:
-                    scope = "single"
+        if account:
+            selected_account = account
+            scope = "single"
+            break
 
-    if not selected_account and scope != "all":
+    if selected_account is None:
         default_account = get_default_account()
         if default_account:
             selected_account = default_account
