@@ -2378,9 +2378,12 @@ async def set_default_account_api(account_id: str):
 
 
 @app.post("/api/vehicles/{vehicle_id}/transfer")
-async def transfer_vehicle_api(vehicle_id: int, payload: VehicleTransferRequest):
+async def transfer_vehicle_api(request: Request, vehicle_id: int, payload: VehicleTransferRequest):
     """Move a vehicle to another account."""
-    vehicle = get_vehicle_by_id(vehicle_id)
+    account_context = get_account_context(request)
+    account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+
+    vehicle = get_vehicle_by_id(vehicle_id, account_id=account_id)
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found.")
 
