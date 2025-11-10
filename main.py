@@ -3,6 +3,7 @@ import os
 import sys
 import csv
 from datetime import date, datetime
+import base64
 from typing import Optional, Dict, Any
 from io import StringIO
 
@@ -193,6 +194,22 @@ templates = Jinja2Templates(directory="./templates")
 # Static files
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static", check_dir=False), name="static")
+
+FAVICON_SVG_CONTENT = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#7c3aed"/><path d="M20 45h6l3-8h6l3 8h6L35 19h-6L20 45zm16-14h-8l4-10 4 10z" fill="#fff"/></svg>"""
+FAVICON_PNG_BYTES = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEWElEQVR4nO2bX2gVURSHP3fcM2/MxL4REhMTQ3AokoiKiEJCSJYhIT4kjiJYpJBS8D8IUpSYlLwCC2KChIOFCoIOj4NMIUURJgQSQkxJNTyZk3m2HvTN3DN3Zm5n5ntOZ6ZnYPM2/O7MzuzPuOd2fN2d2biWSSmQBmshJkkkcxgIsBd4HxgB/Ax4B+wEXgB/AMeBPoBPp3Kvmtq3gBnAY2BvoAL4CVgOzBf6G2nbjtTWD44DjS2v2xkfAz4DXwOvgN/AZ65u+o3SggxgiuBuYD9wGfgJ+B6YAK4Ftih5yldxz4HXgPeCWeLh4wL1zvt2Wqj6SfB64N09bDJwH52/3J/b9cVVcM3AheGQ1VfVhevlOcccwB/ge0zhM8DHgEXAJOApM99KcCSeFtXT8AB4EXgLXAzmA/ec9+IYDvJfYAHgJbgSbjHWuvY4DvwKvAjmBh+FYA/EHwOfBf8VOv6ZbgAVy00q+AnaDqKrnTfVheNLxkA7B/8ClwP58cDX2B64i/kx9zPgMeB94zHga2Bu4NeN+rqf5lV9Q+A1cBLL1YanfVZAPCOwNPDNXB8e7wsVivJfwv2AD7mm23wBzAYWAusAJabHigDcAbY6QkUARPb2C3gJWA48HbkDwKrgYOA9cBtwNPBvSrO36yqOwA/gWPAeWm2JXABpuflXQCuAbaC388uAKsB90d4hl9YLk3dSzJfYGH7Hy76dEvVbQB+AlYBN5he8EvApmqOjXaxNwEOq/Wj2A3gT2A+8z+gDGt1NbdcRdgAWsfZj4u+AvUda7Wtt8ybKvqysAKsB1w1K/Bf8EHgfeNbZdQpYBs6Y3FmwBrdyOfVZvLac+mxLWADcDLwFeAvcz8qOf8M2GWbDqt50Np9+AuYB/09k1r4/Bq4i2lJgI/AjuBPSv1MLCplhc5L9CVZTbACuBI8DpcAM+PZ6h6X0f2BG5v+8FrLHG8rpAtYADwMrgJ3AV6xsVZa/cQfAKcDISd4Knned/ApsAk4EHkf6Y6T9wCrgrv4/E4fr7Btw3uE5yK/4JbA8eCRl+bAdcBPgXWAA8BwyN7Lkg3sCtwALgLXkebEHYCpwEHB3sM5UI/2zYg1gDrA/cBnyP9ZsDP0Sd38DWsbqBvTlfJ+9dlVdAe4BNgC5o83xHlYXkJeBp8iXeR8nX+S3wfPWLftfAWOBLcAj5cgW8E/MTa3HvUmAbsaXmm2NMJtwDzOfETQw5Sx65S2uBL8CO7v7Mrv+GvgI2Hd+81bVySV/mN9q8wgAzPxO8CdwSNz3fwFXgddL2yA/OzS5Bdz+DfwIPmX20wj3gl7AZ+Bj4Kty/zeit7S1aAKPpbdgMnCL21fM9DtgYno6nRwC7IQQjz0ljuU2UBIZI0zAGYks/CEJRwBCWyl8kEI8AsSW7o2HTejMKP0I7zlLkHcAgSW7EBhmxL+p/VdLSTPEdrw/ACFnCRnkwx0u+16Ayz2u6GtLLddYIbCeZl0KzGtyBwkiWYRbLItE6XgReAVWJmEh8sSmS2P1AgVNgJT+E5S+E2R+E8C4GAWhtPwNJ8n1uoYBjikjrlGUfA0npmYx2I6pe4j+TnMjYlZXCmwF5gbX8t59+6n8Vbf0PaUKV+DrIR0G9YQQk++CGzx8Pgv6Csvu3Ybl5c/AtVlft+u0k8sBj1tYcMzNA41qaVfkC/Bb4sODAs9grzyZJ7IOP5zlB9l2S7AKjE4AAAAABJRU5ErkJggg==")
+APPLE_ICON_PNG_BYTES = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9z0YvAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEG0lEQVR4nO3dTW4UQRCA4b+DzLUAVgEyARmADGQFZANiBDIBMQBtAIsWs6OSbhRXU39H56wU1lP6rnc7d13Z2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZyda1/3cOqv9vzYf23uryrb9fzPXO3Xpeb3+fj8zqv1/ftdd/q+v3+43nfJ+zs7OzszOzsjNTu+X291fs3u72u5fT+/x8Zrb6vffW5nvd7L7vePv/Ozszs7M7OzOzszs7OzOzOztb9r3f93D6r/b8zVfv7/r6/f5jef8nZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZw92EtZgYeeJAPAAAAAElFTkSuQmCC")
+
+@app.get("/favicon.svg")
+async def favicon_svg():
+    return Response(content=FAVICON_SVG_CONTENT, media_type="image/svg+xml")
+
+@app.get("/favicon.ico")
+async def favicon_ico():
+    return Response(content=FAVICON_PNG_BYTES, media_type="image/png")
+
+@app.get("/apple-touch-icon.png")
+async def apple_touch_icon():
+    return Response(content=APPLE_ICON_PNG_BYTES, media_type="image/png")
 
 
 def get_account_context(request: Request):
