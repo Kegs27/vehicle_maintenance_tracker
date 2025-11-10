@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import date as date_type, datetime
 from pydantic import ConfigDict
 from uuid import uuid4
+from sqlalchemy import UniqueConstraint
 
 
 def generate_uuid() -> str:
@@ -27,10 +28,13 @@ class Account(SQLModel, table=True):
 class Vehicle(SQLModel, table=True):
     """Vehicle model"""
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    __table_args__ = (
+        UniqueConstraint("account_id", "name", name="uq_vehicle_account_name"),
+    )
     
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: str = Field(foreign_key="account.id", description="Account the vehicle belongs to")
-    name: str = Field(max_length=100, unique=True)  # Prevent duplicate vehicle names
+    name: str = Field(max_length=100)
     year: int
     make: str = Field(max_length=50)
     model: str = Field(max_length=50)

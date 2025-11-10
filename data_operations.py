@@ -393,14 +393,13 @@ def create_vehicle(
         if not account:
             return {"success": False, "error": "Invalid account selected for vehicle."}
 
-        # Check for duplicate name
+        # Check for duplicate name within the same account (matches DB constraint)
         existing_name = session.execute(
             select(Vehicle)
-            .join(Account, Account.id == Vehicle.account_id)
-            .where(Account.owner_user_id == owner_user_id, Vehicle.name == name)
+            .where(Vehicle.account_id == account_id, Vehicle.name == name)
         ).scalar_one_or_none()
         if existing_name:
-            return {"success": False, "error": "A vehicle with this name already exists"}
+            return {"success": False, "error": "A vehicle with this name already exists in this account"}
         
         # Check for duplicate VIN
         if vin:
