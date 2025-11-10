@@ -333,6 +333,33 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
     return items.join('');
 }
 
+function rewriteAccountAwareLinks(selectedAccountId) {
+    const normalizedId = selectedAccountId && selectedAccountId !== 'all' ? selectedAccountId : null;
+    const accountAwareLinks = document.querySelectorAll('[data-account-aware=\"true\"]');
+
+    accountAwareLinks.forEach((link) => {
+        const baseHref = link.dataset.baseHref || link.getAttribute('href');
+        if (!baseHref || baseHref === '#' || baseHref.toLowerCase().startsWith('javascript')) {
+            return;
+        }
+        if (!link.dataset.baseHref) {
+            link.dataset.baseHref = baseHref;
+        }
+
+        try {
+            const url = new URL(link.dataset.baseHref, window.location.origin);
+            if (normalizedId) {
+                url.searchParams.set('accountId', normalizedId);
+            } else {
+                url.searchParams.delete('accountId');
+            }
+            link.setAttribute('href', url.pathname + url.search + url.hash);
+        } catch (error) {
+            console.warn('Unable to rewrite account-aware link:', baseHref, error);
+        }
+    });
+}
+
 function handleAccountSelection(accountId, accountName) {
     const isAll = !accountId || accountId === 'all';
     saveAccountIdToStorage(isAll ? null : accountId);
@@ -366,9 +393,20 @@ async function buildAccountDropdown(menuId, buttonId) {
         const totalVehicleCount = accounts.reduce((sum, acc) => sum + (acc.vehicle_count || 0), 0);
         const selectedAccountId = determineInitialAccountId(accounts, data.default_account_id);
         const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
+        const normalizedId = selectedAccountId === 'all' ? null : selectedAccountId;
 
         updateAccountDropdownButton(button, selectedAccount, totalVehicleCount, selectedAccountId === 'all');
         menu.innerHTML = buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount);
+
+        if (normalizedId) {
+            setCookie(ACCOUNT_COOKIE_NAME, normalizedId);
+            saveAccountIdToStorage(normalizedId);
+        } else {
+            setCookie(ACCOUNT_COOKIE_NAME, 'all');
+            saveAccountIdToStorage(null);
+        }
+
+        rewriteAccountAwareLinks(selectedAccountId);
 
         menu.querySelectorAll('a[data-account-id]').forEach((anchor) => {
             anchor.addEventListener('click', (event) => {
@@ -482,3 +520,4 @@ window.initializeAccountSwitcher = initializeAccountSwitcher;
 window.fetchAccountsFromApi = fetchAccountsFromApi;
 window.getSelectedAccountId = getSelectedAccountId;
 window.buildAccountAwareUrl = buildAccountAwareUrl;
+window.rewriteAccountAwareLinks = rewriteAccountAwareLinks;
