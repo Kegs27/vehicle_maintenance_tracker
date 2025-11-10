@@ -187,6 +187,19 @@ except ImportError as e:
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
 
+if os.getenv("ENV") == "development":
+    from starlette.middleware.base import BaseHTTPMiddleware
+
+    class LogRedirects(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            if response.status_code in (301, 302):
+                location = response.headers.get("location")
+                print(f"[REDIRECT] {request.method} {request.url.path} -> {location}")
+            return response
+
+    app.add_middleware(LogRedirects)
+
 # Templates
 templates = Jinja2Templates(directory="./templates")
 
@@ -459,45 +472,11 @@ async def home(request: Request):
             'total_vehicles': 0
         }
         
-        return HTMLResponse(content=f"""
-        <!DOCTYPE html>
-        <head>
-            <title>Vehicle Maintenance Tracker</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }}
-                .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-                h1 {{ color: #2c3e50; text-align: center; }}
-                .nav {{ text-align: center; margin: 30px 0; }}
-                .nav a {{ display: inline-block; margin: 10px; padding: 12px 24px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }}
-                .nav a:hover {{ background: #2980b9; }}
-                .status {{ text-align: center; color: #27ae60; font-size: 18px; margin: 20px 0; }}
-                .summary {{ text-align: center; margin: 20px 0; padding: 20px; background: #ecf0f1; border-radius: 5px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>Vehicle Maintenance Tracker</h1>
-                <div class="status">✅ App is running successfully!</div>
-                <div class="summary">
-                    <h3>Dashboard</h3>
-                    <p>Total Vehicles: {default_dashboard['total_vehicles']}</p>
-                    <p>Recent Activity (30 days): {default_dashboard['recent_activity_count']} records</p>
-                    <p>Total Miles This Year: {default_dashboard['total_miles_this_year']:,} miles</p>
-                </div>
-                <div class="nav">
-                    <a href="/vehicles">View Vehicles</a>
-                    <a href="/vehicles/new">Add Vehicle</a>
-                    <a href="/maintenance">View Maintenance</a>
-                    <a href="/maintenance/new">Add Maintenance</a>
-                    <a href="/import">Import Data</a>
-                </div>
-                <p style="text-align: center; color: #7f8c8d;">
-                    Your vehicle maintenance tracking system is now live and ready to use!
-                </p>
-            </div>
-        </body>
-        </html>
-        """)
+        return templates.TemplateResponse("home_fallback.html", {"request": request, "dashboard": default_dashboard})
+
+@app.head("/")
+async def home_head():
+    return Response(status_code=200)
 
 @app.get("/migrate-photo-columns")
 async def migrate_photo_columns():
@@ -1111,9 +1090,8 @@ async def edit_maintenance_form(
 
 @app.get("/oil-changes", response_class=HTMLResponse)
 async def oil_changes_page_redirect(request: Request):
-    """Redirect old oil-changes page to new oil management system"""
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/oil-management", status_code=301)
+    """Legacy alias for the oil management page (no redirect)."""
+    return await oil_management_new(request)
 
 @app.get("/notifications", response_class=HTMLResponse)
 async def notifications_page(request: Request):
@@ -2414,7 +2392,7 @@ async def get_notifications_api():
                                     'type': 'Oil Change',
                                     'vehicle': f"{vehicle.year} {vehicle.make} {vehicle.model}",
                                     'urgency': urgency,
-                                    'link': f'/oil-changes?vehicle_id={vehicle.id}'
+                                    'link': f'/oil-management?vehicle_id={vehicle.id}'
                                 })
                                 total_count += 1
                     
@@ -2621,13 +2599,16 @@ async def oil_management_new(request: Request):
     try:
         from data_operations import get_all_vehicles, get_maintenance_records_by_vehicle
         
-        # Get all vehicles
-        vehicles = get_all_vehicles()
+        account_context = get_account_context(request)
+        account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+
+        # Get vehicles scoped to the active account (or all)
+        vehicles = get_all_vehicles(account_id=account_id)
         vehicles_oil_data = []
         
         for vehicle in vehicles:
-            # Get all maintenance records for this vehicle
-            records = get_maintenance_records_by_vehicle(vehicle.id)
+            # Get all maintenance records for this vehicle under the same account scope
+            records = get_maintenance_records_by_vehicle(vehicle.id, account_id=account_id)
             
             # Filter oil changes (records marked as oil changes)
             oil_changes = [r for r in records if r.is_oil_change]
@@ -2768,7 +2749,8 @@ async def oil_management_new(request: Request):
             "request": request,
             "vehicles_oil_data": vehicles_oil_data,
             "vehicles_json_data": json_safe_data,
-            "most_recent_vehicle_id": most_recent_vehicle_id
+            "most_recent_vehicle_id": most_recent_vehicle_id,
+            "account_context": account_context,
         })
         
     except Exception as e:

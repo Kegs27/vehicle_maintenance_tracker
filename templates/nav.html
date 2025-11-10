@@ -3,7 +3,7 @@
     <div class="container">
         <a class="navbar-brand fw-bold" href="/">
             <span class="icon-row">
-                <i class="fa-solid fa-car icon-m icon-fw icon-primary icon-base"></i>
+                <i class="fa-solid fa-car fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                 <span>Vehicle Maintenance Tracker</span>
             </span>
         </a>
@@ -12,7 +12,7 @@
             <div class="dropdown me-2">
                 <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" id="accountDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="icon-row-sm">
-                        <i class="fa-solid fa-user-circle icon-m icon-base icon-primary"></i>
+                        <i class="fa-solid fa-circle-user fa-fw icon-primary" aria-hidden="true"></i>
                         <span>Accounts</span>
                     </span>
                 </button>
@@ -24,7 +24,7 @@
             <div class="notification-bell me-2 me-md-3" style="position: relative;">
                 <button class="btn btn-outline-warning position-relative btn-sm" type="button" onclick="showNotificationsModal()">
                     <span class="icon-row-sm">
-                        <i class="fa-regular fa-bell icon-m icon-base"></i>
+                        <i class="fa-solid fa-bell fa-fw" aria-hidden="true"></i>
                     </span>
                     <span id="notificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
                         0
@@ -35,7 +35,7 @@
             <div class="dropdown">
                 <button class="btn btn-outline-primary dropdown-toggle" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="icon-row-sm">
-                        <i class="fa-solid fa-bars icon-m icon-base"></i>
+                        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
                         <span>Menu</span>
                     </span>
                 </button>
@@ -43,7 +43,7 @@
                     <li>
                         <a class="dropdown-item" href="/vehicles" data-account-aware="true">
                             <span class="icon-row">
-                                <i class="fa-solid fa-car icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-car fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Vehicles</span>
                             </span>
                         </a>
@@ -51,7 +51,7 @@
                     <li>
                         <a class="dropdown-item" href="/maintenance" data-account-aware="true">
                             <span class="icon-row">
-                                <i class="fa-solid fa-screwdriver-wrench icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-screwdriver-wrench fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Maintenance</span>
                             </span>
                         </a>
@@ -59,16 +59,16 @@
                     <li>
                         <a class="dropdown-item" href="/notifications" data-account-aware="true">
                             <span class="icon-row">
-                                <i class="fa-regular fa-envelope icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-envelope fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Email Notifications</span>
                             </span>
                         </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <a class="dropdown-item" href="/oil-changes" data-account-aware="true">
+                        <a class="dropdown-item" href="/oil-management" data-account-aware="true">
                             <span class="icon-row">
-                                <i class="fa-solid fa-oil-can icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-oil-can fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Oil Management</span>
                             </span>
                         </a>
@@ -76,7 +76,7 @@
                     <li>
                         <a class="dropdown-item" href="/fuel-new" data-account-aware="true">
                             <span class="icon-row">
-                                <i class="fa-solid fa-gas-pump icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-gas-pump fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Fuel Tracking</span>
                             </span>
                         </a>
@@ -85,7 +85,7 @@
                     <li>
                         <a class="dropdown-item" href="/import" data-account-aware="true">
                             <span class="icon-row">
-                                <i class="fa-solid fa-upload icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-upload fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Import Data</span>
                             </span>
                         </a>
@@ -93,7 +93,7 @@
                     <li>
                         <a class="dropdown-item" href="#" onclick="exportAllVehicles()">
                             <span class="icon-row">
-                                <i class="fa-regular fa-file-lines icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-file-lines fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Export All</span>
                                 <span class="badge-micro badge-green">CSV</span>
                             </span>
@@ -102,7 +102,7 @@
                     <li>
                         <a class="dropdown-item" href="#" onclick="exportToPDF()">
                             <span class="icon-row">
-                                <i class="fa-regular fa-file-lines icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-file-lines fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Export All</span>
                                 <span class="badge-micro badge-red">PDF</span>
                             </span>
@@ -111,7 +111,7 @@
                     <li>
                         <a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
                             <span class="icon-row">
-                                <i class="fa-solid fa-car icon-m icon-fw icon-primary icon-base"></i>
+                                <i class="fa-solid fa-car fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
                                 <span>Export Single Vehicle</span>
                             </span>
                         </a>
@@ -129,7 +129,7 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="notificationsModalLabel">
                     <span class="icon-row">
-                        <i class="fa-regular fa-bell icon-s icon-base icon-primary"></i>
+                        <i class="fa-solid fa-bell icon-s icon-base icon-primary" aria-hidden="true"></i>
                         <span>Maintenance Alerts</span>
                     </span>
                 </h5>

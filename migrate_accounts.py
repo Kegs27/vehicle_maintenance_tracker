@@ -110,7 +110,7 @@ def _ensure_seed_accounts(engine: Engine) -> Dict[str, str]:
     """
     Create baseline demo accounts and return mapping of account name -> id.
     """
-    seed_accounts = ["Kory", "Kelley", "James Miller"]
+    seed_accounts = ["Kory", "Kelley", ]
     owner_user_id = "kory"
     account_ids: Dict[str, str] = {}
 

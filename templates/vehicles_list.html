@@ -4,16 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vehicles - Vehicle Maintenance Tracker</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-          crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link href="/static/app-styles.css" rel="stylesheet">
-    <link href="/static/icon-styles.css?v=2" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=1">
-    <link rel="icon" href="/favicon.ico?v=1" sizes="any">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1">
+    {% include 'partials/head_resources.html' %}
     <style>
         /* Page-specific styles */
         .table-card {
@@ -349,7 +340,7 @@
                         <li>
                             <a class="dropdown-item" href="#" onclick="exportAllVehicles()">
                                 <span class="icon-row">
-                                    <i class="fa-regular fa-file-lines icon-m icon-fw icon-primary icon-base"></i>
+                                    <i class="fa-solid fa-file-lines icon-m icon-fw icon-primary icon-base" aria-hidden="true"></i>
                                     <span>Transfer All</span>
                                     <span class="badge-micro badge-green">CSV</span>
                                 </span>
@@ -358,7 +349,7 @@
                         <li>
                             <a class="dropdown-item" href="#" onclick="exportAllVehiclesToPDF()">
                                 <span class="icon-row">
-                                    <i class="fa-regular fa-file-lines icon-m icon-fw icon-primary icon-base"></i>
+                                    <i class="fa-solid fa-file-lines icon-m icon-fw icon-primary icon-base" aria-hidden="true"></i>
                                     <span>Transfer All</span>
                                     <span class="badge-micro badge-red">PDF</span>
                                 </span>
@@ -386,51 +377,51 @@
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th class="col-vehicle">
+                                <th class="col-vehicle text-center">
                                     <span class="icon-row">
-                                        <i class="fa-solid fa-car icon-s icon-fw icon-muted icon-base"></i>
+                                        <i class="fa-solid fa-car fa-sm fa-fw icon-muted icon-base" aria-hidden="true"></i>
                                         <span class="small fw-semibold">Vehicle</span>
                                     </span>
                                 </th>
-                                <th class="col-year">
+                                <th class="col-year text-center">
                                     <span class="icon-row">
-                                        <i class="fa-regular fa-calendar icon-s icon-fw icon-muted icon-base"></i>
+                                        <i class="fa-regular fa-calendar fa-sm fa-fw icon-muted icon-base" aria-hidden="true"></i>
                                         <span class="small fw-semibold">Year</span>
                                     </span>
                                 </th>
-                                <th class="col-make">
+                                <th class="col-make text-center">
                                     <span class="icon-row">
-                                        <i class="fa-solid fa-industry icon-s icon-fw icon-muted icon-base"></i>
+                                        <i class="fa-solid fa-industry fa-sm fa-fw icon-muted icon-base" aria-hidden="true"></i>
                                         <span class="small fw-semibold">Make</span>
                                     </span>
                                 </th>
-                                <th class="col-model">
+                                <th class="col-model text-center">
                                     <span class="icon-row">
-                                        <i class="fa-solid fa-tag icon-s icon-fw icon-muted icon-base"></i>
+                                        <i class="fa-solid fa-tag fa-sm fa-fw icon-muted icon-base" aria-hidden="true"></i>
                                         <span class="small fw-semibold">Model</span>
                                     </span>
                                 </th>
-                                <th class="col-vin">
+                                <th class="col-vin text-center">
                                     <span class="icon-row">
-                                        <i class="fa-solid fa-barcode icon-s icon-fw icon-muted icon-base"></i>
+                                        <i class="fa-solid fa-barcode fa-sm fa-fw icon-muted icon-base" aria-hidden="true"></i>
                                         <span class="small fw-semibold">VIN</span>
                                     </span>
                                 </th>
-                                <th class="col-future">
+                                <th class="col-future text-center">
                                     <span class="icon-row">
-                                        <i class="fa-regular fa-clock icon-s icon-fw icon-muted icon-base"></i>
+                                        <i class="fa-regular fa-clock fa-sm fa-fw icon-muted icon-base" aria-hidden="true"></i>
                                         <span class="small fw-semibold">Future Maintenance</span>
                                     </span>
                                 </th>
-                                <th class="col-health">
+                                <th class="col-health text-center">
                                     <span class="icon-row">
-                                        <i class="fa-solid fa-heart-pulse icon-s icon-fw icon-muted icon-base"></i>
+                                        <i class="fa-solid fa-heart-pulse fa-sm fa-fw icon-muted icon-base" aria-hidden="true"></i>
                                         <span class="small fw-semibold">Health</span>
                                     </span>
                                 </th>
-                                <th>
+                                <th class="text-center">
                                     <span class="icon-row">
-                                        <i class="fa-solid fa-ellipsis icon-s icon-fw icon-muted icon-base"></i>
+                                        <i class="fa-solid fa-ellipsis fa-sm fa-fw icon-muted icon-base" aria-hidden="true"></i>
                                         <span class="small fw-semibold">Actions</span>
                                     </span>
                                 </th>
@@ -545,27 +536,21 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-sm btn-outline-primary">
-                                            <span class="icon-row-sm">
-                                                <i class="fa-regular fa-pen-to-square icon-m icon-base"></i>
-                                                <span>Edit</span>
-                                            </span>
+                                            <i class="fa-solid fa-pen-to-square fa-fw icon-left" aria-hidden="true"></i>
+                                            Edit
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary transfer-vehicle-btn" 
+                                        <button type="button" class="btn btn-sm btn-outline-secondary transfer-vehicle-btn"
                                                 data-vehicle-id="{{ vehicle.id }}"
                                                 data-vehicle-name="{{ vehicle.name }}"
                                                 data-account-id="{{ vehicle.account_id }}">
-                                            <span class="icon-row-sm">
-                                                <i class="fa-solid fa-right-left icon-m icon-base"></i>
-                                                <span>Transfer</span>
-                                            </span>
+                                            <i class="fa-solid fa-right-left fa-fw icon-left" aria-hidden="true"></i>
+                                            Transfer
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger delete-vehicle-btn" 
-                                                data-vehicle-id="{{ vehicle.id }}" 
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-vehicle-btn"
+                                                data-vehicle-id="{{ vehicle.id }}"
                                                 data-vehicle-name="{{ vehicle.name }}">
-                                            <span class="icon-row-sm">
-                                                <i class="fa-regular fa-trash-can icon-m icon-base"></i>
-                                                <span>Delete</span>
-                                            </span>
+                                            <i class="fa-solid fa-trash-can fa-fw icon-left" aria-hidden="true"></i>
+                                            Delete
                                         </button>
                                     </div>
                                 </td>
@@ -634,39 +619,29 @@
                 
                 <div class="vehicle-card-actions">
                     <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="btn btn-outline-primary btn-sm">
-                        <span class="icon-row-sm">
-                            <i class="fa-solid fa-list icon-m icon-base"></i>
-                            <span>Records</span>
-                        </span>
+                        <i class="fa-solid fa-list fa-fw icon-left" aria-hidden="true"></i>
+                        Records
                     </a>
                     <a href="/maintenance/new?vehicle_id={{ vehicle.id }}" class="btn btn-outline-success btn-sm">
-                        <span class="icon-row-sm">
-                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
-                            <span>Add</span>
-                        </span>
+                        <i class="fa-solid fa-circle-plus fa-fw icon-left" aria-hidden="true"></i>
+                        Add
                     </a>
                     <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-outline-secondary btn-sm">
-                        <span class="icon-row-sm">
-                            <i class="fa-regular fa-pen-to-square icon-m icon-base"></i>
-                            <span>Edit</span>
-                        </span>
+                        <i class="fa-solid fa-pen-to-square fa-fw icon-left" aria-hidden="true"></i>
+                        Edit
                     </a>
                     <button type="button" class="btn btn-outline-secondary btn-sm transfer-vehicle-btn"
                             data-vehicle-id="{{ vehicle.id }}"
                             data-vehicle-name="{{ vehicle.name }}"
                             data-account-id="{{ vehicle.account_id }}">
-                        <span class="icon-row-sm">
-                            <i class="fa-solid fa-right-left icon-m icon-base"></i>
-                            <span>Transfer</span>
-                        </span>
+                        <i class="fa-solid fa-right-left fa-fw icon-left" aria-hidden="true"></i>
+                        Transfer
                     </button>
                     <button type="button" class="btn btn-outline-danger btn-sm delete-vehicle-btn"
                             data-vehicle-id="{{ vehicle.id }}" 
                             data-vehicle-name="{{ vehicle.name }}">
-                        <span class="icon-row-sm">
-                            <i class="fa-regular fa-trash-can icon-m icon-base"></i>
-                            <span>Delete</span>
-                        </span>
+                        <i class="fa-solid fa-trash-can fa-fw icon-left" aria-hidden="true"></i>
+                        Delete
                     </button>
                 </div>
             </div>
@@ -765,10 +740,8 @@
                             </span>
                         </button>
                         <button type="submit" class="btn btn-primary">
-                            <span class="icon-row-sm">
-                                <i class="fa-regular fa-floppy-disk icon-m icon-base"></i>
-                                <span>Update Mileage</span>
-                            </span>
+                            <i class="fa-solid fa-floppy-disk fa-fw icon-left" aria-hidden="true"></i>
+                            <span>Update Mileage</span>
                         </button>
                     </div>
                 </form>
