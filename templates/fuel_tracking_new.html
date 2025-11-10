@@ -14,6 +14,61 @@
                 font-size: 16px;
             }
         }
+
+        /* MPG flip cards */
+        .mpg-card {
+            perspective: 1200px;
+        }
+
+        .mpg-card-inner {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+            min-height: 220px;
+        }
+
+        .mpg-card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+            background: #ffffff;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .mpg-card-front {
+            transform: rotateY(0deg);
+            padding: 1.5rem;
+        }
+
+        .mpg-card-back {
+            transform: rotateY(180deg);
+            padding: 1.5rem;
+        }
+
+        .mpg-card.is-flipped .mpg-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .mpg-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 9999px;
+            background: #cbd5e1;
+            border: 0;
+        }
+
+        .mpg-dot[aria-selected="true"] {
+            background: #475569;
+        }
+
+        .mpg-dot:focus {
+            outline: 2px solid #94a3b8;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body>
@@ -419,8 +474,8 @@
             }
 
             let html = `
-                <div class="table-responsive">
-                    <table class="table table-hover">
+                <div id="fuel-recent-scroll" class="table-responsive">
+                    <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
                                 <th><span class="icon-row"><i class="fa-solid fa-car icon-s icon-base"></i><span>Vehicle</span></span></th>
@@ -457,7 +512,7 @@
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="fuel-recent-tbody">
             `;
 
             fuelEntries.forEach(entry => {
@@ -498,6 +553,88 @@
             `;
 
             container.innerHTML = html;
+            applyFuelEntriesScroll();
+        }
+
+        function ensureFuelScrollStyles() {
+            if (document.getElementById('fuel-scroll-style')) {
+                return;
+            }
+            const style = document.createElement('style');
+            style.id = 'fuel-scroll-style';
+            style.textContent = `
+#fuel-recent-scroll::-webkit-scrollbar { width: 8px; }
+#fuel-recent-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+#fuel-recent-scroll:hover::-webkit-scrollbar-thumb { background: #94a3b8; }
+`;
+            document.head.appendChild(style);
+        }
+
+        function applyFuelEntriesScroll() {
+            const container = document.getElementById('fuel-recent-scroll');
+            const tbody = document.getElementById('fuel-recent-tbody');
+            if (!container || !tbody) {
+                return;
+            }
+
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const thead = container.querySelector('thead');
+
+            if (rows.length === 0) {
+                container.style.maxHeight = '';
+                container.style.overflowY = 'visible';
+                container.style.border = '';
+                if (thead) {
+                    thead.style.position = '';
+                    thead.style.top = '';
+                    thead.style.zIndex = '';
+                }
+                return;
+            }
+
+            if (rows.length <= 15) {
+                container.style.maxHeight = '';
+                container.style.overflowY = 'visible';
+                container.style.border = '';
+                if (thead) {
+                    thead.style.position = '';
+                    thead.style.top = '';
+                    thead.style.zIndex = '';
+                }
+                return;
+            }
+
+            ensureFuelScrollStyles();
+
+            const sampleRow = rows.find((row) => row.getBoundingClientRect().height) || rows[0];
+            let rowHeight = sampleRow ? sampleRow.getBoundingClientRect().height : 44;
+            if (!rowHeight || rowHeight === 0) {
+                rowHeight = parseFloat(window.getComputedStyle(sampleRow).lineHeight || '44') + 12;
+                if (!rowHeight || Number.isNaN(rowHeight)) {
+                    rowHeight = 44;
+                }
+            }
+
+            let headHeight = thead ? thead.getBoundingClientRect().height : 44;
+            if (!headHeight || headHeight === 0) {
+                headHeight = 44;
+            }
+
+            const maxHeight = Math.round(rowHeight * 15 + headHeight);
+            container.style.maxHeight = `${maxHeight}px`;
+            container.style.overflowY = 'auto';
+            container.style.webkitOverflowScrolling = 'touch';
+            container.style.border = '1px solid #e5e7eb';
+
+            if (thead) {
+                thead.style.position = 'sticky';
+                thead.style.top = '0';
+                thead.style.zIndex = '10';
+                const bg = window.getComputedStyle(thead).backgroundColor;
+                if (!bg || bg === 'rgba(0, 0, 0, 0)') {
+                    thead.style.backgroundColor = '#ffffff';
+                }
+            }
         }
 
         // Submit fuel entry (create or edit)
@@ -607,7 +744,34 @@
             }
         }
 
-        // Display MPG summary
+        function formatCurrency(value) {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+                return '—';
+            }
+            return `$${Number(value).toFixed(2)}`;
+        }
+
+        function formatMiles(value) {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+                return '—';
+            }
+            return Number(value).toLocaleString();
+        }
+
+        function formatGallons(value) {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+                return '—';
+            }
+            return `${Number(value).toFixed(1)} gal`;
+        }
+
+        function formatDays(value) {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+                return '—';
+            }
+            return `${Number(value).toFixed(1)} days`;
+        }
+
         function displayMPGSummary(summary) {
             const container = document.getElementById('mpgSummary');
             
@@ -619,56 +783,89 @@
             let html = '<div class="row g-3">';
             
             summary.forEach(vehicle => {
+                const avgPriceText = formatCurrency(vehicle.avg_price_per_gal);
+                const milesTraveledText = formatMiles(vehicle.miles_traveled);
+                const gallonsFilledText = formatGallons(vehicle.gallons_filled);
+                const avgDaysText = formatDays(vehicle.avg_days_between_fills);
+
                 html += `
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body text-center">
-                                <h6 class="card-title">${vehicle.vehicle_name}</h6>
-                                
-                                <!-- Current MPG (last 2 entries) - TOP PRIORITY -->
-                                ${vehicle.current_mpg ? 
-                                    `<div class="mb-2">
-                                        <div class="h5 text-success mb-0">${vehicle.current_mpg.toFixed(1)} MPG</div>
-                                        <small class="text-muted">Current (last 2 entries)</small>
-                                    </div>` : 
-                                    `<div class="mb-2">
-                                        <small class="text-muted">Current: Need 2+ entries</small>
-                                    </div>`
-                                }
-                                
-                                <!-- Entries-based MPG (last 5 entries) - MIDDLE -->
-                                ${vehicle.entries_mpg ? 
-                                    `<div class="mb-2">
-                                        <div class="h6 text-info mb-0">${vehicle.entries_mpg.toFixed(1)} MPG</div>
-                                        <small class="text-muted">Last 5 entries</small>
-                                    </div>` : 
-                                    `<div class="mb-2">
-                                        <small class="text-muted">Last 5: Need 2+ entries</small>
-                                    </div>`
-                                }
-                                
-                                <!-- Lifetime MPG (always shown if available) - BOTTOM -->
-                                ${vehicle.lifetime_mpg ? 
-                                    `<div class="mb-2">
-                                        <div class="h6 text-primary mb-0">${vehicle.lifetime_mpg.toFixed(1)} MPG</div>
-                                        <small class="text-muted">Lifetime (${vehicle.entries_count} entries)</small>
-                                    </div>` : ''
-                                }
-                                
-                                <!-- Gap warnings -->
-                                ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
-                                    `<div class="mt-2">
-                                        <small class="text-warning icon-row">
-                                            <i class="fa-solid fa-triangle-exclamation icon-xs icon-base"></i>
-                                            <span>${vehicle.gaps_detected.length} gap(s) detected</span>
-                                        </small>
-                                        <div class="small text-muted mt-1">
-                                            ${vehicle.gaps_detected.map(gap => 
-                                                `${gap.gap_miles} miles`
-                                            ).join(', ')}
+                        <div class="mpg-card relative"
+                             data-name="${vehicle.vehicle_name || ''}"
+                             data-avg-price="${vehicle.avg_price_per_gal ?? ''}"
+                             data-miles="${vehicle.miles_traveled ?? ''}"
+                             data-gallons="${vehicle.gallons_filled ?? ''}"
+                             data-avg-days="${vehicle.avg_days_between_fills ?? ''}">
+                            <div class="mpg-card-inner rounded-3">
+                                <section class="mpg-card-face mpg-card-front">
+                                    <div class="card h-100 border-0 bg-transparent">
+                                        <div class="card-body text-center p-0">
+                                            <h6 class="card-title">${vehicle.vehicle_name}</h6>
+                                            
+                                            ${vehicle.current_mpg ? 
+                                                `<div class="mb-2">
+                                                    <div class="h5 text-success mb-0">${vehicle.current_mpg.toFixed(1)} MPG</div>
+                                                    <small class="text-muted">Current (last 2 entries)</small>
+                                                </div>` : 
+                                                `<div class="mb-2">
+                                                    <small class="text-muted">Current: Need 2+ entries</small>
+                                                </div>`
+                                            }
+                                            
+                                            ${vehicle.entries_mpg ? 
+                                                `<div class="mb-2">
+                                                    <div class="h6 text-info mb-0">${vehicle.entries_mpg.toFixed(1)} MPG</div>
+                                                    <small class="text-muted">Last 5 entries</small>
+                                                </div>` : 
+                                                `<div class="mb-2">
+                                                    <small class="text-muted">Last 5: Need 2+ entries</small>
+                                                </div>`
+                                            }
+                                            
+                                            ${vehicle.lifetime_mpg ? 
+                                                `<div class="mb-2">
+                                                    <div class="h6 text-primary mb-0">${vehicle.lifetime_mpg.toFixed(1)} MPG</div>
+                                                    <small class="text-muted">Lifetime (${vehicle.entries_count} entries)</small>
+                                                </div>` : ''
+                                            }
+                                            
+                                            ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
+                                                `<div class="mt-2">
+                                                    <small class="text-warning icon-row">
+                                                        <i class="fa-solid fa-triangle-exclamation icon-xs icon-base"></i>
+                                                        <span>${vehicle.gaps_detected.length} gap(s) detected</span>
+                                                    </small>
+                                                    <div class="small text-muted mt-1">
+                                                        ${vehicle.gaps_detected.map(gap => 
+                                                            `${gap.gap_miles} miles`
+                                                        ).join(', ')}
+                                                    </div>
+                                                </div>` : ''
+                                            }
+                                            <div class="mt-3">
+                                                <button type="button" class="flip-btn btn btn-outline-secondary btn-sm">View fuel stats</button>
+                                            </div>
                                         </div>
-                                    </div>` : ''
-                                }
+                                    </div>
+                                </section>
+                                <section class="mpg-card-face mpg-card-back d-flex flex-column justify-content-between text-center">
+                                    <div>
+                                        <div class="fw-semibold">${vehicle.vehicle_name} &ndash; Fuel Stats</div>
+                                        <div class="mt-3 text-start small">
+                                            <div><span class="fw-semibold">Avg price/gal:</span> ${avgPriceText}</div>
+                                            <div class="mt-1"><span class="fw-semibold">Miles traveled:</span> ${milesTraveledText}</div>
+                                            <div class="mt-1"><span class="fw-semibold">Gallons filled:</span> ${gallonsFilledText}</div>
+                                            <div class="mt-1"><span class="fw-semibold">Refuel frequency:</span> ${avgDaysText}</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <button type="button" class="flip-btn btn btn-outline-secondary btn-sm">Back to MPG</button>
+                                    </div>
+                                </section>
+                            </div>
+                            <div class="mpg-dots mt-3 d-flex align-items-center justify-content-center gap-2">
+                                <button type="button" class="mpg-dot" aria-selected="true" aria-label="MPG summary" data-side="front"></button>
+                                <button type="button" class="mpg-dot" aria-selected="false" aria-label="Fuel stats" data-side="back"></button>
                             </div>
                         </div>
                     </div>
@@ -677,6 +874,39 @@
 
             html += '</div>';
             container.innerHTML = html;
+            initializeMpgCards();
+        }
+
+        function initializeMpgCards() {
+            const cards = document.querySelectorAll('.mpg-card');
+            cards.forEach((card) => {
+                const setDots = (side) => {
+                    card.querySelectorAll('.mpg-dot').forEach((dot) => {
+                        dot.setAttribute('aria-selected', String(dot.dataset.side === side));
+                    });
+                };
+
+                const flipTo = (side) => {
+                    const toBack = side === 'back';
+                    card.classList.toggle('is-flipped', toBack);
+                    setDots(side);
+                };
+
+                setDots('front');
+
+                card.querySelectorAll('.flip-btn').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const isFlipped = card.classList.contains('is-flipped');
+                        flipTo(isFlipped ? 'front' : 'back');
+                    });
+                });
+
+                card.querySelectorAll('.mpg-dot').forEach((dot) => {
+                    dot.addEventListener('click', () => {
+                        flipTo(dot.dataset.side === 'back' ? 'back' : 'front');
+                    });
+                });
+            });
         }
 
         // Quick Fill-Up Functions

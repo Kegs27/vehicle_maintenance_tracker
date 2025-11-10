@@ -1470,9 +1470,47 @@ async def get_fuel_mpg_summary(
         vehicles = get_all_vehicles(account_id=account_id)
         summary = []
         
+        def to_datetime(value):
+            if isinstance(value, datetime):
+                return value
+            if isinstance(value, date):
+                return datetime.combine(value, datetime.min.time())
+            if isinstance(value, str):
+                for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"):
+                    try:
+                        return datetime.strptime(value, fmt)
+                    except ValueError:
+                        continue
+                try:
+                    return datetime.fromisoformat(value)
+                except ValueError:
+                    return None
+            return None
+
         for vehicle in vehicles:
             fuel_entries = get_fuel_entries_for_vehicle(vehicle.id, account_id=account_id)
-            
+
+            total_cost = sum((entry.get("fuel_cost") or 0) for entry in fuel_entries)
+            total_gallons_all = sum((entry.get("fuel_amount") or 0) for entry in fuel_entries)
+            avg_price_per_gal = (
+                float(total_cost) / float(total_gallons_all)
+                if total_gallons_all
+                else None
+            )
+
+            date_values = [dt for dt in (to_datetime(entry.get("date")) for entry in fuel_entries) if dt]
+            avg_days_between = None
+            if len(date_values) >= 2:
+                date_values.sort()
+                diffs = []
+                for i in range(len(date_values) - 1):
+                    diff = (date_values[i + 1] - date_values[i]).days
+                    if diff >= 0:
+                        diffs.append(diff)
+                if diffs:
+                    avg_days_between = sum(diffs) / len(diffs)
+
+            miles_traveled = 0
             if len(fuel_entries) >= 2:
                 # 🎯 SIMPLE MPG: Sort by mileage, not date!
                 print(f"🎯 SIMPLE MPG for {vehicle.name}:")
@@ -1564,6 +1602,10 @@ async def get_fuel_mpg_summary(
                     "entries_mpg": entries_mpg,
                     "entries_count": len(fuel_entries),
                     "gaps_detected": gaps_detected,
+                    "avg_price_per_gal": avg_price_per_gal,
+                    "miles_traveled": miles_traveled,
+                    "gallons_filled": float(total_gallons_all) if total_gallons_all else 0,
+                    "avg_days_between_fills": avg_days_between,
                     "calculation_details": {
                         "lifetime_miles": lifetime_miles,
                         "lifetime_gallons": lifetime_gallons,
@@ -1581,6 +1623,10 @@ async def get_fuel_mpg_summary(
                     "account_id": vehicle.account_id,
                     "mpg": None,
                     "entries_count": len(fuel_entries),
+                    "avg_price_per_gal": avg_price_per_gal,
+                    "miles_traveled": miles_traveled,
+                    "gallons_filled": float(total_gallons_all) if total_gallons_all else 0,
+                    "avg_days_between_fills": avg_days_between,
                     "calculation_details": {
                         "total_miles": 0,
                         "total_gallons": 0,
