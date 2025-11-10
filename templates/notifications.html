@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Notifications - Vehicle Maintenance Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
     <link href="/static/icon-styles.css" rel="stylesheet">
     <link href="/static/app-styles.css" rel="stylesheet">
     <style>
@@ -42,8 +45,9 @@
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h2 class="mb-0">
-                    <i class="fas fa-envelope me-2"></i>Email Notifications
+                <h2 class="mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-regular fa-envelope icon-l icon-base"></i>
+                    <span>Email Notifications</span>
                 </h2>
                 <p class="text-muted mb-0 mt-2">
                     Manage email subscriptions for maintenance reminders
@@ -51,7 +55,10 @@
             </div>
             <div>
                 <button type="button" class="btn btn-success btn-standard" onclick="testAllNotifications()">
-                    <i class="fas fa-paper-plane me-2"></i>Test All Notifications
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-paper-plane icon-m icon-base"></i>
+                        <span>Test All Notifications</span>
+                    </span>
                 </button>
             </div>
         </div>
@@ -59,8 +66,9 @@
         <!-- Add New Email Subscription -->
         <div class="card notification-card" style="background-color: #e7f3ff; border: 2px solid #b3d9ff !important;">
             <div class="card-header bg-info text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-plus me-2"></i>Add New Email Subscription
+                <h5 class="mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                    <span>Add New Email Subscription</span>
                 </h5>
             </div>
             <div class="card-body">
@@ -95,7 +103,7 @@
                                     <input class="form-check-input vehicle-checkbox" type="checkbox" 
                                            value="{{ vehicle.id }}" id="vehicle_{{ vehicle.id }}">
                                     <label class="form-check-label" for="vehicle_{{ vehicle.id }}">
-                                        <i class="fas fa-car me-1 text-primary"></i>
+                                        <i class="fa-solid fa-car me-1 text-primary"></i>
                                         {{ vehicle.name }} ({{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }})
                                     </label>
                                 </div>
@@ -109,10 +117,16 @@
                     
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary btn-standard">
-                            <i class="fas fa-plus me-2"></i>Add Email Subscription
+                            <span class="icon-row-sm">
+                                <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                                <span>Add Email Subscription</span>
+                            </span>
                         </button>
                         <button type="button" class="btn btn-outline-secondary" onclick="clearForm()">
-                            <i class="fas fa-times me-2"></i>Clear
+                            <span class="icon-row-sm">
+                                <i class="fa-solid fa-xmark icon-m icon-base"></i>
+                                <span>Clear</span>
+                            </span>
                         </button>
                     </div>
                 </form>
@@ -122,8 +136,9 @@
         <!-- Existing Email Subscriptions -->
         <div class="card notification-card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-list me-2"></i>Current Email Subscriptions
+                <h5 class="mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-list icon-m icon-base"></i>
+                    <span>Current Email Subscriptions</span>
                 </h5>
             </div>
             <div class="card-body">
@@ -132,8 +147,9 @@
                     <div class="email-subscription-item">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                                <h6 class="mb-1">
-                                    <i class="fas fa-envelope me-2"></i>{{ email }}
+                                <h6 class="mb-1 d-flex align-items-center gap-2">
+                                    <i class="fa-regular fa-envelope icon-m icon-base"></i>
+                                    <span>{{ email }}</span>
                                 </h6>
                                 <small class="text-muted">
                                     Frequency: {{ subscriptions[0].reminder_frequency }} days | 
@@ -143,11 +159,17 @@
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-outline-primary test-email-btn" 
                                         onclick="testEmailNotification('{{ email }}')">
-                                    <i class="fas fa-paper-plane me-1"></i>Test
+                                    <span class="icon-row-sm">
+                                        <i class="fa-solid fa-paper-plane icon-m icon-base"></i>
+                                        <span>Test</span>
+                                    </span>
                                 </button>
                                 <button type="button" class="btn btn-outline-danger test-email-btn" 
                                         onclick="deleteEmailSubscription('{{ email }}')">
-                                    <i class="fas fa-trash me-1"></i>Delete
+                                    <span class="icon-row-sm">
+                                        <i class="fa-solid fa-trash icon-m icon-base"></i>
+                                        <span>Delete</span>
+                                    </span>
                                 </button>
                             </div>
                         </div>
@@ -159,7 +181,7 @@
                                     {% for subscription in subscriptions %}
                                     <div class="col-md-6 col-lg-4 mb-2">
                                         <div class="d-flex align-items-center">
-                                            <i class="fas fa-car me-2 text-primary"></i>
+                                            <i class="fa-solid fa-car me-2 text-primary"></i>
                                             <span>{{ subscription.vehicle.name }}</span>
                                             {% if not subscription.is_active %}
                                                 <span class="badge bg-warning ms-2">Inactive</span>
@@ -184,7 +206,7 @@
                     {% endfor %}
                 {% else %}
                     <div class="text-center py-4">
-                        <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+                        <i class="fa-regular fa-envelope icon-xl text-muted mb-3 icon-base"></i>
                         <h5 class="text-muted">No Email Subscriptions</h5>
                         <p class="text-muted">Add your first email subscription above to start receiving maintenance reminders.</p>
                     </div>
@@ -196,7 +218,10 @@
         <div class="card notification-card">
             <div class="card-header bg-secondary text-white">
                 <h5 class="mb-0">
-                    <i class="fas fa-cog me-2"></i>Notification Settings
+                    <span class="icon-row">
+                        <i class="fa-solid fa-gear icon-m icon-base"></i>
+                        <span>Notification Settings</span>
+                    </span>
                 </h5>
             </div>
             <div class="card-body">
@@ -219,7 +244,7 @@
                 <hr>
                 
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
+                    <i class="fa-solid fa-circle-info me-2"></i>
                     <strong>How it works:</strong> Email notifications are sent when vehicles have future maintenance items approaching their due dates or mileage targets. You can customize the reminder frequency for each email subscription.
                 </div>
             </div>

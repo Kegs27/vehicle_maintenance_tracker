@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vehicles - Vehicle Maintenance Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
     <link href="/static/app-styles.css" rel="stylesheet">
     <style>
         /* Page-specific styles */
@@ -310,33 +313,62 @@
 
     <div class="container py-5">
         <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0">
-                <i class="fas fa-car me-2"></i>My Vehicles
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h2 class="mb-0 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-car icon-l icon-base icon-primary"></i>
+                <span>My Vehicles</span>
             </h2>
-            <div class="d-flex flex-wrap gap-2 mb-4">
+            <div class="d-flex flex-wrap gap-2">
                 <a href="/vehicles/new?return_url=/vehicles" class="btn btn-primary btn-standard">
-                    <i class="fas fa-plus me-2"></i>Add Vehicle
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                        <span>Add Vehicle</span>
+                    </span>
                 </a>
                 <div class="dropdown">
                     <button class="btn btn-outline-success btn-standard dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-exchange-alt me-2"></i>Data Transfer
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-right-left icon-m icon-base"></i>
+                            <span>Data Transfer</span>
+                        </span>
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="exportDropdown">
-                        <li><a class="dropdown-item" href="/import">
-                            <i class="fas fa-upload me-2 text-purple-600"></i>Import Data
-                        </a></li>
+                        <li>
+                            <a class="dropdown-item" href="/import">
+                                <span class="icon-row">
+                                    <i class="fa-solid fa-upload icon-m icon-fw icon-primary icon-base"></i>
+                                    <span>Import Data</span>
+                                </span>
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportAllVehicles()">
-                            <i class="fas fa-file-csv me-2 text-success"></i>Transfer All to CSV
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportAllVehiclesToPDF()">
-                            <i class="fas fa-file-pdf me-2 text-danger"></i>Transfer All to PDF
-                        </a></li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportAllVehicles()">
+                                <span class="icon-row">
+                                    <i class="fa-regular fa-file-lines icon-m icon-fw icon-primary icon-base"></i>
+                                    <span>Transfer All</span>
+                                    <span class="badge-micro badge-green">CSV</span>
+                                </span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportAllVehiclesToPDF()">
+                                <span class="icon-row">
+                                    <i class="fa-regular fa-file-lines icon-m icon-fw icon-primary icon-base"></i>
+                                    <span>Transfer All</span>
+                                    <span class="badge-micro badge-red">PDF</span>
+                                </span>
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
-                            <i class="fas fa-car me-2 text-purple-600"></i>Transfer Single Vehicle
-                        </a></li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
+                                <span class="icon-row">
+                                    <i class="fa-solid fa-car icon-m icon-fw icon-primary icon-base"></i>
+                                    <span>Transfer Single Vehicle</span>
+                                </span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -351,52 +383,52 @@
                         <thead>
                             <tr>
                                 <th class="col-vehicle">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-car text-purple-600 small mb-2"></i>
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-car icon-s icon-fw icon-muted icon-base"></i>
                                         <span class="small fw-semibold">Vehicle</span>
-                                    </div>
+                                    </span>
                                 </th>
                                 <th class="col-year">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-calendar-day text-purple-600 small mb-2"></i>
+                                    <span class="icon-row">
+                                        <i class="fa-regular fa-calendar icon-s icon-fw icon-muted icon-base"></i>
                                         <span class="small fw-semibold">Year</span>
-                                    </div>
+                                    </span>
                                 </th>
                                 <th class="col-make">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-building text-purple-600 small mb-2"></i>
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-industry icon-s icon-fw icon-muted icon-base"></i>
                                         <span class="small fw-semibold">Make</span>
-                                    </div>
+                                    </span>
                                 </th>
                                 <th class="col-model">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-tag text-purple-600 small mb-2"></i>
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-tag icon-s icon-fw icon-muted icon-base"></i>
                                         <span class="small fw-semibold">Model</span>
-                                    </div>
+                                    </span>
                                 </th>
                                 <th class="col-vin">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-barcode text-purple-600 small mb-2"></i>
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-barcode icon-s icon-fw icon-muted icon-base"></i>
                                         <span class="small fw-semibold">VIN</span>
-                                    </div>
+                                    </span>
                                 </th>
                                 <th class="col-future">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-clock text-purple-600 small mb-2"></i>
+                                    <span class="icon-row">
+                                        <i class="fa-regular fa-clock icon-s icon-fw icon-muted icon-base"></i>
                                         <span class="small fw-semibold">Future Maintenance</span>
-                                    </div>
+                                    </span>
                                 </th>
                                 <th class="col-health">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-heartbeat text-purple-600 small mb-2"></i>
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-heart-pulse icon-s icon-fw icon-muted icon-base"></i>
                                         <span class="small fw-semibold">Health</span>
-                                    </div>
+                                    </span>
                                 </th>
                                 <th>
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-ellipsis-h text-purple-600 small mb-2"></i>
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-ellipsis icon-s icon-fw icon-muted icon-base"></i>
                                         <span class="small fw-semibold">Actions</span>
-                                    </div>
+                                    </span>
                                 </th>
                             </tr>
                         </thead>
@@ -405,28 +437,34 @@
                             <tr data-vehicle-id="{{ vehicle.id }}">
                                 <td class="col-vehicle">
                                     <div class="d-flex flex-column align-items-center">
-                                        <div class="mb-2">
-                                            <i class="fas fa-car text-primary me-2"></i>
-                                            <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="text-decoration-none fw-bold text-dark hover-primary">
-                                                {{ vehicle.name }}
-                                            </a>
+                                        <div class="mb-2 text-center">
+                                            <span class="icon-row">
+                                                <i class="fa-solid fa-car icon-m icon-base icon-primary"></i>
+                                                <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="text-decoration-none fw-bold text-dark hover-primary">
+                                                    {{ vehicle.name }}
+                                                </a>
+                                            </span>
                                         </div>
                                         {% set health_data = vehicle_health | selectattr("vehicle.id", "equalto", vehicle.id) | first %}
                                         {% if health_data %}
                                         <div class="text-muted small">
-                                            <i class="fas fa-tachometer-alt text-primary me-1"></i>
-                                            <span class="mileage-clickable" 
-                                                  onclick="openMileageModal({{ vehicle.id }}, '{{ vehicle.name }}', {{ health_data.current_mileage }}, '{{ health_data.source_description or 'Unknown source' }}')"
-                                                  title="Click to update mileage"
-                                                  data-vehicle-id="{{ vehicle.id }}"
-                                                  data-current-mileage="{{ health_data.current_mileage }}">
-                                                {{ "{:,}".format(health_data.current_mileage) }} mi
+                                            <span class="icon-row">
+                                                <i class="fa-solid fa-gauge icon-xs icon-base icon-subtle"></i>
+                                                <span class="mileage-clickable" 
+                                                      onclick="openMileageModal({{ vehicle.id }}, '{{ vehicle.name }}', {{ health_data.current_mileage }}, '{{ health_data.source_description or 'Unknown source' }}')"
+                                                      title="Click to update mileage"
+                                                      data-vehicle-id="{{ vehicle.id }}"
+                                                      data-current-mileage="{{ health_data.current_mileage }}">
+                                                    {{ "{:,}".format(health_data.current_mileage) }} mi
+                                                </span>
                                             </span>
                                         </div>
                                         {% endif %}
                                         <div class="text-muted small">
-                                            <i class="fas fa-tools me-1"></i>
-                                            {{ vehicle.maintenance_records|length }} maintenance records
+                                            <span class="icon-row">
+                                                <i class="fa-solid fa-screwdriver-wrench icon-xs icon-base icon-subtle"></i>
+                                                <span>{{ vehicle.maintenance_records|length }} maintenance records</span>
+                                            </span>
                                         </div>
                                     </div>
                                 </td>
@@ -495,7 +533,7 @@
                                     </div>
                                     {% else %}
                                     <div class="text-center text-muted">
-                                        <i class="fas fa-question-circle"></i>
+                                        <i class="fa-regular fa-circle-question icon-m icon-base icon-subtle"></i>
                                         <div class="small">No data</div>
                                     </div>
                                     {% endif %}
@@ -503,18 +541,27 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-edit me-1"></i>Edit
+                                            <span class="icon-row-sm">
+                                                <i class="fa-regular fa-pen-to-square icon-m icon-base"></i>
+                                                <span>Edit</span>
+                                            </span>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-secondary transfer-vehicle-btn" 
                                                 data-vehicle-id="{{ vehicle.id }}"
                                                 data-vehicle-name="{{ vehicle.name }}"
                                                 data-account-id="{{ vehicle.account_id }}">
-                                            <i class="fas fa-exchange-alt me-1"></i>Transfer
+                                            <span class="icon-row-sm">
+                                                <i class="fa-solid fa-right-left icon-m icon-base"></i>
+                                                <span>Transfer</span>
+                                            </span>
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-danger delete-vehicle-btn" 
                                                 data-vehicle-id="{{ vehicle.id }}" 
                                                 data-vehicle-name="{{ vehicle.name }}">
-                                            <i class="fas fa-trash me-1"></i>Delete
+                                            <span class="icon-row-sm">
+                                                <i class="fa-regular fa-trash-can icon-m icon-base"></i>
+                                                <span>Delete</span>
+                                            </span>
                                         </button>
                                     </div>
                                 </td>
@@ -532,7 +579,10 @@
             <div class="vehicle-card">
                 <div class="vehicle-card-header">
                     <div class="vehicle-card-title">
-                        <i class="fas fa-car text-primary me-2"></i>{{ vehicle.name }}
+                        <span class="icon-row">
+                            <i class="fa-solid fa-car icon-m icon-base icon-primary"></i>
+                            <span>{{ vehicle.name }}</span>
+                        </span>
                     </div>
                     <div class="vehicle-card-year">
                         {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}
@@ -542,7 +592,7 @@
                 <div class="vehicle-card-body">
                     {% set health_data = vehicle_health | selectattr("vehicle.id", "equalto", vehicle.id) | first %}
                     <div class="vehicle-card-info">
-                        <i class="fas fa-tachometer-alt"></i>
+                        <i class="fa-solid fa-gauge icon-s icon-base icon-subtle"></i>
                         {% if health_data %}
                         <span class="mileage-clickable" 
                               onclick="openMileageModal({{ vehicle.id }}, '{{ vehicle.name }}', {{ health_data.current_mileage }}, '{{ health_data.source_description or 'Unknown source' }}')"
@@ -556,7 +606,7 @@
                         {% endif %}
                     </div>
                     <div class="vehicle-card-info">
-                        <i class="fas fa-tools"></i>
+                        <i class="fa-solid fa-screwdriver-wrench icon-s icon-base icon-subtle"></i>
                         <span>{{ vehicle.maintenance_records|length }} records</span>
                     </div>
                 </div>
@@ -580,24 +630,39 @@
                 
                 <div class="vehicle-card-actions">
                     <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-list me-1"></i>Records
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-list icon-m icon-base"></i>
+                            <span>Records</span>
+                        </span>
                     </a>
                     <a href="/maintenance/new?vehicle_id={{ vehicle.id }}" class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-plus me-1"></i>Add
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                            <span>Add</span>
+                        </span>
                     </a>
                     <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-edit me-1"></i>Edit
+                        <span class="icon-row-sm">
+                            <i class="fa-regular fa-pen-to-square icon-m icon-base"></i>
+                            <span>Edit</span>
+                        </span>
                     </a>
                     <button type="button" class="btn btn-outline-secondary btn-sm transfer-vehicle-btn"
                             data-vehicle-id="{{ vehicle.id }}"
                             data-vehicle-name="{{ vehicle.name }}"
                             data-account-id="{{ vehicle.account_id }}">
-                        <i class="fas fa-exchange-alt me-1"></i>Transfer
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-right-left icon-m icon-base"></i>
+                            <span>Transfer</span>
+                        </span>
                     </button>
                     <button type="button" class="btn btn-outline-danger btn-sm delete-vehicle-btn"
                             data-vehicle-id="{{ vehicle.id }}" 
                             data-vehicle-name="{{ vehicle.name }}">
-                        <i class="fas fa-trash me-1"></i>Delete
+                        <span class="icon-row-sm">
+                            <i class="fa-regular fa-trash-can icon-m icon-base"></i>
+                            <span>Delete</span>
+                        </span>
                     </button>
                 </div>
             </div>
@@ -607,11 +672,14 @@
         {% else %}
         <!-- Empty State -->
         <div class="text-center py-5">
-            <i class="fas fa-car empty-state text-muted"></i>
+            <i class="fa-solid fa-car empty-state text-muted icon-xl icon-base"></i>
             <h4 class="text-muted">No Vehicles Yet</h4>
             <p class="text-muted mb-4">Get started by adding your first vehicle to track maintenance.</p>
             <a href="/vehicles/new?return_url=/vehicles" class="btn btn-primary btn-lg">
-                <i class="fas fa-plus me-2"></i>Add Your First Vehicle
+                <span class="icon-row-sm">
+                    <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                    <span>Add Your First Vehicle</span>
+                </span>
             </a>
         </div>
         {% endif %}
@@ -619,7 +687,10 @@
         <!-- Quick Actions -->
         <div class="mt-4 text-center">
             <a href="/" class="btn btn-outline-secondary">
-                <i class="fas fa-home me-2"></i>Back to Home
+                <span class="icon-row-sm">
+                    <i class="fa-solid fa-house icon-m icon-base"></i>
+                    <span>Back to Home</span>
+                </span>
             </a>
         </div>
     </div>
@@ -643,7 +714,10 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="mileageUpdateModalLabel">
-                        <i class="fas fa-tachometer-alt me-2"></i>Update Mileage
+                        <span class="icon-row">
+                            <i class="fa-solid fa-gauge icon-m icon-base icon-primary"></i>
+                            <span>Update Mileage</span>
+                        </span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -671,18 +745,26 @@
                         </div>
                         
                         <div id="mileageWarning" class="alert alert-warning d-none">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <span id="warningText"></span>
+                            <span class="icon-row">
+                                <i class="fa-solid fa-triangle-exclamation icon-m icon-base"></i>
+                                <span id="warningText"></span>
+                            </span>
                         </div>
                         
                         <input type="hidden" id="modalVehicleId" name="vehicle_id">
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i>Cancel
+                            <span class="icon-row-sm">
+                                <i class="fa-solid fa-xmark icon-m icon-base"></i>
+                                <span>Cancel</span>
+                            </span>
                         </button>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Update Mileage
+                            <span class="icon-row-sm">
+                                <i class="fa-regular fa-floppy-disk icon-m icon-base"></i>
+                                <span>Update Mileage</span>
+                            </span>
                         </button>
                     </div>
                 </form>
@@ -696,7 +778,10 @@
             <form class="modal-content" id="transferVehicleForm">
                 <div class="modal-header">
                     <h5 class="modal-title" id="transferVehicleModalLabel">
-                        <i class="fas fa-exchange-alt me-2"></i>Transfer Vehicle
+                        <span class="icon-row">
+                            <i class="fa-solid fa-right-left icon-m icon-base icon-primary"></i>
+                            <span>Transfer Vehicle</span>
+                        </span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -715,10 +800,16 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Cancel
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-xmark icon-m icon-base"></i>
+                            <span>Cancel</span>
+                        </span>
                     </button>
                     <button type="submit" class="btn btn-primary" id="transferSubmitBtn">
-                        <i class="fas fa-exchange-alt me-1"></i>Transfer Vehicle
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-right-left icon-m icon-base"></i>
+                            <span>Transfer Vehicle</span>
+                        </span>
                     </button>
                 </div>
             </form>
@@ -803,22 +894,22 @@
              // Build modal content
              let html = `<div class="fw-bold mb-2">${maintenanceType}</div>`;
              
-             if (targetMileage && targetMileage !== '') {
-                 html += `<div class="mb-1"><i class="fas fa-tachometer-alt text-primary me-1"></i>Due at ${parseInt(targetMileage).toLocaleString()} mi</div>`;
-             }
-             
-             if (targetDate && targetDate !== '') {
-                 html += `<div class="mb-1"><i class="fas fa-calendar text-warning me-1"></i>Due on ${targetDate}</div>`;
-             }
-             
-             // Get current mileage from the vehicle row
-             const vehicleRow = event.target.closest('tr');
-             const mileageElement = vehicleRow.querySelector('.fa-tachometer-alt');
+            if (targetMileage && targetMileage !== '') {
+                html += `<div class="mb-1"><span class="icon-row"><i class="fa-solid fa-gauge icon-xs icon-base icon-primary"></i><span>Due at ${parseInt(targetMileage).toLocaleString()} mi</span></span></div>`;
+            }
+            
+            if (targetDate && targetDate !== '') {
+                html += `<div class="mb-1"><span class="icon-row"><i class="fa-regular fa-calendar icon-xs icon-base icon-primary"></i><span>Due on ${targetDate}</span></span></div>`;
+            }
+            
+            // Get current mileage from the vehicle row
+            const vehicleRow = event.target.closest('tr');
+            const mileageElement = vehicleRow.querySelector('.fa-gauge');
              if (mileageElement) {
                  const mileageText = mileageElement.parentElement.textContent;
                  const currentMileage = mileageText.match(/(\d{1,3}(?:,\d{3})*)/);
                  if (currentMileage) {
-                     html += `<div class="text-muted small"><i class="fas fa-info-circle me-1"></i>Current: ${currentMileage[1]} mi</div>`;
+                    html += `<div class="text-muted small"><span class="icon-row"><i class="fa-solid fa-circle-info icon-xs icon-base"></i><span>Current: ${currentMileage[1]} mi</span></span></div>`;
                  }
              }
              
@@ -891,7 +982,7 @@
                 transferState.availableAccounts = accounts;
 
                 if (!accounts.length) {
-                    showTransferFeedback('warning', '<i class="fas fa-info-circle me-2"></i>No other accounts available. Create another account first.');
+                    showTransferFeedback('warning', '<span class="icon-row"><i class="fa-solid fa-circle-info icon-m icon-base"></i><span>No other accounts available. Create another account first.</span></span>');
                 } else {
                     const options = accounts.map(account => {
                         const countLabel = typeof account.vehicle_count === 'number' ? ` (${account.vehicle_count})` : '';
@@ -906,7 +997,7 @@
                 }
             } catch (error) {
                 console.error('Failed to load accounts:', error);
-                showTransferFeedback('danger', `<i class="fas fa-exclamation-circle me-2"></i>${error.message || 'Unable to load accounts.'}`);
+                showTransferFeedback('danger', `<span class="icon-row"><i class="fa-solid fa-circle-exclamation icon-m icon-base"></i><span>${error.message || 'Unable to load accounts.'}</span></span>`);
             }
 
             transferState.modal.show();
@@ -918,7 +1009,7 @@
 
             const targetAccountId = transferSelectors.accountSelect ? transferSelectors.accountSelect.value : '';
             if (!targetAccountId) {
-                showTransferFeedback('warning', '<i class="fas fa-exclamation-triangle me-2"></i>Please choose an account.');
+                showTransferFeedback('warning', '<span class="icon-row"><i class="fa-solid fa-triangle-exclamation icon-m icon-base"></i><span>Please choose an account.</span></span>');
                 return;
             }
 
@@ -926,7 +1017,7 @@
                 transferSelectors.submitButton.disabled = true;
             }
             transferSelectors.accountSelect.disabled = true;
-            showTransferFeedback('info', '<i class="fas fa-spinner fa-spin me-2"></i>Transferring vehicle...');
+            showTransferFeedback('info', '<span class="icon-row"><i class="fa-solid fa-spinner fa-spin icon-m icon-base"></i><span>Transferring vehicle...</span></span>');
 
             try {
                 const response = await fetch(window.buildAccountAwareUrl(`/api/vehicles/${transferState.vehicleId}/transfer`), {
@@ -944,7 +1035,7 @@
 
                 const destination = transferState.availableAccounts.find(account => account.id === targetAccountId);
                 const destinationName = destination ? destination.name : 'selected account';
-                showTransferFeedback('success', `<i class="fas fa-check me-2"></i>Vehicle moved to ${destinationName}. Reloading...`);
+                showTransferFeedback('success', `<span class="icon-row"><i class="fa-solid fa-check icon-m icon-base"></i><span>Vehicle moved to ${destinationName}. Reloading...</span></span>`);
 
                 if (typeof accountCache !== 'undefined') {
                     accountCache = data;
@@ -959,7 +1050,7 @@
                 }, 900);
             } catch (error) {
                 console.error('Transfer failed:', error);
-                showTransferFeedback('danger', `<i class="fas fa-exclamation-circle me-2"></i>${error.message}`);
+                showTransferFeedback('danger', `<span class="icon-row"><i class="fa-solid fa-circle-exclamation icon-m icon-base"></i><span>${error.message}</span></span>`);
                 transferSelectors.accountSelect.disabled = false;
                 if (transferSelectors.submitButton) {
                     transferSelectors.submitButton.disabled = false;
@@ -1013,7 +1104,7 @@
             const originalText = submitBtn.innerHTML;
             
             // Show loading state
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+            submitBtn.innerHTML = '<span class="icon-row-sm"><i class="fa-solid fa-spinner fa-spin icon-m icon-base"></i><span>Updating...</span></span>';
             submitBtn.disabled = true;
             
             fetch(`/vehicles/${vehicleId}/update-mileage`, {
@@ -1052,7 +1143,7 @@
             alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
             alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
             alertDiv.innerHTML = `
-                <i class="fas fa-check-circle me-2"></i>${message}
+                <span class="icon-row"><i class="fa-solid fa-circle-check icon-m icon-base"></i><span>${message}</span></span>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             document.body.appendChild(alertDiv);
@@ -1064,7 +1155,7 @@
             alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
             alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
             alertDiv.innerHTML = `
-                <i class="fas fa-exclamation-circle me-2"></i>${message}
+                <span class="icon-row"><i class="fa-solid fa-circle-exclamation icon-m icon-base"></i><span>${message}</span></span>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             document.body.appendChild(alertDiv);

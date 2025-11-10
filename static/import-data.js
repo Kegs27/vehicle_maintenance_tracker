@@ -10,7 +10,7 @@ function showImportModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i class="fas fa-upload me-2"></i>Import Data
+                            <span class="icon-row"><i class="fa-solid fa-upload me-2"></i><span>Import Data</span></span>
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
@@ -18,7 +18,7 @@ function showImportModal() {
                         <p class="text-muted mb-3">Import maintenance records from CSV files:</p>
                         <div class="d-grid gap-2">
                             <a href="/import" class="btn btn-primary">
-                                <i class="fas fa-upload me-2"></i>Import CSV Data
+                                <span class="icon-row"><i class="fa-solid fa-upload me-2"></i><span>Import CSV Data</span></span>
                             </a>
                         </div>
                     </div>

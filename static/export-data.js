@@ -47,7 +47,7 @@ function showVehicleSelectionModal(exportType) {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i class="fas fa-download me-2"></i>Select Vehicle to Export
+                            <span class="icon-row"><i class="fa-solid fa-download me-2"></i><span>Select Vehicle to Export</span></span>
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
@@ -126,19 +126,19 @@ function loadVehiclesForExport(exportType) {
                 console.log('Setting up maintenance export buttons');
                 exportBtnContainer.innerHTML = `
                     <button class="btn btn-success me-2" onclick="exportMaintenanceRecords()">
-                        <i class="fas fa-file-csv me-2"></i>Export to CSV
+                        <span class="icon-row"><i class="fa-solid fa-file-csv me-2"></i><span>Export to CSV</span></span>
                     </button>
                     <button class="btn btn-danger" onclick="exportMaintenanceRecordsToPDF()">
-                        <i class="fas fa-file-pdf me-2"></i>Export to PDF
+                        <span class="icon-row"><i class="fa-solid fa-file-pdf me-2"></i><span>Export to PDF</span></span>
                     </button>
                 `;
             } else if (exportType === 'pdf') {
                 exportBtnContainer.innerHTML = `
                     <button class="btn btn-success me-2" onclick="exportVehicleToCSV()">
-                        <i class="fas fa-file-csv me-2"></i>Export to CSV
+                        <span class="icon-row"><i class="fa-solid fa-file-csv me-2"></i><span>Export to CSV</span></span>
                     </button>
                     <button class="btn btn-danger" onclick="exportVehicleToPDF()">
-                        <i class="fas fa-file-pdf me-2"></i>Export to PDF
+                        <span class="icon-row"><i class="fa-solid fa-file-pdf me-2"></i><span>Export to PDF</span></span>
                     </button>
                 `;
             } else if (exportType === 'single') {
@@ -149,10 +149,10 @@ function loadVehiclesForExport(exportType) {
                         <h6 class="text-muted mb-3">Export Maintenance Records for Selected Vehicle</h6>
                         <p class="text-muted small mb-3">Includes vehicle information with each maintenance record</p>
                         <button class="btn btn-success me-2" onclick="exportMaintenanceRecords()">
-                            <i class="fas fa-file-csv me-2"></i>Export to CSV
+                            <span class="icon-row"><i class="fa-solid fa-file-csv me-2"></i><span>Export to CSV</span></span>
                         </button>
                         <button class="btn btn-danger" onclick="exportMaintenanceRecordsToPDF()">
-                            <i class="fas fa-file-pdf me-2"></i>Export to PDF
+                            <span class="icon-row"><i class="fa-solid fa-file-pdf me-2"></i><span>Export to PDF</span></span>
                         </button>
                     </div>
                 `;
@@ -160,10 +160,10 @@ function loadVehiclesForExport(exportType) {
                 // Default single vehicle export (uses API endpoint)
                 exportBtnContainer.innerHTML = `
                     <button class="btn btn-success me-2" onclick="exportVehicleToCSV()">
-                        <i class="fas fa-file-csv me-2"></i>Export to CSV
+                        <span class="icon-row"><i class="fa-solid fa-file-csv me-2"></i><span>Export to CSV</span></span>
                     </button>
                     <button class="btn btn-danger" onclick="exportVehicleToPDF()">
-                        <i class="fas fa-file-pdf me-2"></i>Export to PDF
+                        <span class="icon-row"><i class="fa-solid fa-file-pdf me-2"></i><span>Export to PDF</span></span>
                     </button>
                 `;
             }

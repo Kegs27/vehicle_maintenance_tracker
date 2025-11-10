@@ -274,18 +274,18 @@ function updateAccountDropdownButton(button, account, totalVehicleCount, isAllSe
     if (!button) return;
 
     if (isAllSelected) {
-        button.innerHTML = `<i class="fas fa-user-circle me-2"></i>All Accounts${typeof totalVehicleCount === 'number' ? ` (${totalVehicleCount})` : ''}`;
+        button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-user-circle me-2"></i><span>All Accounts${typeof totalVehicleCount === 'number' ? ` (${totalVehicleCount})` : ''}</span></span>`;
         return;
     }
 
     if (!account) {
-        button.innerHTML = `<i class="fas fa-user-circle me-2"></i>Accounts`;
+        button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-user-circle me-2"></i><span>Accounts</span></span>`;
         return;
     }
 
     const countLabel = typeof account.vehicle_count === 'number' ? ` (${account.vehicle_count})` : '';
-    const defaultBadge = account.is_default ? ' <i class="fas fa-star text-warning ms-1" title="Default account"></i>' : '';
-    button.innerHTML = `<i class="fas fa-user-circle me-2"></i>${account.name}${countLabel}${defaultBadge}`;
+    const defaultBadge = account.is_default ? ' <i class="fa-solid fa-star text-warning ms-1" title="Default account"></i>' : '';
+    button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-user-circle me-2"></i><span>${account.name}${countLabel}${defaultBadge}</span></span>`;
 }
 
 function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) {
@@ -296,7 +296,7 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
         <li>
             <a class="dropdown-item d-flex justify-content-between align-items-center ${isAll ? 'active' : ''}"
                href="#" data-account-id="all" data-account-name="All">
-                <span><i class="fas fa-layer-group me-2 text-purple-600"></i>All Accounts</span>
+                <span class="icon-row"><i class="fa-solid fa-layer-group me-2 text-purple-600"></i><span>All Accounts</span></span>
                 <span class="badge bg-light text-dark border">${typeof totalVehicleCount === 'number' ? totalVehicleCount : '-'}</span>
             </a>
         </li>
@@ -308,12 +308,12 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
     } else {
         accounts.forEach((account) => {
             const isActive = selectedAccountId === account.id;
-            const defaultIcon = account.is_default ? '<i class="fas fa-star text-warning ms-2" title="Default account"></i>' : '';
+            const defaultIcon = account.is_default ? '<i class="fa-solid fa-star text-warning ms-2" title="Default account"></i>' : '';
             items.push(`
                 <li>
                     <a class="dropdown-item d-flex justify-content-between align-items-center ${isActive ? 'active' : ''}"
                        href="#" data-account-id="${account.id}" data-account-name="${account.name}">
-                        <span><i class="fas fa-user me-2 text-purple-600"></i>${account.name}${defaultIcon}</span>
+                        <span class="icon-row"><i class="fa-solid fa-user me-2 text-purple-600"></i><span>${account.name}${defaultIcon}</span></span>
                         <span class="badge bg-light text-dark border">${account.vehicle_count ?? 0}</span>
                     </a>
                 </li>
@@ -325,7 +325,7 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
     items.push(`
         <li>
             <a class="dropdown-item d-flex align-items-center" href="/accounts" data-manage-accounts="true">
-                <i class="fas fa-users-cog me-2 text-purple-600"></i>Manage Accounts
+                <span class="icon-row"><i class="fa-solid fa-users-gear me-2 text-purple-600"></i><span>Manage Accounts</span></span>
             </a>
         </li>
     `);
@@ -394,10 +394,10 @@ async function buildAccountDropdown(menuId, buttonId) {
         }
     } catch (error) {
         console.error('Unable to populate account dropdown:', error);
-        button.innerHTML = `<i class="fas fa-user-circle me-2"></i>Accounts (offline)`;
+        button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-user-circle me-2"></i><span>Accounts (offline)</span></span>`;
         menu.innerHTML = `
             <li class="dropdown-header text-muted">Unable to load accounts</li>
-            <li><a class="dropdown-item" href="/accounts"><i class="fas fa-users-cog me-2"></i>Manage Accounts</a></li>
+            <li><a class="dropdown-item" href="/accounts"><span class="icon-row"><i class="fa-solid fa-users-gear me-2"></i><span>Manage Accounts</span></span></a></li>
         `;
     }
 }

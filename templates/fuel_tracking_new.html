@@ -8,7 +8,10 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
     <!-- Custom CSS -->
     <link href="/static/app-styles.css" rel="stylesheet">
     <link href="/static/icon-styles.css" rel="stylesheet">
@@ -31,18 +34,25 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="display-4">
-                        <i class="fas fa-gas-pump me-3"></i>Fuel Tracking
+                    <h1 class="display-4 d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-gas-pump icon-xl icon-base"></i>
+                        <span>Fuel Tracking</span>
                     </h1>
                     <p class="lead mb-0">Track fuel consumption and calculate MPG across your fleet</p>
                 </div>
                 <div class="col-md-4 text-end">
                     <div class="d-flex justify-content-end gap-2">
                         <button class="btn btn-warning" onclick="showQuickFillModal()">
-                            <i class="fas fa-bolt me-2"></i>Quick Fill-Up
+                            <span class="icon-row-sm">
+                                <i class="fa-solid fa-bolt icon-m icon-base"></i>
+                                <span>Quick Fill-Up</span>
+                            </span>
                         </button>
                         <button class="btn btn-success" onclick="showFuelEntryModal()">
-                            <i class="fas fa-plus me-2"></i>New Fuel Entry
+                            <span class="icon-row-sm">
+                                <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                                <span>New Fuel Entry</span>
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -58,10 +68,16 @@
                 <div class="col-12">
                     <div class="card border-0 shadow-sm" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
                         <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">
-                                <i class="fas fa-list me-2"></i>Recent Fuel Entries
-                                <button class="btn btn-light btn-sm float-end" onclick="loadFuelEntries()">
-                                    <i class="fas fa-sync-alt"></i>
+                            <h5 class="mb-0 d-flex align-items-center justify-content-between">
+                                <span class="icon-row">
+                                    <i class="fa-solid fa-list icon-m icon-base"></i>
+                                    <span>Recent Fuel Entries</span>
+                                </span>
+                                <button class="btn btn-light btn-sm" onclick="loadFuelEntries()">
+                                    <span class="icon-row-sm">
+                                        <i class="fa-solid fa-rotate-right icon-m icon-base"></i>
+                                        <span>Refresh</span>
+                                    </span>
                                 </button>
                             </h5>
                         </div>
@@ -69,7 +85,7 @@
                             <div id="fuelEntriesList">
                                 <!-- Fuel entries will be loaded here -->
                                 <div class="text-center text-muted">
-                                    <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                    <i class="fa-solid fa-spinner fa-spin icon-xl icon-base mb-3"></i>
                                     <p>Loading fuel entries...</p>
                                 </div>
                             </div>
@@ -83,8 +99,9 @@
                 <div class="col-12">
                     <div class="card border-0 shadow-sm" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
                         <div class="card-header bg-info text-white">
-                            <h5 class="mb-0">
-                                <i class="fas fa-chart-line me-2"></i>Vehicle MPG Summary
+                            <h5 class="mb-0 d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-chart-line icon-m icon-base"></i>
+                                <span>Vehicle MPG Summary</span>
                             </h5>
                         </div>
                         <div class="card-body">
@@ -104,7 +121,10 @@
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="fuelEntryModalLabel">
-                        <i class="fas fa-gas-pump me-2"></i><span id="modalTitle">New Fuel Entry</span>
+                        <span class="icon-row">
+                            <i class="fa-solid fa-gas-pump icon-m icon-base"></i>
+                            <span id="modalTitle">New Fuel Entry</span>
+                        </span>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -116,7 +136,10 @@
                         <!-- Vehicle Selection -->
                         <div class="mb-3">
                             <label for="vehicleSelect" class="form-label fw-bold">
-                                <i class="fas fa-car me-2"></i>Vehicle
+                                <span class="icon-row">
+                                    <i class="fa-solid fa-car icon-s icon-base"></i>
+                                    <span>Vehicle</span>
+                                </span>
                             </label>
                             <select class="form-select" id="vehicleSelect" name="vehicle_id" required onchange="loadQuickFillData()">
                                 <option value="">Select a vehicle...</option>
@@ -130,7 +153,10 @@
                         <div id="quickFillInfo" class="mb-3" style="display: none;">
                             <div class="alert alert-info">
                                 <h6 class="alert-heading mb-2">
-                                    <i class="fas fa-info-circle me-2"></i>Quick Fill-Up Mode
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-circle-info icon-m icon-base"></i>
+                                        <span>Quick Fill-Up Mode</span>
+                                    </span>
                                 </h6>
                                 <p class="mb-2">Pre-filled with your last used settings:</p>
                                 <div id="lastUsedSettings" class="small">
@@ -143,14 +169,20 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="fuelDate" class="form-label fw-bold">
-                                    <i class="fas fa-calendar me-2"></i>Date
+                                    <span class="icon-row">
+                                        <i class="fa-regular fa-calendar icon-s icon-base"></i>
+                                        <span>Date</span>
+                                    </span>
                                 </label>
                                 <input type="text" class="form-control" id="fuelDate" name="date" required
                                        placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
                             </div>
                             <div class="col-md-6">
                                 <label for="fuelTime" class="form-label fw-bold">
-                                    <i class="fas fa-clock me-2"></i>Time
+                                    <span class="icon-row">
+                                        <i class="fa-regular fa-clock icon-s icon-base"></i>
+                                        <span>Time</span>
+                                    </span>
                                 </label>
                                 <input type="time" class="form-control" id="fuelTime" name="time" required>
                             </div>
@@ -160,13 +192,19 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="mileage" class="form-label fw-bold">
-                                    <i class="fas fa-tachometer-alt me-2"></i>Current Mileage
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-gauge icon-s icon-base"></i>
+                                        <span>Current Mileage</span>
+                                    </span>
                                 </label>
                                 <input type="number" class="form-control" id="mileage" name="mileage" required min="0">
                             </div>
                             <div class="col-md-6">
                                 <label for="fuelAmount" class="form-label fw-bold">
-                                    <i class="fas fa-gas-pump me-2"></i>Fuel Amount (Gallons)
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-gas-pump icon-s icon-base"></i>
+                                        <span>Fuel Amount (Gallons)</span>
+                                    </span>
                                 </label>
                                 <input type="number" class="form-control" id="fuelAmount" name="fuel_amount" required min="0" step="0.1">
                             </div>
@@ -176,13 +214,19 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="fuelCost" class="form-label fw-bold">
-                                    <i class="fas fa-dollar-sign me-2"></i>Total Cost
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-dollar-sign icon-s icon-base"></i>
+                                        <span>Total Cost</span>
+                                    </span>
                                 </label>
                                 <input type="number" class="form-control" id="fuelCost" name="fuel_cost" required min="0" step="0.01">
                             </div>
                             <div class="col-md-6">
                                 <label for="fuelType" class="form-label fw-bold">
-                                    <i class="fas fa-gas-pump me-2"></i>Fuel Type
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-gas-pump icon-s icon-base"></i>
+                                        <span>Fuel Type</span>
+                                    </span>
                                 </label>
                                 <select class="form-select" id="fuelType" name="fuel_type" required>
                                     <option value="">Select fuel type...</option>
@@ -199,7 +243,10 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="drivingPattern" class="form-label fw-bold">
-                                    <i class="fas fa-route me-2"></i>Driving Pattern
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-route icon-s icon-base"></i>
+                                        <span>Driving Pattern</span>
+                                    </span>
                                 </label>
                                 <select class="form-select" id="drivingPattern" name="driving_pattern" required>
                                     <option value="">Select pattern...</option>
@@ -209,9 +256,12 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="notes" class="form-label fw-bold">
-                                    <i class="fas fa-sticky-note me-2"></i>Notes (Optional)
-                                </label>
+                            <label for="notes" class="form-label fw-bold">
+                                <span class="icon-row">
+                                    <i class="fa-regular fa-note-sticky icon-s icon-base"></i>
+                                    <span>Notes (Optional)</span>
+                                </span>
+                            </label>
                                 <input type="text" class="form-control" id="notes" name="notes" placeholder="Any additional notes...">
                             </div>
                         </div>
@@ -219,13 +269,22 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Cancel
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-xmark icon-m icon-base"></i>
+                            <span>Cancel</span>
+                        </span>
                     </button>
                     <button type="button" class="btn btn-warning me-2" id="quickFillNextBtn" onclick="prepareQuickFillUp()" title="Save current entry and prepare form for next entry">
-                        <i class="fas fa-bolt me-2"></i>Save & Next Entry
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-bolt icon-m icon-base"></i>
+                            <span>Save & Next Entry</span>
+                        </span>
                     </button>
                     <button type="button" class="btn btn-success" onclick="submitFuelEntry()">
-                        <i class="fas fa-save me-2"></i><span id="saveButtonText">Save Fuel Entry</span>
+                        <span class="icon-row-sm">
+                            <i class="fa-regular fa-floppy-disk icon-m icon-base"></i>
+                            <span id="saveButtonText">Save Fuel Entry</span>
+                        </span>
                     </button>
                 </div>
             </div>
@@ -325,7 +384,10 @@
                 <strong>Fuel Type:</strong> ${template.fuel_type || 'Not set'}<br>
                 <strong>Driving Pattern:</strong> ${template.driving_pattern || 'Not set'}<br>
                 <strong>Notes:</strong> ${template.notes || 'None'}<br>
-                <span class="text-muted"><i class="fas fa-bolt me-1"></i>Using saved Quick Fill-Up template</span>
+                <span class="text-muted icon-row">
+                    <i class="fa-solid fa-bolt icon-xs icon-base"></i>
+                    <span>Using saved Quick Fill-Up template</span>
+                </span>
             `;
             
             quickFillInfo.style.display = 'block';
@@ -359,7 +421,7 @@
             if (fuelEntries.length === 0) {
                 container.innerHTML = `
                     <div class="text-center text-muted py-4">
-                        <i class="fas fa-gas-pump fa-3x mb-3"></i>
+                        <i class="fa-solid fa-gas-pump icon-xl icon-base mb-3"></i>
                         <h5>No fuel entries yet</h5>
                         <p>Add your first fuel entry to start tracking!</p>
                     </div>
@@ -372,13 +434,13 @@
                     <table class="table table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th><i class="fas fa-car me-2"></i>Vehicle</th>
-                                <th><i class="fas fa-calendar me-2"></i>Date</th>
-                                <th><i class="fas fa-tachometer-alt me-2"></i>Mileage</th>
-                                <th><i class="fas fa-gas-pump me-2"></i>Fuel</th>
-                                <th><i class="fas fa-dollar-sign me-2"></i>Cost</th>
-                                <th><i class="fas fa-route me-2"></i>Pattern</th>
-                                <th><i class="fas fa-cogs me-2"></i>Actions</th>
+                                <th><span class="icon-row"><i class="fa-solid fa-car icon-s icon-base"></i><span>Vehicle</span></span></th>
+                                <th><span class="icon-row"><i class="fa-regular fa-calendar icon-s icon-base"></i><span>Date</span></span></th>
+                                <th><span class="icon-row"><i class="fa-solid fa-gauge icon-s icon-base"></i><span>Mileage</span></span></th>
+                                <th><span class="icon-row"><i class="fa-solid fa-gas-pump icon-s icon-base"></i><span>Fuel</span></span></th>
+                                <th><span class="icon-row"><i class="fa-solid fa-dollar-sign icon-s icon-base"></i><span>Cost</span></span></th>
+                                <th><span class="icon-row"><i class="fa-solid fa-route icon-s icon-base"></i><span>Pattern</span></span></th>
+                                <th><span class="icon-row"><i class="fa-solid fa-ellipsis icon-s icon-base"></i><span>Actions</span></span></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -405,10 +467,14 @@
                         <td><span class="badge bg-secondary">${drivingPattern}</span></td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary me-1" onclick="editFuelEntry(${entry.id})" title="Edit Entry">
-                                <i class="fas fa-edit"></i>
+                                <span class="icon-row-sm">
+                                    <i class="fa-regular fa-pen-to-square icon-m icon-base"></i>
+                                </span>
                             </button>
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteFuelEntry(${entry.id})" title="Delete Entry">
-                                <i class="fas fa-trash"></i>
+                                <span class="icon-row-sm">
+                                    <i class="fa-regular fa-trash-can icon-m icon-base"></i>
+                                </span>
                             </button>
                         </td>
                     </tr>
@@ -582,9 +648,9 @@
                                 <!-- Gap warnings -->
                                 ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
                                     `<div class="mt-2">
-                                        <small class="text-warning">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>
-                                            ${vehicle.gaps_detected.length} gap(s) detected
+                                        <small class="text-warning icon-row">
+                                            <i class="fa-solid fa-triangle-exclamation icon-xs icon-base"></i>
+                                            <span>${vehicle.gaps_detected.length} gap(s) detected</span>
                                         </small>
                                         <div class="small text-muted mt-1">
                                             ${vehicle.gaps_detected.map(gap => 
@@ -657,7 +723,7 @@
                 <strong>Driving Pattern:</strong> ${lastEntry.driving_pattern || 'Not set'}<br>
                 <strong>Last Mileage:</strong> ${lastEntry.mileage ? lastEntry.mileage.toLocaleString() : 'Not set'}<br>
                 <strong>Notes:</strong> ${lastEntry.notes || 'None'}<br>
-                <span class="text-muted"><i class="fas fa-info-circle me-1"></i>Using last entry data</span>
+                <span class="text-muted icon-row"><i class="fa-solid fa-circle-info icon-xs icon-base"></i><span>Using last entry data</span></span>
             `;
             
             quickFillInfo.style.display = 'block';
@@ -668,7 +734,7 @@
             const lastUsedSettings = document.getElementById('lastUsedSettings');
             
             lastUsedSettings.innerHTML = `
-                <span class="text-muted"><i class="fas fa-info-circle me-1"></i>No previous data for this vehicle. Fill in manually or use defaults.</span>
+                <span class="text-muted icon-row"><i class="fa-solid fa-circle-info icon-xs icon-base"></i><span>No previous data for this vehicle. Fill in manually or use defaults.</span></span>
             `;
             
             quickFillInfo.style.display = 'block';
@@ -852,7 +918,10 @@
                         <div class="modal-content">
                             <div class="modal-header bg-warning text-dark">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>Gap Detected
+                                    <span class="icon-row">
+                                        <i class="fa-solid fa-triangle-exclamation icon-m icon-base"></i>
+                                        <span>Gap Detected</span>
+                                    </span>
                                 </h5>
                             </div>
                             <div class="modal-body">
@@ -868,10 +937,16 @@
                                 <div class="text-center">
                                     <p class="mb-3">What would you like to do?</p>
                                     <button class="btn btn-info me-2" onclick="handleGapChoice('add_missing')">
-                                        <i class="fas fa-plus-circle me-2"></i>Add Missing Entry
+                                        <span class="icon-row-sm">
+                                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                                            <span>Add Missing Entry</span>
+                                        </span>
                                     </button>
                                     <button class="btn btn-warning" onclick="handleGapChoice('continue')">
-                                        <i class="fas fa-forward me-2"></i>Continue Without It
+                                        <span class="icon-row-sm">
+                                            <i class="fa-solid fa-forward icon-m icon-base"></i>
+                                            <span>Continue Without It</span>
+                                        </span>
                                     </button>
                                 </div>
                                 <div class="mt-3 text-muted small">
