@@ -1002,17 +1002,17 @@ async def create_maintenance_route(
 
                         create_maintenance_record_fn(
                             vehicle_id=payload.vehicle_id,
-                            date=payload.date_str,
+                            date=date_str,  # Same date as oil change
                             description=(
                                 f"Oil Analysis - {payload.mileage:,} miles"
                                 if payload.mileage is not None
                                 else "Oil Analysis"
                             ),
-                            cost=0.0,
-                            mileage=payload.mileage,
+                            cost=0.0,  # Analysis cost separate from oil change cost
+                            mileage=payload.mileage,  # Same mileage as oil change - this creates the link!
                             is_oil_change=False,  # This is an analysis record, not an oil change
                             # Set as analysis record with oil change data for reference
-                            oil_analysis_date=payload.date_str,  # Mark as analysis record
+                            oil_analysis_date=date_str,  # Mark as analysis record
                             oil_type=payload.oil_type,  # Copy oil change data
                             oil_brand=payload.oil_brand,
                             oil_filter_brand=payload.oil_filter_brand,
