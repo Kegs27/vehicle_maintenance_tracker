@@ -1528,7 +1528,9 @@ def get_vehicle_current_mileage(vehicle_id: int) -> Dict[str, Any]:
     finally:
         session.close()
 
-def get_all_vehicles_current_mileage() -> Dict[int, Dict[str, Any]]:
+def get_all_vehicles_current_mileage(
+    account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> Dict[int, Dict[str, Any]]:
     """
     Get current mileage for all vehicles at once.
     Useful for bulk operations and dashboard displays.
@@ -1536,7 +1538,7 @@ def get_all_vehicles_current_mileage() -> Dict[int, Dict[str, Any]]:
     Returns:
         Dict mapping vehicle_id to mileage info from get_vehicle_current_mileage()
     """
-    vehicles = get_all_vehicles()
+    vehicles = get_all_vehicles(account_id=account_id, owner_user_id=owner_user_id)
     mileage_data = {}
     
     for vehicle in vehicles:
@@ -1975,54 +1977,59 @@ def get_all_fuel_entries(
     finally:
         session.close()
 
-def get_vehicle_health_status() -> List[Dict[str, Any]]:
-    """Get health status for all vehicles including mileage, cost, and maintenance status"""
+def get_vehicle_health_status(
+    account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[Dict[str, Any]]:
+    """Get health status for all vehicles including mileage, cost, and maintenance status."""
     try:
-        vehicles = get_all_vehicles()
-        records = get_all_maintenance_records()
-        
+        vehicles = get_all_vehicles(account_id=account_id, owner_user_id=owner_user_id)
+        records = get_all_maintenance_records(account_id=account_id, owner_user_id=owner_user_id)
+
         # Get current mileage for all vehicles
-        vehicles_current_mileage = get_all_vehicles_current_mileage()
-        
-        # Calculate current year
+        vehicles_current_mileage = get_all_vehicles_current_mileage(
+            account_id=account_id, owner_user_id=owner_user_id
+        )
+
         from datetime import datetime
+
         current_year = datetime.now().year
-        
-        vehicle_health = []
-        
+
+        vehicle_health: List[Dict[str, Any]] = []
+
         for vehicle in vehicles:
             vehicle_id = vehicle.id
             current_mileage_info = vehicles_current_mileage.get(vehicle_id, {})
-            current_mileage = current_mileage_info.get('current_mileage', 0)
-            
+            current_mileage = current_mileage_info.get("current_mileage", 0)
+
             # Get maintenance records for this vehicle this year
             vehicle_records = [r for r in records if r.vehicle_id == vehicle_id]
             vehicle_year_records = [r for r in vehicle_records if r.date and r.date.year == current_year]
-            
+
             # Calculate cost this year
             cost_this_year = sum(r.cost or 0 for r in vehicle_year_records)
-            
+
             # Get oil change status
-            oil_changes = [r for r in vehicle_records if r.is_oil_change]
+            oil_changes = [r for r in vehicle_records if getattr(r, "is_oil_change", False)]
             oil_change_status = "unknown"
-            
+
             if oil_changes and current_mileage > 0:
                 # Sort by date (most recent first)
-                oil_changes.sort(key=lambda x: x.date, reverse=True)
+                oil_changes.sort(key=lambda x: x.date or datetime.min.date(), reverse=True)
                 last_oil_change = oil_changes[0]
-                
+
                 # Get oil change interval
                 oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
-                miles_since_oil_change = current_mileage - last_oil_change.mileage
+                last_mileage = getattr(last_oil_change, "mileage", 0) or 0
+                miles_since_oil_change = current_mileage - last_mileage
                 miles_until_next = oil_change_interval - miles_since_oil_change
-                
+
                 if miles_until_next < 0:
                     oil_change_status = "overdue"
                 elif miles_until_next <= 500:
                     oil_change_status = "due_soon"
                 else:
                     oil_change_status = "good"
-            
+
             # Determine overall health indicator
             if oil_change_status == "overdue":
                 health_indicator = "🔴"
@@ -2040,21 +2047,23 @@ def get_vehicle_health_status() -> List[Dict[str, Any]]:
                 health_indicator = "⚪"
                 health_text = "Unknown"
                 health_class = "text-muted"
-            
-            vehicle_health.append({
-                "vehicle": vehicle,
-                "current_mileage": current_mileage,
-                "cost_this_year": cost_this_year,
-                "health_indicator": health_indicator,
-                "health_text": health_text,
-                "health_class": health_class,
-                "oil_change_status": oil_change_status,
-                "maintenance_count": len(vehicle_records),
-                "year_records_count": len(vehicle_year_records)
-            })
-        
+
+            vehicle_health.append(
+                {
+                    "vehicle": vehicle,
+                    "current_mileage": current_mileage,
+                    "cost_this_year": cost_this_year,
+                    "health_indicator": health_indicator,
+                    "health_text": health_text,
+                    "health_class": health_class,
+                    "oil_change_status": oil_change_status,
+                    "maintenance_count": len(vehicle_records),
+                    "year_records_count": len(vehicle_year_records),
+                }
+            )
+
         return vehicle_health
-        
+
     except Exception as e:
         print(f"Error getting vehicle health status: {e}")
         return []
@@ -2245,91 +2254,138 @@ def update_future_maintenance(
     finally:
         session.close()
 
-def get_all_future_maintenance() -> List[Dict[str, Any]]:
-    """Get all future maintenance reminders with vehicle information"""
+def get_all_future_maintenance(
+    account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[Dict[str, Any]]:
+    """Get all future maintenance reminders with vehicle information."""
     session = SessionLocal()
     try:
         from models import FutureMaintenance
-        
-        # Get all future maintenance records with vehicle info
-        future_maintenance = session.execute(
-            select(FutureMaintenance, Vehicle)
+
+        normalized_account_id = (
+            account_id if account_id and account_id.lower() not in ("all", "null") else None
+        )
+
+        query = (
+            select(FutureMaintenance, Vehicle, Account)
             .join(Vehicle, FutureMaintenance.vehicle_id == Vehicle.id)
+            .outerjoin(Account, Account.id == Vehicle.account_id)
             .where(FutureMaintenance.is_active == True)
-            .order_by(FutureMaintenance.target_date)
-        ).all()
-        
-        # Convert to list of dictionaries
-        result = []
-        for fm, vehicle in future_maintenance:
-            result.append({
-                'id': fm.id,
-                'vehicle_id': fm.vehicle_id,
-                'vehicle_name': vehicle.name,
-                'vehicle_year': vehicle.year,
-                'vehicle_make': vehicle.make,
-                'vehicle_model': vehicle.model,
-                'maintenance_type': fm.maintenance_type,
-                'target_mileage': fm.target_mileage,
-                'target_date': fm.target_date,
-                'mileage_reminder': fm.mileage_reminder,
-                'date_reminder': fm.date_reminder,
-                'estimated_cost': fm.estimated_cost,
-                'parts_link': fm.parts_link,
-                'notes': fm.notes,
-                'is_recurring': fm.is_recurring,
-                'recurrence_interval_miles': fm.recurrence_interval_miles,
-                'recurrence_interval_months': fm.recurrence_interval_months,
-                'is_active': fm.is_active,
-                'created_at': fm.created_at,
-                'updated_at': fm.updated_at
-            })
-        
+            .order_by(FutureMaintenance.target_date, FutureMaintenance.id)
+        )
+
+        if normalized_account_id:
+            query = query.where(
+                Vehicle.account_id == normalized_account_id,
+                or_(Account.owner_user_id == owner_user_id, Account.id.is_(None)),
+            )
+        else:
+            query = query.where(
+                or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None))
+            )
+
+        future_maintenance = session.execute(query).all()
+
+        result: List[Dict[str, Any]] = []
+        for fm, vehicle, account in future_maintenance:
+            result.append(
+                {
+                    "id": fm.id,
+                    "vehicle_id": fm.vehicle_id,
+                    "vehicle_name": vehicle.name,
+                    "vehicle_year": vehicle.year,
+                    "vehicle_make": vehicle.make,
+                    "vehicle_model": vehicle.model,
+                    "account_id": vehicle.account_id,
+                    "account_name": account.name if account else None,
+                    "maintenance_type": fm.maintenance_type,
+                    "target_mileage": fm.target_mileage,
+                    "target_date": fm.target_date,
+                    "mileage_reminder": fm.mileage_reminder,
+                    "date_reminder": fm.date_reminder,
+                    "estimated_cost": fm.estimated_cost,
+                    "parts_link": fm.parts_link,
+                    "notes": fm.notes,
+                    "is_recurring": fm.is_recurring,
+                    "recurrence_interval_miles": fm.recurrence_interval_miles,
+                    "recurrence_interval_months": fm.recurrence_interval_months,
+                    "is_active": fm.is_active,
+                    "created_at": fm.created_at,
+                    "updated_at": fm.updated_at,
+                }
+            )
+
         return result
-        
+
     except Exception as e:
+        print(f"Error getting future maintenance: {e}")
         return []
     finally:
         session.close()
 
-def get_future_maintenance_by_vehicle(vehicle_id: int) -> List[Dict[str, Any]]:
-    """Get future maintenance reminders for a specific vehicle"""
+
+def get_future_maintenance_by_vehicle(
+    vehicle_id: int, account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[Dict[str, Any]]:
+    """Get future maintenance reminders for a specific vehicle."""
     session = SessionLocal()
     try:
         from models import FutureMaintenance
-        
-        future_maintenance = session.execute(
-            select(FutureMaintenance)
+
+        normalized_account_id = (
+            account_id if account_id and account_id.lower() not in ("all", "null") else None
+        )
+
+        query = (
+            select(FutureMaintenance, Vehicle, Account)
+            .join(Vehicle, FutureMaintenance.vehicle_id == Vehicle.id)
+            .outerjoin(Account, Account.id == Vehicle.account_id)
             .where(FutureMaintenance.vehicle_id == vehicle_id)
             .where(FutureMaintenance.is_active == True)
-            .order_by(FutureMaintenance.target_date)
-        ).scalars().all()
-        
-        # Convert to list of dictionaries
-        result = []
-        for fm in future_maintenance:
-            result.append({
-                'id': fm.id,
-                'vehicle_id': fm.vehicle_id,
-                'maintenance_type': fm.maintenance_type,
-                'target_mileage': fm.target_mileage,
-                'target_date': fm.target_date,
-                'mileage_reminder': fm.mileage_reminder,
-                'date_reminder': fm.date_reminder,
-                'estimated_cost': fm.estimated_cost,
-                'parts_link': fm.parts_link,
-                'notes': fm.notes,
-                'is_recurring': fm.is_recurring,
-                'recurrence_interval_miles': fm.recurrence_interval_miles,
-                'recurrence_interval_months': fm.recurrence_interval_months,
-                'is_active': fm.is_active,
-                'created_at': fm.created_at,
-                'updated_at': fm.updated_at
-            })
-        
+            .order_by(FutureMaintenance.target_date, FutureMaintenance.id)
+        )
+
+        if normalized_account_id:
+            query = query.where(
+                Vehicle.account_id == normalized_account_id,
+                or_(Account.owner_user_id == owner_user_id, Account.id.is_(None)),
+            )
+        else:
+            query = query.where(
+                or_(Account.owner_user_id == owner_user_id, Vehicle.account_id.is_(None))
+            )
+
+        future_maintenance = session.execute(query).all()
+
+        result: List[Dict[str, Any]] = []
+        for fm, vehicle, account in future_maintenance:
+            result.append(
+                {
+                    "id": fm.id,
+                    "vehicle_id": fm.vehicle_id,
+                    "maintenance_type": fm.maintenance_type,
+                    "target_mileage": fm.target_mileage,
+                    "target_date": fm.target_date,
+                    "mileage_reminder": fm.mileage_reminder,
+                    "date_reminder": fm.date_reminder,
+                    "estimated_cost": fm.estimated_cost,
+                    "parts_link": fm.parts_link,
+                    "notes": fm.notes,
+                    "is_recurring": fm.is_recurring,
+                    "recurrence_interval_miles": fm.recurrence_interval_miles,
+                    "recurrence_interval_months": fm.recurrence_interval_months,
+                    "is_active": fm.is_active,
+                    "created_at": fm.created_at,
+                    "updated_at": fm.updated_at,
+                    "account_id": vehicle.account_id,
+                    "account_name": account.name if account else None,
+                }
+            )
+
         return result
-        
+
     except Exception as e:
+        print(f"Error getting future maintenance for vehicle {vehicle_id}: {e}")
         return []
     finally:
         session.close()
@@ -2465,22 +2521,24 @@ def get_triggered_future_maintenance(vehicle_id: int, current_mileage: int) -> L
     except Exception as e:
         return []
 
-def get_all_vehicles_triggered_maintenance() -> Dict[int, List[Dict[str, Any]]]:
-    """Get triggered future maintenance for all vehicles"""
+def get_all_vehicles_triggered_maintenance(
+    account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> Dict[int, List[Dict[str, Any]]]:
+    """Get triggered future maintenance for all vehicles, optionally filtered by account."""
     try:
-        vehicles = get_all_vehicles()
+        vehicles = get_all_vehicles(account_id=account_id, owner_user_id=owner_user_id)
         vehicles_current_mileage = get_all_vehicles_current_mileage()
-        
-        result = {}
+
+        result: Dict[int, List[Dict[str, Any]]] = {}
         for vehicle in vehicles:
-            current_mileage = vehicles_current_mileage.get(vehicle.id, {}).get('current_mileage', 0)
+            current_mileage = vehicles_current_mileage.get(vehicle.id, {}).get("current_mileage", 0)
             triggered_items = get_triggered_future_maintenance(vehicle.id, current_mileage)
-            
-            if triggered_items:  # Only include vehicles with triggered items
+
+            if triggered_items:
                 result[vehicle.id] = triggered_items
-        
+
         return result
-        
+
     except Exception as e:
         print(f"Error getting all vehicles triggered maintenance: {e}")
         return {}

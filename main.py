@@ -531,8 +531,8 @@ async def list_vehicles(request: Request):
         account_id = account_context["account_id"] if account_context["scope"] != "all" else None
 
         vehicles = get_all_vehicles(account_id=account_id)
-        vehicle_health = get_vehicle_health_status()
-        triggered_maintenance = get_all_vehicles_triggered_maintenance()
+        vehicle_health = get_vehicle_health_status(account_id=account_id)
+        triggered_maintenance = get_all_vehicles_triggered_maintenance(account_id=account_id)
 
         if account_id:
             allowed_vehicle_ids = {vehicle.id for vehicle in vehicles}
@@ -719,7 +719,7 @@ async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(N
         }
 
         try:
-            future_maintenance = get_all_future_maintenance()
+            future_maintenance = get_all_future_maintenance(account_id=account_id)
             if future_maintenance is None:
                 future_maintenance = []
         except Exception as e:
