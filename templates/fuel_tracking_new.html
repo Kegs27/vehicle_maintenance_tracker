@@ -17,40 +17,88 @@
 
         /* MPG flip cards */
         .mpg-card {
+            --mpg-card-h: 220px;
+            --mpg-pad: 1rem;
+            --mpg-radius: 12px;
             perspective: 1200px;
         }
 
         .mpg-card-inner {
             position: relative;
+            height: var(--mpg-card-h);
             transform-style: preserve-3d;
-            transition: transform 0.5s ease;
-            min-height: 220px;
+            transition: transform 420ms ease;
+            border-radius: var(--mpg-radius);
+            background: #ffffff;
+            box-shadow: 0 6px 18px rgba(2, 8, 23, 0.06);
         }
 
         .mpg-card-face {
             position: absolute;
             inset: 0;
+            padding: var(--mpg-pad);
             backface-visibility: hidden;
-            border-radius: 1rem;
-            background: #ffffff;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            border-radius: var(--mpg-radius);
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 0.35rem;
+            overflow: hidden;
+        }
+
+        .mpg-card-face * {
+            line-height: 1.25;
         }
 
         .mpg-card-front {
             transform: rotateY(0deg);
-            padding: 1.5rem;
         }
 
         .mpg-card-back {
             transform: rotateY(180deg);
-            padding: 1.5rem;
         }
 
         .mpg-card.is-flipped .mpg-card-inner {
             transform: rotateY(180deg);
+        }
+
+        .mpg-face-header {
+            font-weight: 600;
+            font-size: clamp(0.9rem, 2.1vw, 1rem);
+            text-align: center;
+            color: #0f172a;
+        }
+
+        .mpg-stats {
+            list-style: none;
+            margin: 0.25rem 0 0 0;
+            padding: 0;
+            display: grid;
+            gap: 0.35rem;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+        }
+
+        .mpg-stats li {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            white-space: nowrap;
+        }
+
+        .mpg-stats li span {
+            color: #475569;
+        }
+
+        .mpg-stats li strong {
+            color: #0f172a;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mpg-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
         }
 
         .mpg-dot {
@@ -59,6 +107,7 @@
             border-radius: 9999px;
             background: #cbd5e1;
             border: 0;
+            cursor: pointer;
         }
 
         .mpg-dot[aria-selected="true"] {
@@ -68,6 +117,11 @@
         .mpg-dot:focus {
             outline: 2px solid #94a3b8;
             outline-offset: 2px;
+        }
+
+        .modal-title {
+            letter-spacing: 0.02em;
+            color: #0f172a;
         }
     </style>
 </head>
@@ -147,7 +201,7 @@
                         <div class="card-header bg-info text-white">
                             <h5 class="mb-0 d-flex align-items-center gap-2">
                                 <i class="fa-solid fa-chart-line icon-m icon-base"></i>
-                                <span>Vehicle MPG Summary</span>
+                                <span>Vehicle Fuel Data</span>
                             </h5>
                         </div>
                         <div class="card-body">
@@ -745,31 +799,35 @@
         }
 
         function formatCurrency(value) {
-            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) {
                 return '—';
             }
-            return `$${Number(value).toFixed(2)}`;
+            return `$${num.toFixed(2)}`;
         }
 
         function formatMiles(value) {
-            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) {
                 return '—';
             }
-            return Number(value).toLocaleString();
+            return num.toLocaleString();
         }
 
         function formatGallons(value) {
-            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) {
                 return '—';
             }
-            return `${Number(value).toFixed(1)} gal`;
+            return num.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
         }
 
         function formatDays(value) {
-            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) {
                 return '—';
             }
-            return `${Number(value).toFixed(1)} days`;
+            return `~${num.toFixed(1)} days`;
         }
 
         function displayMPGSummary(summary) {
@@ -796,10 +854,10 @@
                              data-miles="${vehicle.miles_traveled ?? ''}"
                              data-gallons="${vehicle.gallons_filled ?? ''}"
                              data-avg-days="${vehicle.avg_days_between_fills ?? ''}">
-                            <div class="mpg-card-inner rounded-3">
+                            <div class="mpg-card-inner">
                                 <section class="mpg-card-face mpg-card-front">
                                     <div class="card h-100 border-0 bg-transparent">
-                                        <div class="card-body text-center p-0">
+                                        <div class="card-body text-center p-0 h-100 d-flex flex-column justify-content-between">
                                             <h6 class="card-title">${vehicle.vehicle_name}</h6>
                                             
                                             ${vehicle.current_mpg ? 
@@ -842,30 +900,24 @@
                                                     </div>
                                                 </div>` : ''
                                             }
-                                            <div class="mt-3">
-                                                <button type="button" class="flip-btn btn btn-outline-secondary btn-sm">View fuel stats</button>
-                                            </div>
                                         </div>
                                     </div>
+                                    <div aria-hidden="true"></div>
                                 </section>
-                                <section class="mpg-card-face mpg-card-back d-flex flex-column justify-content-between text-center">
-                                    <div>
-                                        <div class="fw-semibold">${vehicle.vehicle_name} &ndash; Fuel Stats</div>
-                                        <div class="mt-3 text-start small">
-                                            <div><span class="fw-semibold">Avg price/gal:</span> ${avgPriceText}</div>
-                                            <div class="mt-1"><span class="fw-semibold">Miles traveled:</span> ${milesTraveledText}</div>
-                                            <div class="mt-1"><span class="fw-semibold">Gallons filled:</span> ${gallonsFilledText}</div>
-                                            <div class="mt-1"><span class="fw-semibold">Refuel frequency:</span> ${avgDaysText}</div>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4">
-                                        <button type="button" class="flip-btn btn btn-outline-secondary btn-sm">Back to MPG</button>
-                                    </div>
+                                <section class="mpg-card-face mpg-card-back">
+                                    <header class="mpg-face-header">${vehicle.vehicle_name} &ndash; Fuel stats</header>
+                                    <ul class="mpg-stats">
+                                        <li><span>Avg price/gal</span><strong>${avgPriceText}</strong></li>
+                                        <li><span>Miles traveled</span><strong>${milesTraveledText}</strong></li>
+                                        <li><span>Gallons filled</span><strong>${gallonsFilledText}</strong></li>
+                                        <li><span>Refuel frequency</span><strong>${avgDaysText}</strong></li>
+                                    </ul>
+                                    <div class="mpg-face-footer" aria-hidden="true"></div>
                                 </section>
                             </div>
                             <div class="mpg-dots mt-3 d-flex align-items-center justify-content-center gap-2">
-                                <button type="button" class="mpg-dot" aria-selected="true" aria-label="MPG summary" data-side="front"></button>
-                                <button type="button" class="mpg-dot" aria-selected="false" aria-label="Fuel stats" data-side="back"></button>
+                                <button type="button" class="mpg-dot" aria-selected="true" aria-label="MPG summary" data-side="front" tabindex="0"></button>
+                                <button type="button" class="mpg-dot" aria-selected="false" aria-label="Fuel stats" data-side="back" tabindex="0"></button>
                             </div>
                         </div>
                     </div>
@@ -894,16 +946,13 @@
 
                 setDots('front');
 
-                card.querySelectorAll('.flip-btn').forEach((btn) => {
-                    btn.addEventListener('click', () => {
-                        const isFlipped = card.classList.contains('is-flipped');
-                        flipTo(isFlipped ? 'front' : 'back');
-                    });
-                });
-
                 card.querySelectorAll('.mpg-dot').forEach((dot) => {
-                    dot.addEventListener('click', () => {
-                        flipTo(dot.dataset.side === 'back' ? 'back' : 'front');
+                    dot.addEventListener('click', () => flipTo(dot.dataset.side));
+                    dot.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            flipTo(dot.dataset.side);
+                        }
                     });
                 });
             });

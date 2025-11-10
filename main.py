@@ -2,6 +2,7 @@
 import os
 import sys
 import csv
+from decimal import Decimal
 from datetime import date, datetime
 from typing import Optional, Dict, Any
 from io import StringIO
@@ -13,7 +14,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, ValidationError
+
+from schemas import MaintenanceCreate
 
 # Define dummy functions at module level to ensure they're always available
 def dummy_get_all_vehicles():
@@ -56,6 +59,20 @@ def dummy_get_maintenance_summary():
 
 def dummy_sort_maintenance_records(*args, **kwargs):
     return []
+
+# ---------------------------------------------------------------------------
+# Validation helpers
+# ---------------------------------------------------------------------------
+
+
+def _errors_dict(validation_error: ValidationError) -> Dict[str, str]:
+    errors: Dict[str, str] = {}
+    for item in validation_error.errors():
+        field = item.get("loc")[-1]
+        message = item.get("msg")
+        if isinstance(field, str) and isinstance(message, str):
+            errors.setdefault(field, message)
+    return errors
 
 # Initialize functions with dummy versions by default
 get_all_vehicles = dummy_get_all_vehicles
@@ -793,189 +810,248 @@ async def new_maintenance_form(
 @app.post("/maintenance")
 async def create_maintenance_route(
     request: Request,
-    vehicle_id: int = Form(...),
-    date_str: str = Form(default=""),
-    mileage: Optional[int] = Form(None),
-    description: Optional[str] = Form(None),
-    cost: Optional[float] = Form(None),
-    oil_change_interval: Optional[int] = Form(None),
-    link_oil_analysis: bool = Form(False),
-    # Oil change fields
-    is_oil_change: Optional[bool] = Form(None),
-    oil_type: Optional[str] = Form(None),
-    oil_brand: Optional[str] = Form(None),
-    oil_filter_brand: Optional[str] = Form(None),
-    oil_filter_part_number: Optional[str] = Form(None),
-    oil_cost: Optional[float] = Form(None),
-    filter_cost: Optional[float] = Form(None),
-    labor_cost: Optional[float] = Form(None),
-    # Oil analysis fields
-    oil_analysis_date: Optional[str] = Form(None),
-    next_oil_analysis_date: Optional[str] = Form(None),
-    oil_analysis_cost: Optional[float] = Form(None),
-    iron_level: Optional[float] = Form(None),
-    aluminum_level: Optional[float] = Form(None),
-    copper_level: Optional[float] = Form(None),
-    viscosity: Optional[float] = Form(None),
-    tbn: Optional[float] = Form(None),
-    fuel_dilution: Optional[float] = Form(None),
-    coolant_contamination: Optional[bool] = Form(None),
-    driving_conditions: Optional[str] = Form(None),
-    oil_consumption_notes: Optional[str] = Form(None),
-    # PDF upload for oil analysis
     oil_analysis_report: UploadFile = File(None),
-    # Photo documentation
     photo: UploadFile = File(None),
-    photo_description: Optional[str] = Form(None),
-    return_url: Optional[str] = Form(None),
-    future_maintenance_id: Optional[int] = Form(None)
 ):
-    """Create a new maintenance record using centralized data operations"""
+    """Create a new maintenance record using centralized data operations."""
     try:
+        form = await request.form()
+        data = dict(form)
+
         account_context = get_account_context(request)
         account_id = account_context["account_id"] if account_context["scope"] != "all" else None
-        vehicle = get_vehicle_by_id(vehicle_id, account_id=account_id)
+        vehicles_for_account = get_all_vehicles(account_id=account_id)
+        vehicle_options = [{"id": v.id, "name": v.name} for v in vehicles_for_account]
+
+        def render_with_errors(errors: Dict[str, str]):
+            detected_form_type = determine_form_type(
+                None,
+                data.get("return_url"),
+                data.get("form_type"),
+            )
+            selected_vehicle_id = data.get("vehicle_id")
+            try:
+                selected_vehicle_id = int(selected_vehicle_id)
+            except (TypeError, ValueError):
+                pass
+            context = {
+                "request": request,
+                "vehicles": vehicle_options,
+                "record": None,
+                "return_url": data.get("return_url") or "/maintenance",
+                "selected_vehicle_id": selected_vehicle_id,
+                "form_type": detected_form_type,
+                "pre_populated_data": None,
+                "future_maintenance_id": data.get("future_maintenance_id"),
+                "is_oil_analysis": detected_form_type == "oil_analysis",
+                "is_oil_change": detected_form_type == "oil_change",
+                "account_context": account_context,
+                "form": data,
+                "errors": errors,
+            }
+            return templates.TemplateResponse("maintenance_form.html", context, status_code=422)
+
+        try:
+            payload = MaintenanceCreate(**data)
+        except ValidationError as exc:
+            return render_with_errors(_errors_dict(exc))
+
+        vehicle = get_vehicle_by_id(payload.vehicle_id, account_id=account_id)
         if not vehicle:
             raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
 
-        if future_maintenance_id:
+        if payload.future_maintenance_id:
             from data_operations import get_future_maintenance_by_id
-            future_record = get_future_maintenance_by_id(future_maintenance_id)
-            if not future_record or future_record.vehicle_id != vehicle_id:
+
+            future_record = get_future_maintenance_by_id(payload.future_maintenance_id)
+            if not future_record or future_record.vehicle_id != payload.vehicle_id:
                 raise HTTPException(status_code=404, detail="Future maintenance not found for this vehicle.")
 
-        # Handle PDF file upload for oil analysis
         pdf_file_path = None
         if oil_analysis_report and oil_analysis_report.filename:
-            # Create uploads directory if it doesn't exist
             upload_dir = "uploads"
             os.makedirs(upload_dir, exist_ok=True)
-            
-            # Generate unique filename
             import uuid
+
             file_extension = os.path.splitext(oil_analysis_report.filename)[1]
             unique_filename = f"oil_analysis_{uuid.uuid4().hex}{file_extension}"
             pdf_file_path = os.path.join(upload_dir, unique_filename)
-            
-            # Save the uploaded file
             with open(pdf_file_path, "wb") as buffer:
-                content = await oil_analysis_report.read()
-                buffer.write(content)
-        
-        # Handle photo upload for documentation
+                buffer.write(await oil_analysis_report.read())
+
         photo_path = None
         if photo and photo.filename:
-            # Create uploads directory if it doesn't exist
             upload_dir = "uploads"
             os.makedirs(upload_dir, exist_ok=True)
-            
-            # Generate unique filename
             import uuid
+
             file_extension = os.path.splitext(photo.filename)[1]
             unique_filename = f"photo_{uuid.uuid4().hex}{file_extension}"
             photo_path = os.path.join(upload_dir, unique_filename)
-            
-            # Save the uploaded file
             with open(photo_path, "wb") as buffer:
-                content = await photo.read()
-                buffer.write(content)
-        
-        # Handle empty date string by converting to None
-        if date_str == "":
-            date_str = None
-        
-        # Create the maintenance record
+                buffer.write(await photo.read())
+
+        def dec_to_float(value: Optional[Decimal]) -> Optional[float]:
+            return float(value) if value is not None else None
+
+        date_str = payload.date_str or "01/01/1900"
+        cost_value = float(payload.cost) if payload.cost is not None else 0.0
+
         result = create_maintenance_record(
-            vehicle_id=vehicle_id,
-            date=date_str or "01/01/1900", 
-            description=description,
-            cost=cost or 0.0,
-            mileage=mileage,
-            oil_change_interval=oil_change_interval,
-            is_oil_change=is_oil_change,  # Use explicit parameter
-            oil_analysis_date=oil_analysis_date,
-            next_oil_analysis_date=next_oil_analysis_date,
-            oil_analysis_cost=oil_analysis_cost,
-            iron_level=iron_level,
-            aluminum_level=aluminum_level,
-            copper_level=copper_level,
-            viscosity=viscosity,
-            tbn=tbn,
-            fuel_dilution=fuel_dilution,
-            coolant_contamination=coolant_contamination,
-            driving_conditions=driving_conditions,
-            oil_consumption_notes=oil_consumption_notes,
+            vehicle_id=payload.vehicle_id,
+            date=date_str,
+            description=payload.description,
+            cost=cost_value,
+            mileage=payload.mileage,
+            oil_change_interval=payload.oil_change_interval,
+            is_oil_change=payload.is_oil_change,
+            oil_analysis_date=payload.oil_analysis_date,
+            next_oil_analysis_date=payload.next_oil_analysis_date,
+            oil_analysis_cost=dec_to_float(payload.oil_analysis_cost),
+            iron_level=payload.iron_level,
+            aluminum_level=payload.aluminum_level,
+            copper_level=payload.copper_level,
+            viscosity=payload.viscosity,
+            tbn=payload.tbn,
+            fuel_dilution=payload.fuel_dilution,
+            coolant_contamination=payload.coolant_contamination,
+            driving_conditions=payload.driving_conditions,
+            oil_consumption_notes=payload.oil_consumption_notes,
             oil_analysis_report=pdf_file_path,
             photo_path=photo_path,
-            photo_description=photo_description
+            photo_description=payload.photo_description,
         )
-        
-        # If successful and oil change fields provided, update the record with oil change details
-        if result["success"] and (is_oil_change or oil_type or oil_brand):
+
+        is_oil_change_flag = bool(payload.is_oil_change)
+        oil_type = payload.oil_type
+        oil_brand = payload.oil_brand
+
+        if result["success"] and (is_oil_change_flag or oil_type or oil_brand):
             try:
                 from data_operations import update_maintenance_record
+
                 update_result = update_maintenance_record(
                     record_id=result["record"].id,
-                    vehicle_id=vehicle_id,
-                    date=date_str or "01/01/1900",
-                    description=description,
-                    cost=cost or 0.0,
-                    mileage=mileage,
-                    oil_change_interval=oil_change_interval or 3000,
-                    is_oil_change=True,  # Always True for oil changes from this form
-                    oil_type=oil_type,
-                    oil_brand=oil_brand,
-                    oil_filter_brand=oil_filter_brand,
-                    oil_filter_part_number=oil_filter_part_number,
-                    oil_cost=oil_cost,
-                    filter_cost=filter_cost,
-                    labor_cost=labor_cost
+                    vehicle_id=payload.vehicle_id,
+                    date=date_str,
+                    description=payload.description,
+                    cost=cost_value,
+                    mileage=payload.mileage,
+                    oil_change_interval=payload.oil_change_interval or 3000,
+                    is_oil_change=True,
+                    oil_type=payload.oil_type,
+                    oil_brand=payload.oil_brand,
+                    oil_filter_brand=payload.oil_filter_brand,
+                    oil_filter_part_number=payload.oil_filter_part_number,
+                    oil_cost=dec_to_float(payload.oil_cost),
+                    filter_cost=dec_to_float(payload.filter_cost),
+                    labor_cost=dec_to_float(payload.labor_cost),
                 )
                 if not update_result["success"]:
                     print(f"Warning: Failed to update oil change fields: {update_result.get('error', 'Unknown error')}")
-            except Exception as e:
-                print(f"Warning: Exception updating oil change fields: {e}")
-        
-        
-        if result["success"]:
-            # If oil analysis linking was requested, create a placeholder oil analysis record
-            if link_oil_analysis:
-                try:
-                    # Create a placeholder oil analysis record linked to this oil change
-                    oil_analysis_result = create_placeholder_oil_analysis(
-                        vehicle_id, date_str or "01/01/1900", f"Oil analysis for {description}", mileage, result["record"].id
-                    )
-                    if oil_analysis_result["success"]:
-                        pass  # Placeholder oil analysis created successfully
-                    else:
-                        pass  # Failed to create placeholder oil analysis
-                except Exception as e:
-                    pass  # Error creating placeholder oil analysis
-            
-            # Mark future maintenance record as completed if this was completing a future maintenance
-            if future_maintenance_id:
-                try:
-                    from data_operations import mark_future_maintenance_completed
-                    result = mark_future_maintenance_completed(future_maintenance_id)
-                    print(f"Marked future maintenance {future_maintenance_id} as completed")
-                except Exception as e:
-                    print(f"Error marking future maintenance as completed: {e}")
-            
-            # Redirect back to oil analysis page if that's where we came from
-            if any(field is not None for field in [oil_analysis_date, next_oil_analysis_date, oil_analysis_cost, 
-                                                 iron_level, aluminum_level, copper_level, viscosity, tbn,
-                                                 fuel_dilution, coolant_contamination, driving_conditions, oil_consumption_notes]):
-                # This was an oil analysis record, redirect to oil analysis page
-                return RedirectResponse(url="/oil-management", status_code=303)
-            else:
-                return RedirectResponse(url=return_url or "/maintenance", status_code=303)
-        else:
+            except Exception as exc:  # noqa: BLE001
+                print(f"Warning: Exception updating oil change fields: {exc}")
+
+        if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
+
+        if payload.link_oil_analysis:
+            try:
+                oil_analysis_result = create_placeholder_oil_analysis(
+                    payload.vehicle_id,
+                    date_str,
+                    f"Oil analysis for {payload.description}" if payload.description else "Oil analysis",
+                    payload.mileage,
+                    result["record"].id,
+                )
+                if not oil_analysis_result.get("success"):
+                    print(f"Failed to create placeholder oil analysis: {oil_analysis_result.get('error')}")
+            except Exception as exc:  # noqa: BLE001
+                print(f"Error creating placeholder oil analysis: {exc}")
+
+        if payload.future_maintenance_id:
+            try:
+                from data_operations import mark_future_maintenance_completed
+
+                mark_future_maintenance_completed(payload.future_maintenance_id)
+            except Exception as exc:  # noqa: BLE001
+                print(f"Error marking future maintenance as completed: {exc}")
+
+        # Additional oil analysis linking
+        if is_oil_change_flag:
+            from data_operations import get_maintenance_records_by_vehicle
+
+            vehicle_records = get_maintenance_records_by_vehicle(payload.vehicle_id)
+            if payload.link_oil_analysis:
+                existing_analysis = [
+                    record
+                    for record in vehicle_records
+                    if record.mileage == payload.mileage
+                    and (
+                        record.oil_analysis_date
+                        or record.oil_analysis_cost
+                        or record.iron_level
+                        or record.aluminum_level
+                        or record.copper_level
+                        or (record.description and "analysis" in record.description.lower())
+                    )
+                ]
+                if not existing_analysis:
+                    try:
+                        from data_operations import create_maintenance_record as create_maintenance_record_fn
+
+                        create_maintenance_record_fn(
+                            vehicle_id=payload.vehicle_id,
+                            date=payload.date_str,
+                            description=(
+                                f"Oil Analysis - {payload.mileage:,} miles"
+                                if payload.mileage is not None
+                                else "Oil Analysis"
+                            ),
+                            cost=0.0,
+                            mileage=payload.mileage,
+                            is_oil_change=False,
+                            oil_analysis_date=payload.date_str,
+                            oil_type=payload.oil_type,
+                            oil_brand=payload.oil_brand,
+                            oil_filter_brand=payload.oil_filter_brand,
+                            oil_filter_part_number=payload.oil_filter_part_number,
+                            oil_cost=dec_to_float(payload.oil_cost),
+                            filter_cost=dec_to_float(payload.filter_cost),
+                            labor_cost=dec_to_float(payload.labor_cost),
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        print(f"Error creating oil analysis: {exc}")
+                else:
+                    if payload.mileage is not None:
+                        print(f"Oil analysis already exists at {payload.mileage:,} miles")
+                    else:
+                        print("Oil analysis already exists for this entry")
+
+        analysis_fields = [
+            payload.oil_analysis_date,
+            payload.next_oil_analysis_date,
+            payload.oil_analysis_cost,
+            payload.iron_level,
+            payload.aluminum_level,
+            payload.copper_level,
+            payload.viscosity,
+            payload.tbn,
+            payload.fuel_dilution,
+            payload.coolant_contamination,
+            payload.driving_conditions,
+            payload.oil_consumption_notes,
+        ]
+        if any(field is not None for field in analysis_fields):
+            return RedirectResponse(url="/oil-management", status_code=303)
+
+        return RedirectResponse(url=(payload.return_url or "/maintenance"), status_code=303)
+
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"❌ Error creating maintenance record: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create maintenance record: {str(e)}")
+    except Exception as exc:
+        print(f"❌ Error creating maintenance record: {exc}")
+        raise HTTPException(status_code=500, detail=f"Failed to create maintenance record: {str(exc)}")
 
 def determine_form_type(record=None, return_url=None, form_type_param=None):
     """Unified function to determine what type of form to display"""

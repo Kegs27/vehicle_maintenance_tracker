@@ -1,0 +1,185 @@
+{# Shared form macros for consistent field rendering #}
+
+{% macro field(id, label, required=False, help_text=None, error=None, extra_classes="") -%}
+  {% set help_id = help_text and (id ~ "-help") %}
+  {% set error_id = error and (id ~ "-error") %}
+  <div class="mb-4 {{ extra_classes }} {% if error %}has-error{% endif %}">
+    <label for="{{ id }}" class="form-label fw-bold">
+      {{ label }}
+      {% if required %}
+        <span class="text-danger" aria-hidden="true">*</span>
+        <span class="visually-hidden">required</span>
+      {% endif %}
+    </label>
+    {{ caller(help_id=help_id, error_id=error_id) }}
+    {% if help_text %}
+      <div id="{{ help_id }}" class="form-text">{{ help_text }}</div>
+    {% endif %}
+    {% if error %}
+      <div id="{{ error_id }}" class="small text-danger">{{ error }}</div>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro _describedby(help_id=None, error_id=None) -%}
+  {% set ids = [] %}
+  {% if help_id %}{% set ids = ids + [help_id] %}{% endif %}
+  {% if error_id %}{% set ids = ids + [error_id] %}{% endif %}
+  {{ ids|join(" ") }}
+{%- endmacro %}
+
+{% macro text_input(id, name, value="", placeholder="", type="text", required=False,
+                    step=None, min=None, max=None, pattern=None, autocomplete=None,
+                    help_id=None, error_id=None, invalid=False, attrs={}) -%}
+  {% set describedby = _describedby(help_id, error_id).strip() %}
+  <input
+    id="{{ id }}"
+    name="{{ name }}"
+    type="{{ type }}"
+    value="{{ value if value is not none else '' }}"
+    class="form-control {% if invalid %}is-invalid{% endif %}"
+    {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    {% if required %}required{% endif %}
+    {% if step is not none %}step="{{ step }}"{% endif %}
+    {% if min is not none %}min="{{ min }}"{% endif %}
+    {% if max is not none %}max="{{ max }}"{% endif %}
+    {% if pattern %}pattern="{{ pattern }}"{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if describedby %}aria-describedby="{{ describedby }}"{% endif %}
+    aria-invalid="{{ 'true' if invalid else 'false' }}"
+    {% for attr, val in attrs.items() %}
+      {{ attr }}="{{ val }}"
+    {% endfor %}
+  >
+{%- endmacro %}
+
+{% macro number_input(id, name, value="", step="1", min=None, max=None, required=False,
+                      help_id=None, error_id=None, invalid=False, attrs={}) -%}
+  {{ text_input(
+      id,
+      name,
+      value=value,
+      type="number",
+      required=required,
+      step=step,
+      min=min,
+      max=max,
+      help_id=help_id,
+      error_id=error_id,
+      invalid=invalid,
+      attrs=attrs
+  ) }}
+{%- endmacro %}
+
+{% macro money_input(id, name, value="", required=False, help_id=None, error_id=None,
+                     invalid=False, attrs={}) -%}
+  {% set describedby = _describedby(help_id, error_id).strip() %}
+  <div class="input-group">
+    <span class="input-group-text">$</span>
+    <input
+      id="{{ id }}"
+      name="{{ name }}"
+      type="text"
+      value="{{ value if value is not none else '' }}"
+      class="form-control {% if invalid %}is-invalid{% endif %}"
+      {% if required %}required{% endif %}
+      {% if describedby %}aria-describedby="{{ describedby }}"{% endif %}
+      aria-invalid="{{ 'true' if invalid else 'false' }}"
+      data-money="true"
+      {% for attr, val in attrs.items() %}
+        {{ attr }}="{{ val }}"
+      {% endfor %}
+    >
+  </div>
+{%- endmacro %}
+
+{% macro select_input(id, name, options, value="", required=False, help_id=None,
+                      error_id=None, invalid=False, attrs={}) -%}
+  {% set describedby = _describedby(help_id, error_id).strip() %}
+  <select
+    id="{{ id }}"
+    name="{{ name }}"
+    class="form-select {% if invalid %}is-invalid{% endif %}"
+    {% if required %}required{% endif %}
+    {% if describedby %}aria-describedby="{{ describedby }}"{% endif %}
+    aria-invalid="{{ 'true' if invalid else 'false' }}"
+    {% for attr, val in attrs.items() %}
+      {{ attr }}="{{ val }}"
+    {% endfor %}
+  >
+    {% if not required %}
+      <option value="">{{ attrs.get("placeholder", "Select...") }}</option>
+    {% endif %}
+    {% for opt in options %}
+      {% if opt is mapping %}
+        {% set opt_val = opt.get("value", opt.get("id")) %}
+        {% set opt_label = opt.get("label", opt.get("name")) %}
+      {% else %}
+        {% set opt_val = opt[0] %}
+        {% set opt_label = opt[1] %}
+      {% endif %}
+      <option value="{{ opt_val }}" {% if value is not none and value|string == opt_val|string %}selected{% endif %}>{{ opt_label }}</option>
+    {% endfor %}
+  </select>
+{%- endmacro %}
+
+{% macro date_input(id, name, value="", required=False, help_id=None, error_id=None,
+                    invalid=False, attrs={}) -%}
+  {{ text_input(
+      id,
+      name,
+      value=value,
+      type=attrs.pop("type", "text"),
+      placeholder=attrs.pop("placeholder", "MM/DD/YYYY"),
+      required=required,
+      help_id=help_id,
+      error_id=error_id,
+      invalid=invalid,
+      attrs=attrs
+  ) }}
+{%- endmacro %}
+
+{% macro textarea(id, name, value="", rows=3, placeholder="", required=False,
+                  help_id=None, error_id=None, invalid=False, attrs={}) -%}
+  {% set describedby = _describedby(help_id, error_id).strip() %}
+  <textarea
+    id="{{ id }}"
+    name="{{ name }}"
+    rows="{{ rows }}"
+    class="form-control {% if invalid %}is-invalid{% endif %}"
+    {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    {% if required %}required{% endif %}
+    {% if describedby %}aria-describedby="{{ describedby }}"{% endif %}
+    aria-invalid="{{ 'true' if invalid else 'false' }}"
+    {% for attr, val in attrs.items() %}
+      {{ attr }}="{{ val }}"
+    {% endfor %}
+  >{{ value if value is not none else '' }}</textarea>
+{%- endmacro %}
+
+{% macro checkbox(id, name, checked=False, label="", help_id=None, error_id=None,
+                  attrs={}) -%}
+  {% set describedby = _describedby(help_id, error_id).strip() %}
+  <div class="form-check">
+    <input
+      class="form-check-input"
+      type="checkbox"
+      id="{{ id }}"
+      name="{{ name }}"
+      {% if checked %}checked{% endif %}
+      {% if describedby %}aria-describedby="{{ describedby }}"{% endif %}
+      {% for attr, val in attrs.items() %}
+        {{ attr }}="{{ val }}"
+      {% endfor %}
+    >
+    <label class="form-check-label" for="{{ id }}">{{ label }}</label>
+  </div>
+{%- endmacro %}
+
+{% macro field_error(errors, name) -%}
+  {% if errors %}
+    {{ errors.get(name) }}
+  {% else %}
+    {{ None }}
+  {% endif %}
+{%- endmacro %}

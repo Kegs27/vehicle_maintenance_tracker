@@ -578,6 +578,8 @@
     </style>
 </head>
 <body>
+    {% from "partials/forms/macros.html" import field, text_input, number_input, date_input, select_input, money_input, textarea, checkbox, field_error %}
+
     <!-- Navigation -->
     {% include 'nav.html' %}
 
@@ -1218,121 +1220,212 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="futureMaintenanceForm">
-                        <!-- Vehicle Selection -->
-                        <div class="row mb-3">
+                    <form id="futureMaintenanceForm" data-enhanced-form="true" data-draft-key="future-maintenance">
+                        {% set modal_values = {} %}
+                        {% set modal_errors = {} %}
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="vehicle_id" class="form-label fw-bold">Vehicle</label>
-                                <select class="form-select" id="vehicle_id" name="vehicle_id" required>
-                                    <option value="">Select a vehicle...</option>
-                                    {% for vehicle in vehicles %}
-                                    <option value="{{ vehicle.id }}">{{ vehicle.name }} ({{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }})</option>
-                                    {% endfor %}
-                                </select>
+                                {% set vehicle_options = namespace(items=[]) %}
+                                {% for vehicle in vehicles %}
+                                    {% set vehicle_label = vehicle.name %}
+                                    {% if vehicle.year %}
+                                        {% set vehicle_label = vehicle_label ~ " (" ~ vehicle.year ~ " " ~ vehicle.make ~ " " ~ vehicle.model ~ ")" %}
+                                    {% endif %}
+                                    {% set vehicle_options.items = vehicle_options.items + [(vehicle.id, vehicle_label)] %}
+                                {% endfor %}
+                                {% call field("future_vehicle_id", "Vehicle", required=True) %}
+                                    {{ select_input(
+                                        "future_vehicle_id",
+                                        "vehicle_id",
+                                        vehicle_options.items,
+                                        value=modal_values.get("vehicle_id"),
+                                        required=True,
+                                        help_id=help_id,
+                                        error_id=error_id,
+                                        invalid=False,
+                                        attrs={"placeholder": "Select a vehicle..."}
+                                    ) }}
+                                {% endcall %}
+                                <div class="text-danger small d-none" data-error-for="vehicle_id"></div>
                             </div>
                             <div class="col-md-6">
-                                <label for="maintenance_type" class="form-label fw-bold">
-                                    <span class="d-none d-md-inline">Maintenance Type</span>
-                                    <span class="d-inline d-md-none">Type</span>
-                                </label>
-                                <input type="text" class="form-control" id="maintenance_type" name="maintenance_type" 
-                                       placeholder="e.g., Oil Change, Brake Service, Tire Rotation" required>
-                            </div>
-                        </div>
-
-                        <!-- Target Mileage and Date -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="target_mileage" class="form-label fw-bold">
-                                    <span class="d-none d-md-inline">Target Mileage</span>
-                                    <span class="d-inline d-md-none">Target Miles</span>
-                                    <span class="text-muted">*</span>
-                                </label>
-                                <input type="number" class="form-control" id="target_mileage" name="target_mileage" 
-                                       placeholder="e.g., 50000" min="0">
-                                <div class="form-text d-none d-md-block">At least one of Target Mileage or Target Date is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="target_date" class="form-label fw-bold">Target Date
-                                    <span class="text-muted">*</span>
-                                </label>
-                                <input type="text" class="form-control" id="target_date" name="target_date"
-                                       placeholder="MM/DD/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}">
-                                <div class="form-text d-none d-md-block">At least one of Target Mileage or Target Date is required</div>
-                            </div>
-                        </div>
-
-                        <!-- Reminder Settings -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="mileage_reminder" class="form-label fw-bold">Mileage Reminder</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="mileage_reminder" name="mileage_reminder" 
-                                           placeholder="100" min="0" value="100">
-                                    <span class="input-group-text">miles before</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="date_reminder" class="form-label fw-bold">Date Reminder</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="date_reminder" name="date_reminder" 
-                                           placeholder="30" min="0" value="30">
-                                    <span class="input-group-text">days before</span>
-                                </div>
+                                {% call field("future_maintenance_type", "Maintenance Type", required=True) %}
+                                    {{ text_input(
+                                        "future_maintenance_type",
+                                        "maintenance_type",
+                                        value=modal_values.get("maintenance_type", ""),
+                                        placeholder="e.g., Oil Change, Brake Service, Tire Rotation",
+                                        required=True,
+                                        help_id=help_id,
+                                        error_id=error_id,
+                                        invalid=False
+                                    ) }}
+                                {% endcall %}
+                                <div class="text-danger small d-none" data-error-for="maintenance_type"></div>
                             </div>
                         </div>
 
-                        <!-- Cost and Parts -->
-                        <div class="row mb-3">
+                        <div class="row g-3 mt-2">
                             <div class="col-md-6">
-                                <label for="estimated_cost" class="form-label fw-bold">Estimated Cost</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="estimated_cost" name="estimated_cost" 
-                                           placeholder="0.00" step="0.01" min="0">
-                                </div>
+                                {% set target_help = "At least one of Target Mileage or Target Date is required" %}
+                                {% call field("future_target_mileage", "Target Mileage", help_text=target_help, extra_classes="mb-0") %}
+                                    {{ number_input(
+                                        "future_target_mileage",
+                                        "target_mileage",
+                                        value=modal_values.get("target_mileage", ""),
+                                        min="0",
+                                        help_id=help_id,
+                                        error_id=error_id,
+                                        invalid=False,
+                                        attrs={"placeholder": "e.g., 50000"}
+                                    ) }}
+                                {% endcall %}
+                                <div class="form-text d-md-none">At least one of Target Mileage or Target Date is required</div>
+                                <div class="text-danger small d-none" data-error-for="target_mileage"></div>
                             </div>
                             <div class="col-md-6">
-                                <label for="parts_link" class="form-label fw-bold">Parts Link/Part Number</label>
-                                <input type="text" class="form-control" id="parts_link" name="parts_link" 
-                                       placeholder="e.g., Amazon link, part number, or notes">
+                                {% call field("future_target_date", "Target Date", help_text=target_help, extra_classes="mb-0") %}
+                                    {{ date_input(
+                                        "future_target_date",
+                                        "target_date",
+                                        value=modal_values.get("target_date", ""),
+                                        help_id=help_id,
+                                        error_id=error_id,
+                                        invalid=False,
+                                        attrs={
+                                            "placeholder": "MM/DD/YYYY",
+                                            "pattern": "\\d{1,2}/\\d{1,2}/\\d{4}",
+                                            "data-date-max-today": ""
+                                        }
+                                    ) }}
+                                {% endcall %}
+                                <div class="form-text d-md-none">At least one of Target Mileage or Target Date is required</div>
+                                <div class="text-danger small d-none" data-error-for="target_date"></div>
                             </div>
                         </div>
 
-                        <!-- Notes -->
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                {% call field("future_mileage_reminder", "Mileage Reminder") %}
+                                    <div class="input-group">
+                                        {{ number_input(
+                                            "future_mileage_reminder",
+                                            "mileage_reminder",
+                                            value=modal_values.get("mileage_reminder", "100"),
+                                            step="1",
+                                            min="0",
+                                            help_id=help_id,
+                                            error_id=error_id,
+                                            invalid=False
+                                        ) }}
+                                        <span class="input-group-text">miles before</span>
+                                    </div>
+                                {% endcall %}
+                                <div class="text-danger small d-none" data-error-for="mileage_reminder"></div>
+                            </div>
+                            <div class="col-md-6">
+                                {% call field("future_date_reminder", "Date Reminder") %}
+                                    <div class="input-group">
+                                        {{ number_input(
+                                            "future_date_reminder",
+                                            "date_reminder",
+                                            value=modal_values.get("date_reminder", "30"),
+                                            step="1",
+                                            min="0",
+                                            help_id=help_id,
+                                            error_id=error_id,
+                                            invalid=False
+                                        ) }}
+                                        <span class="input-group-text">days before</span>
+                                    </div>
+                                {% endcall %}
+                                <div class="text-danger small d-none" data-error-for="date_reminder"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                {% call field("future_estimated_cost", "Estimated Cost") %}
+                                    {{ money_input(
+                                        "future_estimated_cost",
+                                        "estimated_cost",
+                                        value=modal_values.get("estimated_cost", ""),
+                                        help_id=help_id,
+                                        error_id=error_id,
+                                        invalid=False
+                                    ) }}
+                                {% endcall %}
+                                <div class="text-danger small d-none" data-error-for="estimated_cost"></div>
+                            </div>
+                            <div class="col-md-6">
+                                {% call field("future_parts_link", "Parts Link/Part Number") %}
+                                    {{ text_input(
+                                        "future_parts_link",
+                                        "parts_link",
+                                        value=modal_values.get("parts_link", ""),
+                                        placeholder="e.g., Amazon link, part number, or notes",
+                                        help_id=help_id,
+                                        error_id=error_id,
+                                        invalid=False
+                                    ) }}
+                                {% endcall %}
+                                <div class="text-danger small d-none" data-error-for="parts_link"></div>
+                            </div>
+                        </div>
+
+                        {% call field("future_notes", "Notes") %}
+                            {{ textarea(
+                                "future_notes",
+                                "notes",
+                                value=modal_values.get("notes", ""),
+                                rows=3,
+                                placeholder="Additional details about this maintenance...",
+                                help_id=help_id,
+                                error_id=error_id,
+                                invalid=False
+                            ) }}
+                        {% endcall %}
+                        <div class="text-danger small d-none" data-error-for="notes"></div>
+
                         <div class="mb-3">
-                            <label for="notes" class="form-label fw-bold">Notes</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3" 
-                                      placeholder="Additional details about this maintenance..."></textarea>
+                            {{ checkbox("future_is_recurring", "is_recurring", label="This is recurring maintenance") }}
                         </div>
 
-                        <!-- Recurring Maintenance -->
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
-                                <label class="form-check-label fw-bold" for="is_recurring">
-                                    This is recurring maintenance
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Recurrence Intervals (shown when recurring is checked) -->
                         <div id="recurrenceFields" style="display: none;">
-                            <div class="row mb-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label for="recurrence_interval_miles" class="form-label fw-bold">Recurrence Interval (Miles)</label>
-                                    <input type="number" class="form-control" id="recurrence_interval_miles" name="recurrence_interval_miles" 
-                                           placeholder="e.g., 5000" min="0">
+                                    {% call field("future_recurrence_miles", "Recurrence Interval (Miles)") %}
+                                        {{ number_input(
+                                            "future_recurrence_miles",
+                                            "recurrence_interval_miles",
+                                            value=modal_values.get("recurrence_interval_miles", ""),
+                                            min="0",
+                                            help_id=help_id,
+                                            error_id=error_id,
+                                            invalid=False,
+                                            attrs={"placeholder": "e.g., 5000"}
+                                        ) }}
+                                    {% endcall %}
+                                    <div class="text-danger small d-none" data-error-for="recurrence_interval_miles"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="recurrence_interval_months" class="form-label fw-bold">Recurrence Interval (Months)</label>
-                                    <input type="number" class="form-control" id="recurrence_interval_months" name="recurrence_interval_months" 
-                                           placeholder="e.g., 6" min="0">
+                                    {% call field("future_recurrence_months", "Recurrence Interval (Months)") %}
+                                        {{ number_input(
+                                            "future_recurrence_months",
+                                            "recurrence_interval_months",
+                                            value=modal_values.get("recurrence_interval_months", ""),
+                                            min="0",
+                                            help_id=help_id,
+                                            error_id=error_id,
+                                            invalid=False,
+                                            attrs={"placeholder": "e.g., 6"}
+                                        ) }}
+                                    {% endcall %}
+                                    <div class="text-danger small d-none" data-error-for="recurrence_interval_months"></div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Hierarchy Note -->
                         <div class="alert alert-info mt-3">
                             <span class="icon-row">
                                 <i class="fa-solid fa-circle-info icon-m icon-base"></i>
@@ -1360,6 +1453,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/forms.js?v=1"></script>
     <script src="/static/import-data.js"></script>
     <script src="/static/export-data.js?v=3"></script>
     
