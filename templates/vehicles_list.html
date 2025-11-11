@@ -533,24 +533,30 @@
                                     </div>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-sm btn-outline-primary">
-                                            <i class="fa-solid fa-pen-to-square fa-fw icon-left" aria-hidden="true"></i>
-                                            Edit
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles"
+                                           class="btn-icon btn-sm is-primary"
+                                           title="Edit vehicle"
+                                           aria-label="Edit vehicle">
+                                            <i class="fa-solid fa-pen"></i>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary transfer-vehicle-btn"
+                                        <button type="button"
+                                                class="btn-icon btn-sm is-muted transfer-vehicle-btn"
+                                                title="Transfer vehicle"
+                                                aria-label="Transfer vehicle"
                                                 data-vehicle-id="{{ vehicle.id }}"
                                                 data-vehicle-name="{{ vehicle.name }}"
                                                 data-account-id="{{ vehicle.account_id }}">
-                                            <i class="fa-solid fa-right-left fa-fw icon-left" aria-hidden="true"></i>
-                                            Transfer
+                                            <i class="fa-solid fa-right-left"></i>
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger delete-vehicle-btn"
+                                        <button type="button"
+                                                class="btn-icon btn-sm is-danger delete-vehicle-btn"
+                                                title="Delete vehicle"
+                                                aria-label="Delete vehicle"
                                                 data-vehicle-id="{{ vehicle.id }}"
                                                 data-vehicle-name="{{ vehicle.name }}">
-                                            <i class="fa-solid fa-trash-can fa-fw icon-left" aria-hidden="true"></i>
-                                            Delete
+                                            <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
                                 </td>

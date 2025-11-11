@@ -335,9 +335,9 @@
                 justify-content: flex-end;
             }
             
-            .maintenance-card-actions .btn {
-                font-size: 0.75rem;
-                padding: 0.25rem 0.5rem;
+            .maintenance-card-actions .btn-icon {
+                width: 36px;
+                height: 36px;
             }
             
             /* Hide table on mobile */
@@ -783,13 +783,21 @@
                                                 <span class="text-muted">-</span>
                                             {% endif %}
                                         </td>
-                                        <td class="text-center">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="editFutureMaintenance({{ future_record.id }})" aria-label="Edit future maintenance">
-                                                    <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
+                                        <td class="text-end">
+                                            <div class="d-inline-flex gap-1">
+                                                <button type="button"
+                                                        class="btn-icon btn-sm is-primary"
+                                                        title="Edit"
+                                                        aria-label="Edit future maintenance"
+                                                        onclick="editFutureMaintenance({{ future_record.id }})">
+                                                    <i class="fa-solid fa-pen"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFutureMaintenance({{ future_record.id }})" aria-label="Delete future maintenance">
-                                                    <i class="fa-solid fa-trash-can fa-fw" aria-hidden="true"></i>
+                                                <button type="button"
+                                                        class="btn-icon btn-sm is-danger"
+                                                        title="Delete"
+                                                        aria-label="Delete future maintenance"
+                                                        onclick="deleteFutureMaintenance({{ future_record.id }})">
+                                                    <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </div>
                                         </td>
@@ -934,28 +942,31 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <div class="btn-group-vertical btn-group-sm d-md-none" role="group">
-                                        <a href="/maintenance/{{ record.id }}/edit?return_url=/maintenance" class="btn btn-outline-primary mb-1" aria-label="Edit maintenance record">
-                                            <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <a href="/maintenance/{{ record.id }}/edit?return_url=/maintenance"
+                                           class="btn-icon btn-sm is-primary"
+                                           title="Edit maintenance record"
+                                           aria-label="Edit maintenance record">
+                                            <i class="fa-solid fa-pen"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger delete-maintenance-btn" 
-                                                data-record-id="{{ record.id }}" 
-                                                data-description="{{ record.description[:50] if record.description else '' }}{% if record.description and record.description|length > 50 %}...{% endif %}"
-                                                aria-label="Delete maintenance record">
-                                            <i class="fa-solid fa-trash-can fa-fw" aria-hidden="true"></i>
-                                        </button>
-                                    </div>
-                                    <div class="btn-group d-none d-md-flex" role="group">
-                                        <a href="/maintenance/{{ record.id }}/edit?return_url=/maintenance" class="btn btn-sm btn-outline-primary">
-                                            <i class="fa-solid fa-pen-to-square fa-fw icon-left" aria-hidden="true"></i>
-                                            Edit
+                                        {% if record.photo_path %}
+                                        <a href="/{{ record.photo_path }}"
+                                           target="_blank"
+                                           rel="noopener"
+                                           class="btn-icon btn-sm is-muted"
+                                           title="View photo"
+                                           aria-label="View attached photo">
+                                            <i class="fa-solid fa-image"></i>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger delete-maintenance-btn" 
-                                                data-record-id="{{ record.id }}" 
+                                        {% endif %}
+                                        <button type="button"
+                                                class="btn-icon btn-sm is-danger delete-maintenance-btn"
+                                                title="Delete maintenance record"
+                                                aria-label="Delete maintenance record"
+                                                data-record-id="{{ record.id }}"
                                                 data-description="{{ record.description[:50] if record.description else '' }}{% if record.description and record.description|length > 50 %}...{% endif %}">
-                                            <i class="fa-solid fa-trash-can fa-fw icon-left" aria-hidden="true"></i>
-                                            Delete
+                                            <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -1034,16 +1045,20 @@
                 </div>
                 {% endif %}
                 
-                <div class="maintenance-card-actions">
-                    <a href="/maintenance/{{ record.id }}/edit?return_url=/maintenance" class="btn btn-outline-primary btn-sm">
-                        <i class="fa-solid fa-pen-to-square fa-fw icon-left" aria-hidden="true"></i>
-                        Edit
+                <div class="maintenance-card-actions d-flex gap-2">
+                    <a href="/maintenance/{{ record.id }}/edit?return_url=/maintenance"
+                       class="btn-icon btn-sm is-primary"
+                       title="Edit maintenance record"
+                       aria-label="Edit maintenance record">
+                        <i class="fa-solid fa-pen"></i>
                     </a>
-                    <button type="button" class="btn btn-outline-danger btn-sm delete-maintenance-btn" 
-                            data-record-id="{{ record.id }}" 
+                    <button type="button"
+                            class="btn-icon btn-sm is-danger delete-maintenance-btn"
+                            title="Delete maintenance record"
+                            aria-label="Delete maintenance record"
+                            data-record-id="{{ record.id }}"
                             data-description="{{ record.description }}">
-                        <i class="fa-solid fa-trash-can fa-fw icon-left" aria-hidden="true"></i>
-                        Delete
+                        <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
             </div>
@@ -1093,12 +1108,20 @@
                 </div>
                 {% endif %}
                 
-                <div class="maintenance-card-actions">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="editFutureMaintenance({{ future_record.id }})" aria-label="Edit future maintenance">
-                        <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
+                <div class="maintenance-card-actions d-flex gap-2">
+                    <button type="button"
+                            class="btn-icon btn-sm is-primary"
+                            title="Edit future maintenance"
+                            aria-label="Edit future maintenance"
+                            onclick="editFutureMaintenance({{ future_record.id }})">
+                        <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFutureMaintenance({{ future_record.id }})" aria-label="Delete future maintenance">
-                        <i class="fa-solid fa-trash-can fa-fw" aria-hidden="true"></i>
+                    <button type="button"
+                            class="btn-icon btn-sm is-danger"
+                            title="Delete future maintenance"
+                            aria-label="Delete future maintenance"
+                            onclick="deleteFutureMaintenance({{ future_record.id }})">
+                        <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
             </div>

@@ -299,6 +299,98 @@ body::before {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* --- Compact Icon Buttons: Unified Flat + Border Style --- */
+.btn-icon {
+    --size: 34px;
+    width: var(--size);
+    height: var(--size);
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.1s ease;
+}
+
+.btn-icon i {
+    font-size: 0.95rem;
+}
+
+.btn-icon:hover {
+    transform: translateY(-1px);
+}
+
+.btn-icon:focus-visible {
+    outline: 2px solid rgba(124, 58, 237, 0.35);
+    outline-offset: 2px;
+}
+
+.btn-icon:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+}
+
+.btn-icon.is-primary {
+    background-color: rgba(124, 58, 237, 0.12);
+    color: #7c3aed;
+    border-color: rgba(124, 58, 237, 0.25);
+}
+
+.btn-icon.is-primary:hover,
+.btn-icon.is-primary:focus-visible {
+    background-color: #7c3aed;
+    color: #ffffff;
+    border-color: #7c3aed;
+}
+
+.btn-icon.is-success {
+    background-color: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.25);
+}
+
+.btn-icon.is-success:hover,
+.btn-icon.is-success:focus-visible {
+    background-color: #22c55e;
+    color: #ffffff;
+    border-color: #22c55e;
+}
+
+.btn-icon.is-danger {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.btn-icon.is-danger:hover,
+.btn-icon.is-danger:focus-visible {
+    background-color: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+.btn-icon.is-muted {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #666;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.btn-icon.is-muted:hover,
+.btn-icon.is-muted:focus-visible {
+    background-color: rgba(0, 0, 0, 0.15);
+    color: #000;
+    border-color: rgba(0, 0, 0, 0.3);
+}
+
 /* ============================================================================
    RESPONSIVE STYLES
    ============================================================================ */
