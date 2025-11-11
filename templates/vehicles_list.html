@@ -314,18 +314,14 @@
                 <span>My Vehicles</span>
             </h2>
             <div class="d-flex flex-wrap gap-2">
-                <a href="/vehicles/new?return_url=/vehicles" class="btn btn-primary btn-standard">
-                    <span class="icon-row-sm">
-                        <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
-                        <span>Add Vehicle</span>
-                    </span>
+                <a href="/vehicles/new?return_url=/vehicles" class="btn-action btn-action-primary">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add Vehicle</span>
                 </a>
                 <div class="dropdown">
-                    <button class="btn btn-outline-success btn-standard dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="icon-row-sm">
-                            <i class="fa-solid fa-right-left icon-m icon-base"></i>
-                            <span>Data Transfer</span>
-                        </span>
+                    <button class="btn-action btn-action-outline dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-right-left"></i>
+                        <span>Data Transfer</span>
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="exportDropdown">
                         <li>
@@ -660,22 +656,18 @@
             <i class="fa-solid fa-car empty-state text-muted icon-xl icon-base"></i>
             <h4 class="text-muted">No Vehicles Yet</h4>
             <p class="text-muted mb-4">Get started by adding your first vehicle to track maintenance.</p>
-            <a href="/vehicles/new?return_url=/vehicles" class="btn btn-primary btn-lg">
-                <span class="icon-row-sm">
-                    <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
-                    <span>Add Your First Vehicle</span>
-                </span>
+            <a href="/vehicles/new?return_url=/vehicles" class="btn-action btn-action-primary">
+                <i class="fa-solid fa-plus"></i>
+                <span>Add Your First Vehicle</span>
             </a>
         </div>
         {% endif %}
 
         <!-- Quick Actions -->
         <div class="mt-4 text-center">
-            <a href="/" class="btn btn-outline-secondary">
-                <span class="icon-row-sm">
-                    <i class="fa-solid fa-house icon-m icon-base"></i>
-                    <span>Back to Home</span>
-                </span>
+            <a href="/" class="btn-action btn-action-outline">
+                <i class="fa-solid fa-house"></i>
+                <span>Back to Home</span>
             </a>
         </div>
     </div>

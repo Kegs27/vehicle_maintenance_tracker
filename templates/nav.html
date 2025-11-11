@@ -7,37 +7,30 @@
                 <span>Vehicle Maintenance Tracker</span>
             </span>
         </a>
-        <div class="navbar-nav ms-auto">
+        <div class="navbar-nav ms-auto header-actions">
             <!-- Account Switcher -->
-            <div class="dropdown me-2">
-                <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" id="accountDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="icon-row-sm">
-                        <i class="fa-solid fa-circle-user fa-fw icon-primary" aria-hidden="true"></i>
-                        <span>Accounts</span>
-                    </span>
+            <div class="dropdown">
+                <button class="btn-account dropdown-toggle" type="button" id="accountDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-circle-user" aria-hidden="true"></i>
+                    <span>{{ __account_name or 'Accounts' }}</span>
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" id="accountDropdownMenu" aria-labelledby="accountDropdownButton">
                     <!-- populated by app-functions.js -->
                 </ul>
             </div>
+
             <!-- Notification Bell -->
-            <div class="notification-bell me-2 me-md-3" style="position: relative;">
-                <button class="btn btn-outline-warning position-relative btn-sm" type="button" onclick="showNotificationsModal()">
-                    <span class="icon-row-sm">
-                        <i class="fa-solid fa-bell fa-fw" aria-hidden="true"></i>
-                    </span>
-                    <span id="notificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
-                        0
-                    </span>
-                </button>
-            </div>
+            <button class="btn-header-icon position-relative" type="button" onclick="showNotificationsModal()" title="Notifications" aria-label="Notifications">
+                <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                <span id="notificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
+                    0
+                </span>
+            </button>
             
             <div class="dropdown">
-                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="icon-row-sm">
-                        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
-                        <span>Menu</span>
-                    </span>
+                <button class="btn-header-icon" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Menu" aria-label="Menu">
+                    <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mainNavDropdown">
                     <li>
@@ -154,31 +147,14 @@
 {% set __account_obj = __account_ctx.get('account') if __account_ctx is mapping else None %}
 {% set __account_name = __account_obj.name if __account_obj else None %}
 <script>
-    window.__ACCOUNT_CONTEXT__ = window.__ACCOUNT_CONTEXT__ || {
-        account_id: {{ __account_id|tojson }},
-        scope: {{ __account_scope|tojson }},
-        account_name: {{ __account_name|tojson }}
-    };
+    window.__ACCOUNT_CONTEXT__ = window.__ACCOUNT_CONTEXT__ || {};
+    window.__ACCOUNT_CONTEXT__.account_id = JSON.parse('{{ __account_id|tojson }}');
+    window.__ACCOUNT_CONTEXT__.scope = JSON.parse('{{ __account_scope|tojson }}');
+    window.__ACCOUNT_CONTEXT__.account_name = JSON.parse('{{ __account_name|tojson }}');
 </script>
 <script src="/static/app-functions.js"></script>
 <!-- Export functionality script -->
 <script src="/static/export-data.js"></script>
-
-<!-- Notification System Styles -->
-<style>
-    /* Mobile optimization for notification bell */
-    @media (max-width: 768px) {
-        .notification-bell .btn {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-        }
-        
-        .notification-bell .badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-        }
-    }
-</style>
 
 <!-- Notification System Script -->
 <script>
