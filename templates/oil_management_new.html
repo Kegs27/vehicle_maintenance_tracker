@@ -363,9 +363,11 @@
                                         <i class="fa-solid fa-oil-can icon-s icon-base icon-primary"></i>
                                         <span>Recent Oil Changes</span>
                                     </h6>
-                                    <button class="btn-action btn-action-primary btn-sm" onclick="openOilChangeModal({{ vehicle_data.vehicle.id }}, '{{ vehicle_data.vehicle.name }}')">
-                                        <i class="fa-solid fa-droplet"></i>
-                                        <span class="ms-1">Add Oil Change</span>
+                                    <button class="btn btn-primary btn-sm" onclick="openOilChangeModal({{ vehicle_data.vehicle.id }}, '{{ vehicle_data.vehicle.name }}')">
+                                        <span class="icon-row-sm">
+                                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                                            <span>Add Oil Change</span>
+                                        </span>
                                     </button>
                                 </div>
                                 
@@ -517,8 +519,11 @@
                     <i class="fa-solid fa-oil-can icon-xl icon-base text-muted mb-3"></i>
                     <h4 class="text-muted">No Oil Change Data</h4>
                     <p class="text-muted">Start by adding vehicles and their oil change records.</p>
-                    <a href="/vehicles" class="btn-action btn-action-primary">
-                        <i class="fa-solid fa-plus"></i> Add Vehicles
+                    <a href="/vehicles" class="btn btn-primary">
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                            <span>Add Vehicles</span>
+                        </span>
                     </a>
                 </div>
                 {% endif %}
@@ -659,13 +664,15 @@
                         {% endcall %}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn-action btn-action-outline" data-bs-dismiss="modal">
-                            <i class="fa-solid fa-xmark"></i>
-                            <span class="ms-1">Cancel</span>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <span class="icon-row-sm">
+                                <i class="fa-solid fa-xmark icon-m icon-base"></i>
+                                <span>Cancel</span>
+                            </span>
                         </button>
-                        <button type="submit" class="btn-action btn-action-primary">
-                            <i class="fa-solid fa-floppy-disk"></i>
-                            <span class="ms-1">Add Oil Change</span>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-floppy-disk fa-fw icon-left" aria-hidden="true"></i>
+                            <span>Add Oil Change</span>
                         </button>
                     </div>
                 </form>

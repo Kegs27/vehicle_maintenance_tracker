@@ -602,24 +602,30 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 {% if vehicle %}
-                    <button type="button" class="btn-action btn-action-primary" onclick="goToAddRecord({{ vehicle.id }})">
-                        <i class="fa-solid fa-wrench"></i>
-                        <span class="d-none d-md-inline ms-1">Add Maintenance</span>
-                        <span class="d-inline d-md-none ms-1">Add</span>
+                    <button type="button" class="btn btn-primary btn-standard" onclick="goToAddRecord({{ vehicle.id }})">
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                            <span class="d-none d-md-inline">Add Maintenance</span>
+                            <span class="d-inline d-md-none">Add</span>
+                        </span>
                     </button>
                 {% else %}
-                    <a href="/maintenance/new?return_url=/maintenance" class="btn-action btn-action-primary">
-                        <i class="fa-solid fa-wrench"></i>
-                        <span class="d-none d-md-inline ms-1">Add Maintenance</span>
-                        <span class="d-inline d-md-none ms-1">Add</span>
+                    <a href="/maintenance/new?return_url=/maintenance" class="btn btn-primary btn-standard">
+                        <span class="icon-row-sm">
+                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                            <span class="d-none d-md-inline">Add Maintenance</span>
+                            <span class="d-inline d-md-none">Add</span>
+                        </span>
                     </a>
                 {% endif %}
 
                 <!-- Add Future Maintenance Button - Always Visible -->
-                <button type="button" class="btn-action btn-action-primary" onclick="openFutureMaintenanceModal()">
-                    <i class="fa-solid fa-calendar-plus"></i>
-                    <span class="d-none d-md-inline ms-1">Add Future Maintenance</span>
-                    <span class="d-inline d-md-none ms-1">Future</span>
+                <button type="button" class="btn btn-success btn-standard" onclick="openFutureMaintenanceModal()">
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-calendar-plus icon-m icon-base" aria-hidden="true"></i>
+                        <span class="d-none d-md-inline">Add Future Maintenance</span>
+                        <span class="d-inline d-md-none">Future</span>
+                    </span>
                 </button>
             </div>
         </div>
@@ -777,28 +783,13 @@
                                                 <span class="text-muted">-</span>
                                             {% endif %}
                                         </td>
-                                        <td class="text-end maintenance-actions">
-                                            <div class="d-inline-flex gap-1">
-                                                <button type="button"
-                                                        class="btn-icon btn-sm is-success"
-                                                        title="Mark Complete"
-                                                        aria-label="Mark Complete"
-                                                        onclick="markFutureMaintenanceCompleted({{ future_record.id }})">
-                                                    <i class="fa-solid fa-check"></i>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="editFutureMaintenance({{ future_record.id }})" aria-label="Edit future maintenance">
+                                                    <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
                                                 </button>
-                                                <button type="button"
-                                                        class="btn-icon btn-sm is-primary"
-                                                        title="Edit"
-                                                        aria-label="Edit"
-                                                        onclick="editFutureMaintenance({{ future_record.id }})">
-                                                    <i class="fa-solid fa-pen"></i>
-                                                </button>
-                                                <button type="button"
-                                                        class="btn-icon btn-sm is-danger"
-                                                        title="Delete"
-                                                        aria-label="Delete"
-                                                        onclick="deleteFutureMaintenance({{ future_record.id }})">
-                                                    <i class="fa-solid fa-trash"></i>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFutureMaintenance({{ future_record.id }})" aria-label="Delete future maintenance">
+                                                    <i class="fa-solid fa-trash-can fa-fw" aria-hidden="true"></i>
                                                 </button>
                                             </div>
                                         </td>
@@ -943,38 +934,28 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end maintenance-actions">
-                                    <div class="d-inline-flex gap-1">
-                                        <button type="button"
-                                                class="btn-icon btn-sm is-success"
-                                                title="Mark Complete"
-                                                aria-label="Mark Complete"
-                                                onclick="markMaintenanceRecord({{ record.id }})">
-                                            <i class="fa-solid fa-circle-check"></i>
+                                <td>
+                                    <div class="btn-group-vertical btn-group-sm d-md-none" role="group">
+                                        <a href="/maintenance/{{ record.id }}/edit?return_url=/maintenance" class="btn btn-outline-primary mb-1" aria-label="Edit maintenance record">
+                                            <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger delete-maintenance-btn" 
+                                                data-record-id="{{ record.id }}" 
+                                                data-description="{{ record.description[:50] if record.description else '' }}{% if record.description and record.description|length > 50 %}...{% endif %}"
+                                                aria-label="Delete maintenance record">
+                                            <i class="fa-solid fa-trash-can fa-fw" aria-hidden="true"></i>
                                         </button>
-                                        <a href="/maintenance/{{ record.id }}/edit?return_url=/maintenance"
-                                           class="btn-icon btn-sm is-primary"
-                                           title="Edit"
-                                           aria-label="Edit maintenance record">
-                                            <i class="fa-solid fa-pen"></i>
+                                    </div>
+                                    <div class="btn-group d-none d-md-flex" role="group">
+                                        <a href="/maintenance/{{ record.id }}/edit?return_url=/maintenance" class="btn btn-sm btn-outline-primary">
+                                            <i class="fa-solid fa-pen-to-square fa-fw icon-left" aria-hidden="true"></i>
+                                            Edit
                                         </a>
-                                        {% if record.photo_path %}
-                                        <a href="/{{ record.photo_path }}"
-                                           target="_blank"
-                                           rel="noopener"
-                                           class="btn-icon btn-sm is-muted"
-                                           title="View Photo"
-                                           aria-label="View attached photo">
-                                            <i class="fa-solid fa-image"></i>
-                                        </a>
-                                        {% endif %}
-                                        <button type="button"
-                                                class="btn-icon btn-sm is-danger delete-maintenance-btn"
-                                                title="Delete"
-                                                aria-label="Delete maintenance record"
-                                                data-record-id="{{ record.id }}"
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-maintenance-btn" 
+                                                data-record-id="{{ record.id }}" 
                                                 data-description="{{ record.description[:50] if record.description else '' }}{% if record.description and record.description|length > 50 %}...{% endif %}">
-                                            <i class="fa-solid fa-trash"></i>
+                                            <i class="fa-solid fa-trash-can fa-fw icon-left" aria-hidden="true"></i>
+                                            Delete
                                         </button>
                                     </div>
                                 </td>
@@ -1136,8 +1117,11 @@
                 <p class="text-muted mb-4">Start tracking your vehicle maintenance by adding records or importing from CSV.</p>
             {% endif %}
             <div class="d-flex gap-3 justify-content-center flex-wrap">
-                <a href="/maintenance/new?return_url=/maintenance" class="btn-action btn-action-primary">
-                    <i class="fa-solid fa-wrench"></i> Add First Record
+                <a href="/maintenance/new?return_url=/maintenance" class="btn btn-primary btn-lg">
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                        <span>Add First Record</span>
+                    </span>
                 </a>
             </div>
         </div>
@@ -1147,22 +1131,28 @@
         <div id="quickActions" class="mt-4 text-center">
             <div class="d-flex gap-3 justify-content-center flex-wrap">
                 {% if vehicle %}
-                <button type="button" class="btn-action btn-action-primary" onclick="goToAddRecord({{ vehicle.id }})">
-                    <i class="fa-solid fa-wrench"></i>
-                    <span class="d-none d-md-inline ms-1">Add Maintenance</span>
-                    <span class="d-inline d-md-none ms-1">Add</span>
+                <button type="button" class="btn btn-primary btn-standard" onclick="goToAddRecord({{ vehicle.id }})">
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                        <span class="d-none d-md-inline">Add Maintenance</span>
+                        <span class="d-inline d-md-none">Add</span>
+                    </span>
                 </button>
                 {% else %}
-                <a href="/maintenance/new" class="btn-action btn-action-primary">
-                    <i class="fa-solid fa-wrench"></i>
-                    <span class="d-none d-md-inline ms-1">Add Maintenance</span>
-                    <span class="d-inline d-md-none ms-1">Add</span>
+                <a href="/maintenance/new" class="btn btn-primary btn-standard">
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
+                        <span class="d-none d-md-inline">Add Maintenance</span>
+                        <span class="d-inline d-md-none">Add</span>
+                    </span>
                 </a>
                 {% endif %}
-                <a href="/" class="btn-action btn-action-outline">
-                    <i class="fa-solid fa-house"></i>
-                    <span class="d-none d-md-inline ms-1">Back to Home</span>
-                    <span class="d-inline d-md-none ms-1">Home</span>
+                <a href="/" class="btn btn-outline-secondary btn-standard">
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-house icon-m icon-base"></i>
+                        <span class="d-none d-md-inline">Back to Home</span>
+                        <span class="d-inline d-md-none">Home</span>
+                    </span>
                 </a>
             </div>
         </div>
@@ -1448,15 +1438,14 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-action btn-action-outline" data-bs-dismiss="modal">
-                        <i class="fa-solid fa-xmark"></i>
-                        <span class="d-none d-md-inline ms-1">Cancel</span>
-                        <span class="d-inline d-md-none ms-1">Cancel</span>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <span class="d-none d-md-inline">Cancel</span>
+                        <span class="d-inline d-md-none">Cancel</span>
                     </button>
-                    <button type="button" class="btn-action btn-action-primary" onclick="saveFutureMaintenance()">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span class="d-none d-md-inline ms-1">Save Future Maintenance</span>
-                        <span class="d-inline d-md-none ms-1">Save</span>
+                    <button type="button" class="btn btn-primary" onclick="saveFutureMaintenance()">
+                        <i class="fa-solid fa-floppy-disk fa-fw icon-left" aria-hidden="true"></i>
+                        <span class="d-none d-md-inline">Save Future Maintenance</span>
+                        <span class="d-inline d-md-none">Save</span>
                     </button>
                 </div>
             </div>

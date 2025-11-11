@@ -17,16 +17,13 @@ function showImportModal() {
                     <div class="modal-body">
                         <p class="text-muted mb-3">Import maintenance records from CSV files:</p>
                         <div class="d-grid gap-2">
-                            <a href="/import" class="btn-action btn-action-primary text-center">
-                                <i class="fa-solid fa-upload me-1"></i>
-                                <span>Import CSV Data</span>
+                            <a href="/import" class="btn btn-primary">
+                                <span class="icon-row"><i class="fa-solid fa-upload me-2"></i><span>Import CSV Data</span></span>
                             </a>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn-action btn-action-outline" data-bs-dismiss="modal">
-                            <i class="fa-solid fa-xmark me-1"></i>Close
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>

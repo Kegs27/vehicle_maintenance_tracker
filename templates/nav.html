@@ -1,55 +1,121 @@
 <!-- Reusable Navigation Component -->
-{% set _current_account = (account_context.get('account') if account_context and account_context is mapping else None) %}
 <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/">
-            <i class="fa-solid fa-car me-2"></i>
-            Vehicle Maintenance Tracker
+            <span class="icon-row">
+                <i class="fa-solid fa-car fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                <span>Vehicle Maintenance Tracker</span>
+            </span>
         </a>
-        <div class="ms-auto header-actions">
-            <div class="dropdown">
-                <button class="btn-account dropdown-toggle" type="button"
-                        id="accountDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
-                    {{ _current_account.name if _current_account else "Account" }}
-                    <i class="fa-solid fa-chevron-down"></i>
+        <div class="navbar-nav ms-auto">
+            <!-- Account Switcher -->
+            <div class="dropdown me-2">
+                <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" id="accountDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-circle-user fa-fw icon-primary" aria-hidden="true"></i>
+                        <span>Accounts</span>
+                    </span>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end" id="accountDropdownMenu"
-                    aria-labelledby="accountDropdownButton">
+                <ul class="dropdown-menu dropdown-menu-end" id="accountDropdownMenu" aria-labelledby="accountDropdownButton">
                     <!-- populated by app-functions.js -->
                 </ul>
             </div>
-            <div class="dropdown position-relative">
-                <button class="btn-icon dropdown-toggle position-relative" type="button"
-                        data-bs-toggle="dropdown" aria-label="Notifications">
-                    <i class="fa-solid fa-bell"></i>
-                    <span id="notificationCount"
-                          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                          style="display:none;">0</span>
+            <!-- Notification Bell -->
+            <div class="notification-bell me-2 me-md-3" style="position: relative;">
+                <button class="btn btn-outline-warning position-relative btn-sm" type="button" onclick="showNotificationsModal()">
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-bell fa-fw" aria-hidden="true"></i>
+                    </span>
+                    <span id="notificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
+                        0
+                    </span>
                 </button>
-                <div class="dropdown-menu dropdown-menu-end p-0">
-                    <p class="dropdown-item text-muted small mb-0">No new notifications</p>
-                </div>
             </div>
+            
             <div class="dropdown">
-                <button class="btn-icon dropdown-toggle" type="button" id="mainNavDropdown"
-                        data-bs-toggle="dropdown" aria-label="Menu">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="icon-row-sm">
+                        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+                        <span>Menu</span>
+                    </span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mainNavDropdown">
-                    <li class="dropdown-header">
-                        <span class="text-muted text-uppercase small fw-semibold d-block">Navigate</span>
+                    <li>
+                        <a class="dropdown-item" href="/vehicles" data-account-aware="true">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-car fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Vehicles</span>
+                            </span>
+                        </a>
                     </li>
-                    <li><a class="dropdown-item" href="/vehicles" data-account-aware="true">Vehicles</a></li>
-                    <li><a class="dropdown-item" href="/maintenance" data-account-aware="true">Maintenance</a></li>
-                    <li><a class="dropdown-item" href="/oil-management" data-account-aware="true">Oil Management</a></li>
-                    <li><a class="dropdown-item" href="/fuel-new" data-account-aware="true">Fuel Tracking</a></li>
+                    <li>
+                        <a class="dropdown-item" href="/maintenance" data-account-aware="true">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-screwdriver-wrench fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Maintenance</span>
+                            </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="/notifications" data-account-aware="true">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-envelope fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Email Notifications</span>
+                            </span>
+                        </a>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
-                    <li class="dropdown-header">
-                        <span class="text-muted text-uppercase small fw-semibold d-block">Data Transfer</span>
+                    <li>
+                        <a class="dropdown-item" href="/oil-management" data-account-aware="true">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-oil-can fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Oil Management</span>
+                            </span>
+                        </a>
                     </li>
-                    <li><a class="dropdown-item" href="#" data-action="open-import"><i class="fa-solid fa-file-arrow-up me-2"></i>Import Data (CSV)</a></li>
-                    <li><a class="dropdown-item" href="#" data-action="open-export"><i class="fa-solid fa-file-arrow-down me-2"></i>Export Data</a></li>
-                    <li><a class="dropdown-item" href="/data-transfer"><i class="fa-solid fa-right-left me-2"></i>Data Transfer Page</a></li>
+                    <li>
+                        <a class="dropdown-item" href="/fuel-new" data-account-aware="true">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-gas-pump fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Fuel Tracking</span>
+                            </span>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="/import" data-account-aware="true">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-upload fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Import Data</span>
+                            </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="exportAllVehicles()">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-file-lines fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Export All</span>
+                                <span class="badge-micro badge-green">CSV</span>
+                            </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="exportToPDF()">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-file-lines fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Export All</span>
+                                <span class="badge-micro badge-red">PDF</span>
+                            </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="exportSingleVehicle()">
+                            <span class="icon-row">
+                                <i class="fa-solid fa-car fa-lg fa-fw icon-primary icon-base" aria-hidden="true"></i>
+                                <span>Export Single Vehicle</span>
+                            </span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -75,9 +141,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-action btn-action-outline" data-bs-dismiss="modal">
-                    <i class="fa-solid fa-xmark"></i> Close
-                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

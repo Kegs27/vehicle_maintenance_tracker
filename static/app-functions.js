@@ -273,24 +273,19 @@ function determineInitialAccountId(accounts, defaultAccountId) {
 function updateAccountDropdownButton(button, account, totalVehicleCount, isAllSelected) {
     if (!button) return;
 
-    const chevron = '<i class="fa-solid fa-chevron-down ms-2"></i>';
-
     if (isAllSelected) {
-        const countLabel = typeof totalVehicleCount === 'number' ? ` (${totalVehicleCount})` : '';
-        button.innerHTML = `All Accounts${countLabel} ${chevron}`;
+        button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-circle-user fa-fw icon-primary" aria-hidden="true"></i><span>All Accounts${typeof totalVehicleCount === 'number' ? ` (${totalVehicleCount})` : ''}</span></span>`;
         return;
     }
 
     if (!account) {
-        button.innerHTML = `Account ${chevron}`;
+        button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-circle-user fa-fw icon-primary" aria-hidden="true"></i><span>Accounts</span></span>`;
         return;
     }
 
     const countLabel = typeof account.vehicle_count === 'number' ? ` (${account.vehicle_count})` : '';
-    const defaultBadge = account.is_default
-        ? '<i class="fa-solid fa-star text-warning ms-2" title="Default account" aria-hidden="true"></i>'
-        : '';
-    button.innerHTML = `${account.name}${countLabel} ${defaultBadge} ${chevron}`.trim();
+    const defaultBadge = account.is_default ? ' <i class="fa-solid fa-star fa-fw icon-right text-warning" title="Default account" aria-hidden="true"></i>' : '';
+    button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-circle-user fa-fw icon-primary" aria-hidden="true"></i><span>${account.name}${countLabel}${defaultBadge}</span></span>`;
 }
 
 function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) {
@@ -301,7 +296,7 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
         <li>
             <a class="dropdown-item d-flex justify-content-between align-items-center ${isAll ? 'active' : ''}"
                href="#" data-account-id="all" data-account-name="All">
-                <span>All Accounts</span>
+                <span class="icon-row"><i class="fa-solid fa-layer-group fa-fw icon-primary" aria-hidden="true"></i><span>All Accounts</span></span>
                 <span class="badge bg-light text-dark border">${typeof totalVehicleCount === 'number' ? totalVehicleCount : '-'}</span>
             </a>
         </li>
@@ -313,14 +308,12 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
     } else {
         accounts.forEach((account) => {
             const isActive = selectedAccountId === account.id;
-            const defaultIcon = account.is_default
-                ? '<i class="fa-solid fa-star text-warning ms-1" title="Default account" aria-hidden="true"></i>'
-                : '';
+            const defaultIcon = account.is_default ? '<i class="fa-solid fa-star fa-fw icon-right text-warning" title="Default account" aria-hidden="true"></i>' : '';
             items.push(`
                 <li>
                     <a class="dropdown-item d-flex justify-content-between align-items-center ${isActive ? 'active' : ''}"
                        href="#" data-account-id="${account.id}" data-account-name="${account.name}">
-                        <span>${account.name}${defaultIcon}</span>
+                        <span class="icon-row"><i class="fa-solid fa-user fa-fw icon-primary" aria-hidden="true"></i><span>${account.name}${defaultIcon}</span></span>
                         <span class="badge bg-light text-dark border">${account.vehicle_count ?? 0}</span>
                     </a>
                 </li>
@@ -331,8 +324,8 @@ function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) 
     items.push('<li><hr class="dropdown-divider"></li>');
     items.push(`
         <li>
-            <a class="dropdown-item" href="/accounts" data-manage-accounts="true">
-                Manage Accounts
+            <a class="dropdown-item d-flex align-items-center" href="/accounts" data-manage-accounts="true">
+                <span class="icon-row"><i class="fa-solid fa-users-gear fa-fw icon-primary" aria-hidden="true"></i><span>Manage Accounts</span></span>
             </a>
         </li>
     `);
@@ -473,7 +466,7 @@ async function buildAccountDropdown(menuId, buttonId) {
         }
     } catch (error) {
         console.error('Unable to populate account dropdown:', error);
-        button.innerHTML = `Account (offline) <i class="fa-solid fa-chevron-down ms-2"></i>`;
+        button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-circle-user fa-fw icon-primary" aria-hidden="true"></i><span>Accounts (offline)</span></span>`;
         menu.innerHTML = `
             <li class="dropdown-header text-muted">Unable to load accounts</li>
             <li><a class="dropdown-item" href="/accounts"><span class="icon-row"><i class="fa-solid fa-users-gear fa-fw icon-primary" aria-hidden="true"></i><span>Manage Accounts</span></span></a></li>
@@ -571,29 +564,6 @@ window.fetchAccountsFromApi = fetchAccountsFromApi;
 window.getSelectedAccountId = getSelectedAccountId;
 window.buildAccountAwareUrl = buildAccountAwareUrl;
 window.rewriteAccountAwareLinks = rewriteAccountAwareLinks;
-
-// Header menu: Import/Export triggers
-document.addEventListener('click', (event) => {
-    const trigger = event.target.closest('a[data-action]');
-    if (!trigger) return;
-
-    const action = trigger.getAttribute('data-action');
-    if (action === 'open-import') {
-        event.preventDefault();
-        if (typeof window.openImportModal === 'function') return window.openImportModal();
-        if (typeof window.showImportDialog === 'function') return window.showImportDialog();
-        if (typeof window.handleImportClick === 'function') return window.handleImportClick();
-        console.warn('No import handler found');
-    }
-
-    if (action === 'open-export') {
-        event.preventDefault();
-        if (typeof window.openExportModal === 'function') return window.openExportModal();
-        if (typeof window.showExportDialog === 'function') return window.showExportDialog();
-        if (typeof window.handleExportClick === 'function') return window.handleExportClick();
-        console.warn('No export handler found');
-    }
-});
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
