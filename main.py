@@ -2,9 +2,11 @@
 import os
 import sys
 import csv
+import traceback
 from decimal import Decimal
 from datetime import date, datetime
 from typing import Optional, Dict, Any
+from types import SimpleNamespace
 from io import StringIO
 
 # Third-party imports
@@ -93,8 +95,62 @@ get_vehicle_names = dummy_get_vehicle_names
 get_maintenance_summary = dummy_get_maintenance_summary
 sort_maintenance_records = dummy_sort_maintenance_records
 
+ops: Optional[SimpleNamespace] = None
+
+OPS_REQUIRED_FUNCTIONS = [
+    "get_home_dashboard_summary",
+    "get_future_maintenance_by_id",
+    "update_maintenance_record",
+    "mark_future_maintenance_completed",
+    "get_maintenance_records_by_vehicle",
+    "create_maintenance_record",
+    "create_basic_maintenance_record",
+    "create_oil_analysis_record",
+    "create_placeholder_oil_analysis",
+    "get_maintenance_by_id",
+    "get_vehicle_current_mileage",
+    "get_all_fuel_entries",
+    "get_all_vehicles",
+    "get_vehicle_by_id",
+    "create_vehicle",
+    "update_vehicle",
+    "delete_vehicle",
+    "get_fuel_entries_for_vehicle",
+    "export_vehicles_csv",
+    "export_maintenance_csv",
+    "export_vehicles_pdf",
+    "get_vehicle_names",
+    "export_maintenance_pdf",
+    "parse_date_string",
+    "create_future_maintenance",
+    "update_future_maintenance",
+    "get_future_maintenance_by_vehicle",
+    "delete_future_maintenance",
+    "get_triggered_future_maintenance",
+    "get_oil_change_interval_from_record",
+    "get_all_maintenance_records",
+    "delete_maintenance_record",
+    "get_all_vehicles_triggered_maintenance",
+    "get_accounts",
+    "get_account_by_id",
+    "get_account_by_name",
+    "create_account",
+    "rename_account",
+    "delete_account",
+    "set_default_account",
+    "get_default_account",
+    "transfer_vehicle_to_account",
+    "get_account_vehicle_counts",
+    "get_all_future_maintenance",
+    "get_vehicle_health_status",
+    "sort_maintenance_records",
+    "import_csv_data",
+    "get_maintenance_summary",
+]
+
 # Simplified import system
 try:
+    import data_operations as ops
     from database import engine, init_db, get_session, SessionLocal
     from models import Vehicle, MaintenanceRecord
     from importer import import_csv, ImportResult
@@ -143,6 +199,7 @@ except ImportError as e:
     print(f"❌ Import error: {e}")
     # Fallback for app package (for local development)
     try:
+        import app.data_operations as ops
         from app.database import engine, init_db, get_session, SessionLocal
         from app.models import Vehicle, MaintenanceRecord
         from app.importer import import_csv, ImportResult
@@ -200,6 +257,41 @@ except ImportError as e:
         import_csv = lambda *args, **kwargs: None
         ImportResult = None
         print("⚠️ Using dummy objects to prevent crashes")
+        def _ops_stub(*args, **kwargs):
+            raise RuntimeError("data_operations module unavailable")
+
+        ops = SimpleNamespace()
+        for name in OPS_REQUIRED_FUNCTIONS:
+            func = globals().get(name)
+            setattr(ops, name, func if callable(func) else _ops_stub)
+
+if ops is None:
+    # Ensure ops references the imported module when imports succeed
+    import importlib
+    try:
+        ops = importlib.import_module("data_operations")
+    except ModuleNotFoundError:
+        try:
+            ops = importlib.import_module("app.data_operations")
+        except ModuleNotFoundError:
+            # ops already set to dummy namespace in the previous block
+            pass
+
+# --- OPS + DB sanity check ---
+from database import engine as ENGINE
+
+missing_ops = [fn for fn in OPS_REQUIRED_FUNCTIONS if not hasattr(ops, fn)]
+if missing_ops:
+    raise RuntimeError(f"Missing ops functions: {missing_ops}")
+
+try:
+    with ENGINE.connect() as conn:
+        conn.exec_driver_sql("SELECT 1")
+    print("✅ OPS wired OK:", len(missing_ops) == 0)
+    print("✅ Active DB:", str(ENGINE.url))
+except Exception as e:
+    print("❌ DB connection failed:", e)
+# --- end sanity check ---
 
 # Create FastAPI app
 app = FastAPI(title="Vehicle Maintenance Tracker")
@@ -470,8 +562,7 @@ async def home(request: Request):
     """Home page with navigation and summary using centralized data operations"""
     try:
         # Get enhanced dashboard data using centralized function
-        from data_operations import get_home_dashboard_summary
-        dashboard_data = get_home_dashboard_summary()
+        dashboard_data = ops.get_home_dashboard_summary()
         
         return templates.TemplateResponse("index.html", {"request": request, "dashboard": dashboard_data})
     except Exception as e:
@@ -522,8 +613,7 @@ async def test_endpoint():
 async def test_dashboard():
     """Test endpoint to verify dashboard data is working"""
     try:
-        from data_operations import get_home_dashboard_summary
-        dashboard_data = get_home_dashboard_summary()
+        dashboard_data = ops.get_home_dashboard_summary()
         return {"success": True, "dashboard": dashboard_data}
     except Exception as e:
         return {"success": False, "error": str(e), "traceback": traceback.format_exc()}
@@ -771,8 +861,7 @@ async def new_maintenance_form(
     pre_populated_data = None
     if future_maintenance_id:
         try:
-            from data_operations import get_future_maintenance_by_id
-            future_maintenance = get_future_maintenance_by_id(future_maintenance_id)
+            future_maintenance = ops.get_future_maintenance_by_id(future_maintenance_id)
             if future_maintenance and (
                 not allowed_vehicle_ids or future_maintenance.vehicle_id in allowed_vehicle_ids
             ):
@@ -861,9 +950,7 @@ async def create_maintenance_route(
             raise HTTPException(status_code=404, detail="Vehicle not found or inaccessible in this account.")
 
         if payload.future_maintenance_id:
-            from data_operations import get_future_maintenance_by_id
-
-            future_record = get_future_maintenance_by_id(payload.future_maintenance_id)
+            future_record = ops.get_future_maintenance_by_id(payload.future_maintenance_id)
             if not future_record or future_record.vehicle_id != payload.vehicle_id:
                 raise HTTPException(status_code=404, detail="Future maintenance not found for this vehicle.")
 
@@ -928,9 +1015,7 @@ async def create_maintenance_route(
 
         if result["success"] and (is_oil_change_flag or oil_type or oil_brand):
             try:
-                from data_operations import update_maintenance_record
-
-                update_result = update_maintenance_record(
+                update_result = ops.update_maintenance_record(
                     record_id=result["record"].id,
                     vehicle_id=payload.vehicle_id,
                     date=date_str,
@@ -971,17 +1056,13 @@ async def create_maintenance_route(
 
         if payload.future_maintenance_id:
             try:
-                from data_operations import mark_future_maintenance_completed
-
-                mark_future_maintenance_completed(payload.future_maintenance_id)
+                ops.mark_future_maintenance_completed(payload.future_maintenance_id)
             except Exception as exc:  # noqa: BLE001
                 print(f"Error marking future maintenance as completed: {exc}")
 
         # Additional oil analysis linking
         if is_oil_change_flag:
-            from data_operations import get_maintenance_records_by_vehicle
-
-            vehicle_records = get_maintenance_records_by_vehicle(payload.vehicle_id)
+            vehicle_records = ops.get_maintenance_records_by_vehicle(payload.vehicle_id)
             if payload.link_oil_analysis:
                 existing_analysis = [
                     record
@@ -998,9 +1079,7 @@ async def create_maintenance_route(
                 ]
                 if not existing_analysis:
                     try:
-                        from data_operations import create_maintenance_record as create_maintenance_record_fn
-
-                        create_maintenance_record_fn(
+                        ops.create_maintenance_record(
                             vehicle_id=payload.vehicle_id,
                             date=date_str,  # Same date as oil change
                             description=(
@@ -1113,8 +1192,7 @@ async def edit_maintenance_form(
             any(keyword in record.description.lower() 
                 for keyword in ['fuel filter', 'air filter', 'brake', 'tire', 'battery', 'spark plug', 'belt', 'hose', 'gasket', 'sensor', 'pump', 'alternator', 'starter', 'transmission', 'clutch', 'suspension', 'exhaust', 'coolant', 'thermostat', 'radiator', 'water pump'])):
             # This is incorrectly marked as oil change - auto-fix it
-            from data_operations import update_maintenance_record
-            update_result = update_maintenance_record(
+            update_result = ops.update_maintenance_record(
                 record_id=record_id,
                 vehicle_id=record.vehicle_id,
                 date=record.date.strftime('%m/%d/%Y'),
@@ -1141,8 +1219,7 @@ async def edit_maintenance_form(
         # Check if this record has linked oil analysis (for oil change forms)
         has_linked_oil_analysis = False
         if detected_form_type == "oil_change" and record.is_oil_change:
-            from data_operations import get_maintenance_records_by_vehicle
-            vehicle_records = get_maintenance_records_by_vehicle(record.vehicle_id)
+            vehicle_records = ops.get_maintenance_records_by_vehicle(record.vehicle_id)
             linked_analysis = [
                 r for r in vehicle_records 
                 if r.linked_oil_change_id == record.id
@@ -1327,8 +1404,7 @@ async def update_maintenance_route(
         if result["success"]:
             # If oil analysis linking was requested, create or link oil analysis record
             # Check if this is an oil change (either from form, existing record, or description)
-            from data_operations import get_maintenance_by_id
-            updated_record = get_maintenance_by_id(record_id)
+            updated_record = ops.get_maintenance_by_id(record_id)
             
             # Detect oil change from description if not explicitly marked
             description_indicates_oil_change = False
@@ -1340,8 +1416,7 @@ async def update_maintenance_route(
             
             # Handle oil analysis linking/unlinking
             if is_oil_change_record:
-                from data_operations import get_maintenance_records_by_vehicle
-                vehicle_records = get_maintenance_records_by_vehicle(vehicle_id)
+                vehicle_records = ops.get_maintenance_records_by_vehicle(vehicle_id)
                 
                 # Simple mileage-based oil analysis creation
                 if link_oil_analysis:
@@ -1358,9 +1433,7 @@ async def update_maintenance_route(
                     if not existing_analysis:
                         # Create new oil analysis placeholder at same mileage
                         try:
-                            from data_operations import create_maintenance_record as create_maintenance_record_fn
-
-                            create_maintenance_record_fn(
+                            oil_analysis_result = ops.create_maintenance_record(
                                 vehicle_id=vehicle_id,
                                 date=date_str,  # Same date as oil change
                                 description=f"Oil Analysis - {mileage:,} miles",
@@ -1437,13 +1510,11 @@ async def update_vehicle_mileage(
     """Update vehicle mileage by creating a mileage update record"""
     try:
         # Get current mileage for validation
-        from data_operations import get_vehicle_current_mileage, create_maintenance_record
-        
-        current_mileage_info = get_vehicle_current_mileage(vehicle_id)
+        current_mileage_info = ops.get_vehicle_current_mileage(vehicle_id)
         current_mileage = current_mileage_info.get("current_mileage", 0)
         
         # Create the mileage update record
-        result = create_maintenance_record(
+        result = ops.create_maintenance_record(
             vehicle_id=vehicle_id,
             date=date_str,
             description="Mileage Update",
@@ -1517,10 +1588,8 @@ async def get_fuel_entries(
 ):
     """Get all fuel entries from the database with optional account filtering."""
     try:
-        from data_operations import get_all_fuel_entries
-
         account_id = resolve_account_filter(accountId, accountName)
-        entries = get_all_fuel_entries(account_id=account_id)
+        entries = ops.get_all_fuel_entries(account_id=account_id)
         serialized_entries = [serialize_fuel_entry_for_api(entry) for entry in entries]
 
         return {
@@ -1542,10 +1611,8 @@ async def get_fuel_mpg_summary(
 ):
     """Get MPG summary for all vehicles"""
     try:
-        from data_operations import get_all_vehicles, get_fuel_entries_for_vehicle
-
         account_id = resolve_account_filter(accountId, accountName)
-        vehicles = get_all_vehicles(account_id=account_id)
+        vehicles = ops.get_all_vehicles(account_id=account_id)
         summary = []
         
         def to_datetime(value):
@@ -1566,7 +1633,7 @@ async def get_fuel_mpg_summary(
             return None
 
         for vehicle in vehicles:
-            fuel_entries = get_fuel_entries_for_vehicle(vehicle.id, account_id=account_id)
+            fuel_entries = ops.get_fuel_entries_for_vehicle(vehicle.id, account_id=account_id)
 
             total_cost = sum((entry.get("fuel_cost") or 0) for entry in fuel_entries)
             total_gallons_all = sum((entry.get("fuel_amount") or 0) for entry in fuel_entries)
@@ -1755,16 +1822,14 @@ async def import_data(
 async def export_vehicles_csv(vehicle_ids: Optional[str] = Query(None)):
     """Export vehicles to CSV using centralized data operations"""
     try:
-        from data_operations import export_vehicles_csv as export_vehicles_func
-        
         if vehicle_ids:
             # Export specific vehicles
             vehicle_id_list = [int(id.strip()) for id in vehicle_ids.split(',')]
-            csv_content = export_vehicles_func(vehicle_ids=vehicle_id_list)
+            csv_content = ops.export_vehicles_csv(vehicle_ids=vehicle_id_list)
             filename = f"vehicles_selected_export.csv"
         else:
             # Export all vehicles
-            csv_content = export_vehicles_func()
+            csv_content = ops.export_vehicles_csv()
             filename = "vehicles_export.csv"
         
         return Response(
@@ -1779,15 +1844,13 @@ async def export_vehicles_csv(vehicle_ids: Optional[str] = Query(None)):
 async def export_maintenance_csv(vehicle_id: Optional[int] = Query(None)):
     """Export maintenance records to CSV using centralized data operations"""
     try:
-        from data_operations import export_maintenance_csv as export_maintenance_func
-        
         if vehicle_id:
             # Export single vehicle maintenance
-            csv_content = export_maintenance_func(vehicle_id=vehicle_id)
+            csv_content = ops.export_maintenance_csv(vehicle_id=vehicle_id)
             filename = f"maintenance_vehicle_{vehicle_id}_export.csv"
         else:
             # Export all maintenance
-            csv_content = export_maintenance_func()
+            csv_content = ops.export_maintenance_csv()
             filename = "maintenance_export.csv"
         
         return Response(
@@ -1802,13 +1865,11 @@ async def export_maintenance_csv(vehicle_id: Optional[int] = Query(None)):
 async def export_vehicles_pdf(vehicle_ids: Optional[str] = Query(None)):
     """Export vehicles to PDF using centralized data operations"""
     try:
-        from data_operations import export_vehicles_pdf as export_vehicles_pdf_func
-        
         if vehicle_ids:
             vehicle_id_list = [int(id.strip()) for id in vehicle_ids.split(',')]
-            pdf_content = export_vehicles_pdf_func(vehicle_ids=vehicle_id_list)
+            pdf_content = ops.export_vehicles_pdf(vehicle_ids=vehicle_id_list)
         else:
-            pdf_content = export_vehicles_pdf_func()
+            pdf_content = ops.export_vehicles_pdf()
         
         return Response(
             content=pdf_content,
@@ -1822,8 +1883,7 @@ async def export_vehicles_pdf(vehicle_ids: Optional[str] = Query(None)):
 async def get_vehicle_names_for_export():
     """Get vehicle names and IDs for export selection"""
     try:
-        from data_operations import get_vehicle_names
-        vehicles = get_vehicle_names()
+        vehicles = ops.get_vehicle_names()
         return {"success": True, "vehicles": vehicles}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get vehicle names: {str(e)}")
@@ -1832,9 +1892,7 @@ async def get_vehicle_names_for_export():
 async def export_maintenance_pdf(vehicle_id: Optional[int] = Query(None)):
     """Export maintenance records to PDF using centralized data operations"""
     try:
-        from data_operations import export_maintenance_pdf as export_maintenance_pdf_func
-        
-        pdf_content = export_maintenance_pdf_func(vehicle_id=vehicle_id)
+        pdf_content = ops.export_maintenance_pdf(vehicle_id=vehicle_id)
         
         return Response(
             content=pdf_content,
@@ -1978,11 +2036,10 @@ async def create_fuel_entry(
         from database import SessionLocal
         from models import FuelEntry
         from datetime import datetime
-        from data_operations import parse_date_string
         
         # Parse the date string
         try:
-            parsed_date = parse_date_string(date)
+            parsed_date = ops.parse_date_string(date)
         except ValueError as e:
             return {
                 "success": False,
@@ -1990,8 +2047,7 @@ async def create_fuel_entry(
             }
         
         # Check for gaps before creating entry
-        from data_operations import get_fuel_entries_for_vehicle
-        existing_entries = get_fuel_entries_for_vehicle(vehicle_id)
+        existing_entries = ops.get_fuel_entries_for_vehicle(vehicle_id)
         gaps_detected = []
         
         if existing_entries:
@@ -2082,11 +2138,10 @@ async def update_fuel_entry(
         from database import SessionLocal
         from models import FuelEntry
         from datetime import datetime
-        from data_operations import parse_date_string
         
         # Parse the date string
         try:
-            parsed_date = parse_date_string(date)
+            parsed_date = ops.parse_date_string(date)
         except ValueError as e:
             return {
                 "success": False,
@@ -2166,9 +2221,7 @@ async def create_future_maintenance_api(
 ):
     """Create a new future maintenance reminder"""
     try:
-        from data_operations import create_future_maintenance
-        
-        result = create_future_maintenance(
+        result = ops.create_future_maintenance(
             vehicle_id=vehicle_id,
             maintenance_type=maintenance_type,
             target_date=target_date,
@@ -2209,9 +2262,7 @@ async def update_future_maintenance_api(
 ):
     """Update an existing future maintenance reminder"""
     try:
-        from data_operations import update_future_maintenance
-        
-        result = update_future_maintenance(
+        result = ops.update_future_maintenance(
             future_maintenance_id=future_maintenance_id,
             vehicle_id=vehicle_id,
             maintenance_type=maintenance_type,
@@ -2239,9 +2290,7 @@ async def update_future_maintenance_api(
 async def get_future_maintenance_by_vehicle_api(vehicle_id: int):
     """Get future maintenance reminders for a specific vehicle"""
     try:
-        from data_operations import get_future_maintenance_by_vehicle
-        
-        future_maintenance = get_future_maintenance_by_vehicle(vehicle_id)
+        future_maintenance = ops.get_future_maintenance_by_vehicle(vehicle_id)
         return {
             "success": True,
             "future_maintenance": future_maintenance
@@ -2258,9 +2307,7 @@ async def get_future_maintenance_by_vehicle_api(vehicle_id: int):
 async def get_future_maintenance_by_id_api(future_maintenance_id: int):
     """Get a specific future maintenance reminder by ID"""
     try:
-        from data_operations import get_future_maintenance_by_id
-        
-        future_maintenance = get_future_maintenance_by_id(future_maintenance_id)
+        future_maintenance = ops.get_future_maintenance_by_id(future_maintenance_id)
         if future_maintenance:
             return {
                 "success": True,
@@ -2442,9 +2489,7 @@ async def list_maintenance_api(
 async def delete_future_maintenance_api(future_maintenance_id: int):
     """Delete a future maintenance reminder"""
     try:
-        from data_operations import delete_future_maintenance
-        
-        result = delete_future_maintenance(future_maintenance_id)
+        result = ops.delete_future_maintenance(future_maintenance_id)
         return result
         
     except Exception as e:
@@ -2458,22 +2503,16 @@ async def delete_future_maintenance_api(future_maintenance_id: int):
 async def get_notifications_api():
     """Get all maintenance notifications (oil changes + future maintenance)"""
     try:
-        from data_operations import (
-            get_all_vehicles,
-            get_triggered_future_maintenance,
-            get_vehicle_current_mileage,
-        )
-        
         notifications = []
         total_count = 0
         has_overdue = False
         
         # Get all vehicles to check oil change status
-        vehicles = get_all_vehicles()
+        vehicles = ops.get_all_vehicles()
         
         for vehicle in vehicles:
             # Get current mileage for this vehicle
-            mileage_info = get_vehicle_current_mileage(vehicle.id)
+            mileage_info = ops.get_vehicle_current_mileage(vehicle.id)
             current_mileage = mileage_info.get('current_mileage', 0) or 0
             
             # Check oil change notifications using the same logic as vehicle health
@@ -2502,8 +2541,7 @@ async def get_notifications_api():
                         last_oil_change = max(oil_changes, key=lambda x: x.date)
                         
                         # Get the oil change interval from the record
-                        from data_operations import get_oil_change_interval_from_record
-                        oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
+                        oil_change_interval = ops.get_oil_change_interval_from_record(last_oil_change)
                         
                         if oil_change_interval:
                             miles_since_oil_change = current_mileage - last_oil_change.mileage
@@ -2532,7 +2570,7 @@ async def get_notifications_api():
             
             # Check future maintenance notifications
             try:
-                future_maintenance = get_triggered_future_maintenance(vehicle.id, current_mileage)
+                future_maintenance = ops.get_triggered_future_maintenance(vehicle.id, current_mileage)
                 for item in future_maintenance:
                     if item['urgency'] in ['high', 'medium']:  # Only show overdue and due soon
                         if item['urgency'] == 'high':
@@ -2571,10 +2609,8 @@ async def get_notifications_api():
 async def cleanup_oil_analysis():
     """Clean up oil analysis records for testing"""
     try:
-        from data_operations import get_all_maintenance_records, delete_maintenance_record
-        
         # Get all maintenance records
-        all_records = get_all_maintenance_records()
+        all_records = ops.get_all_maintenance_records()
         
         # Find oil analysis records (records with oil analysis data)
         oil_analysis_records = [
@@ -2590,7 +2626,7 @@ async def cleanup_oil_analysis():
         # Delete each oil analysis record
         for record in oil_analysis_records:
             try:
-                result = delete_maintenance_record(record.id)
+                result = ops.delete_maintenance_record(record.id)
                 if result.get("success", False):
                     deleted_count += 1
                 else:
@@ -2659,10 +2695,8 @@ async def cleanup_oil_analysis():
 async def debug_oil_linking(vehicle_id: int):
     """Debug oil change linking issues"""
     try:
-        from data_operations import get_maintenance_records_by_vehicle
-        
         # Get all maintenance records for this vehicle
-        records = get_maintenance_records_by_vehicle(vehicle_id)
+        records = ops.get_maintenance_records_by_vehicle(vehicle_id)
         
         # Find oil analysis records
         oil_analysis_records = [
@@ -2724,18 +2758,16 @@ async def debug_oil_linking(vehicle_id: int):
 async def oil_management_new(request: Request):
     """New Oil Management page with collapsible cards and smart linking"""
     try:
-        from data_operations import get_all_vehicles, get_maintenance_records_by_vehicle
-        
         account_context = get_account_context(request)
         account_id = account_context["account_id"] if account_context["scope"] != "all" else None
 
         # Get vehicles scoped to the active account (or all)
-        vehicles = get_all_vehicles(account_id=account_id)
+        vehicles = ops.get_all_vehicles(account_id=account_id)
         vehicles_oil_data = []
         
         for vehicle in vehicles:
             # Get all maintenance records for this vehicle under the same account scope
-            records = get_maintenance_records_by_vehicle(vehicle.id, account_id=account_id)
+            records = ops.get_maintenance_records_by_vehicle(vehicle.id, account_id=account_id)
             
             # Filter oil changes (records marked as oil changes)
             oil_changes = [r for r in records if r.is_oil_change]
@@ -2903,11 +2935,10 @@ async def serve_photo(filename: str):
 async def view_oil_analysis_pdf(record_id: int):
     """View uploaded oil analysis PDF"""
     try:
-        from data_operations import get_maintenance_by_id
         import os
         from fastapi.responses import FileResponse
-        
-        record = get_maintenance_by_id(record_id)
+
+        record = ops.get_maintenance_by_id(record_id)
         if not record:
             raise HTTPException(status_code=404, detail="Oil analysis record not found")
         

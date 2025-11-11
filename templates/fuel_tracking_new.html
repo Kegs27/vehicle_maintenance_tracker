@@ -14,111 +14,6 @@
                 font-size: 16px;
             }
         }
-
-        /* MPG flip cards */
-        .mpg-card {
-            --mpg-card-h: 220px;
-            --mpg-pad: 1rem;
-            --mpg-radius: 12px;
-            perspective: 1200px;
-        }
-
-        .mpg-card-inner {
-            position: relative;
-            height: var(--mpg-card-h);
-            transform-style: preserve-3d;
-            transition: transform 420ms ease;
-            border-radius: var(--mpg-radius);
-            background: #ffffff;
-            box-shadow: 0 6px 18px rgba(2, 8, 23, 0.06);
-        }
-
-        .mpg-card-face {
-            position: absolute;
-            inset: 0;
-            padding: var(--mpg-pad);
-            backface-visibility: hidden;
-            border-radius: var(--mpg-radius);
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-            gap: 0.35rem;
-            overflow: hidden;
-        }
-
-        .mpg-card-face * {
-            line-height: 1.25;
-        }
-
-        .mpg-card-front {
-            transform: rotateY(0deg);
-        }
-
-        .mpg-card-back {
-            transform: rotateY(180deg);
-        }
-
-        .mpg-card.is-flipped .mpg-card-inner {
-            transform: rotateY(180deg);
-        }
-
-        .mpg-face-header {
-            font-weight: 600;
-            font-size: clamp(0.9rem, 2.1vw, 1rem);
-            text-align: center;
-            color: #0f172a;
-        }
-
-        .mpg-stats {
-            list-style: none;
-            margin: 0.25rem 0 0 0;
-            padding: 0;
-            display: grid;
-            gap: 0.35rem;
-            font-size: clamp(0.85rem, 2vw, 0.95rem);
-        }
-
-        .mpg-stats li {
-            display: flex;
-            justify-content: space-between;
-            gap: 0.75rem;
-            white-space: nowrap;
-        }
-
-        .mpg-stats li span {
-            color: #475569;
-        }
-
-        .mpg-stats li strong {
-            color: #0f172a;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .mpg-dots {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .mpg-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 9999px;
-            background: #cbd5e1;
-            border: 0;
-            cursor: pointer;
-        }
-
-        .mpg-dot[aria-selected="true"] {
-            background: #475569;
-        }
-
-        .mpg-dot:focus {
-            outline: 2px solid #94a3b8;
-            outline-offset: 2px;
-        }
-
         .modal-title {
             letter-spacing: 0.02em;
             color: #0f172a;
@@ -204,7 +99,7 @@
                                 <span>Vehicle Fuel Data</span>
                             </h5>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body fuel-cards-body">
                             <div id="mpgSummary">
                                 <!-- MPG summary will be loaded here -->
                             </div>
@@ -391,6 +286,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/fuel-cards.js?v=1"></script>
     
     <script>
         // Global variables
@@ -845,79 +741,89 @@
                 const milesTraveledText = formatMiles(vehicle.miles_traveled);
                 const gallonsFilledText = formatGallons(vehicle.gallons_filled);
                 const avgDaysText = formatDays(vehicle.avg_days_between_fills);
+                const vehicleName = vehicle.vehicle_name || 'Vehicle';
+                const gapCount = Array.isArray(vehicle.gaps_detected) ? vehicle.gaps_detected.length : 0;
+
+                const currentMpgSection = vehicle.current_mpg 
+                    ? `<div class="mb-2">
+                            <div class="h5 text-success mb-0">${vehicle.current_mpg.toFixed(1)} MPG</div>
+                            <small class="text-muted">Current (last 2 entries)</small>
+                       </div>`
+                    : `<div class="mb-2">
+                            <small class="text-muted">Current: Need 2+ entries</small>
+                       </div>`;
+
+                const recentMpgSection = vehicle.entries_mpg
+                    ? `<div class="mb-2">
+                            <div class="h6 text-info mb-0">${vehicle.entries_mpg.toFixed(1)} MPG</div>
+                            <small class="text-muted">Last 5 entries</small>
+                       </div>`
+                    : `<div class="mb-2">
+                            <small class="text-muted">Last 5: Need 2+ entries</small>
+                       </div>`;
+
+                const lifetimeMpgSection = vehicle.lifetime_mpg
+                    ? `<div class="mb-2">
+                            <div class="h6 text-primary mb-0">${vehicle.lifetime_mpg.toFixed(1)} MPG</div>
+                            <small class="text-muted">Lifetime (${vehicle.entries_count} entries)</small>
+                       </div>`
+                    : '';
+
+                const gapDetailsSection = gapCount > 0
+                    ? `<div class="gap-details small text-muted mt-2">
+                            ${vehicle.gaps_detected.map(gap => `${gap.gap_miles} miles`).join(', ')}
+                       </div>`
+                    : '';
+
+                const gapWarningLine = gapCount > 0
+                    ? `<div class="gap-warning">
+                            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                            ${gapCount} gap${gapCount === 1 ? '' : 's'} detected
+                       </div>`
+                    : '<div class="gap-warning"></div>';
 
                 html += `
                     <div class="col-md-4">
-                        <div class="mpg-card relative"
-                             data-name="${vehicle.vehicle_name || ''}"
-                             data-avg-price="${vehicle.avg_price_per_gal ?? ''}"
-                             data-miles="${vehicle.miles_traveled ?? ''}"
-                             data-gallons="${vehicle.gallons_filled ?? ''}"
-                             data-avg-days="${vehicle.avg_days_between_fills ?? ''}">
-                            <div class="mpg-card-inner">
-                                <section class="mpg-card-face mpg-card-front">
-                                    <div class="card h-100 border-0 bg-transparent">
-                                        <div class="card-body text-center p-0 h-100 d-flex flex-column justify-content-between">
-                                            <h6 class="card-title">${vehicle.vehicle_name}</h6>
-                                            
-                                            ${vehicle.current_mpg ? 
-                                                `<div class="mb-2">
-                                                    <div class="h5 text-success mb-0">${vehicle.current_mpg.toFixed(1)} MPG</div>
-                                                    <small class="text-muted">Current (last 2 entries)</small>
-                                                </div>` : 
-                                                `<div class="mb-2">
-                                                    <small class="text-muted">Current: Need 2+ entries</small>
-                                                </div>`
-                                            }
-                                            
-                                            ${vehicle.entries_mpg ? 
-                                                `<div class="mb-2">
-                                                    <div class="h6 text-info mb-0">${vehicle.entries_mpg.toFixed(1)} MPG</div>
-                                                    <small class="text-muted">Last 5 entries</small>
-                                                </div>` : 
-                                                `<div class="mb-2">
-                                                    <small class="text-muted">Last 5: Need 2+ entries</small>
-                                                </div>`
-                                            }
-                                            
-                                            ${vehicle.lifetime_mpg ? 
-                                                `<div class="mb-2">
-                                                    <div class="h6 text-primary mb-0">${vehicle.lifetime_mpg.toFixed(1)} MPG</div>
-                                                    <small class="text-muted">Lifetime (${vehicle.entries_count} entries)</small>
-                                                </div>` : ''
-                                            }
-                                            
-                                            ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
-                                                `<div class="mt-2">
-                                                    <small class="text-warning icon-row">
-                                                        <i class="fa-solid fa-triangle-exclamation icon-xs icon-base"></i>
-                                                        <span>${vehicle.gaps_detected.length} gap(s) detected</span>
-                                                    </small>
-                                                    <div class="small text-muted mt-1">
-                                                        ${vehicle.gaps_detected.map(gap => 
-                                                            `${gap.gap_miles} miles`
-                                                        ).join(', ')}
-                                                    </div>
-                                                </div>` : ''
-                                            }
+                        <div class="fuel-card flip-card">
+                            <div class="flip-inner">
+                                <div class="card-face card-front">
+                                    <div class="card-content">
+                                        <div class="card-head">${vehicleName}</div>
+                                        <div class="card-main text-center">
+                                            ${currentMpgSection}
+                                            ${recentMpgSection}
+                                            ${lifetimeMpgSection}
+                                            ${gapDetailsSection}
+                                        </div>
+                                        <div class="card-foot">
+                                            ${gapWarningLine}
+                                            <div class="pager-dots" role="tablist" aria-label="Flip card">
+                                                <button type="button" class="dot is-active" data-side="front" aria-label="Front" aria-selected="true"></button>
+                                                <button type="button" class="dot" data-side="back" aria-label="Back" aria-selected="false"></button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div aria-hidden="true"></div>
-                                </section>
-                                <section class="mpg-card-face mpg-card-back">
-                                    <header class="mpg-face-header">${vehicle.vehicle_name} &ndash; Fuel stats</header>
-                                    <ul class="mpg-stats">
-                                        <li><span>Avg price/gal</span><strong>${avgPriceText}</strong></li>
-                                        <li><span>Miles traveled</span><strong>${milesTraveledText}</strong></li>
-                                        <li><span>Gallons filled</span><strong>${gallonsFilledText}</strong></li>
-                                        <li><span>Refuel frequency</span><strong>${avgDaysText}</strong></li>
-                                    </ul>
-                                    <div class="mpg-face-footer" aria-hidden="true"></div>
-                                </section>
-                            </div>
-                            <div class="mpg-dots mt-3 d-flex align-items-center justify-content-center gap-2">
-                                <button type="button" class="mpg-dot" aria-selected="true" aria-label="MPG summary" data-side="front" tabindex="0"></button>
-                                <button type="button" class="mpg-dot" aria-selected="false" aria-label="Fuel stats" data-side="back" tabindex="0"></button>
+                                </div>
+                                <div class="card-face card-back">
+                                    <div class="card-content">
+                                        <div class="card-head">${vehicleName}</div>
+                                        <div class="card-main">
+                                            <ul class="fuel-stats list-unstyled mb-0">
+                                                <li><span>Avg price/gal</span><strong>${avgPriceText}</strong></li>
+                                                <li><span>Miles traveled</span><strong>${milesTraveledText}</strong></li>
+                                                <li><span>Gallons filled</span><strong>${gallonsFilledText}</strong></li>
+                                                <li><span>Refuel frequency</span><strong>${avgDaysText}</strong></li>
+                                            </ul>
+                                        </div>
+                                        <div class="card-foot">
+                                            <div class="gap-warning"></div>
+                                            <div class="pager-dots" role="tablist" aria-label="Flip card">
+                                                <button type="button" class="dot" data-side="front" aria-label="Front" aria-selected="false"></button>
+                                                <button type="button" class="dot is-active" data-side="back" aria-label="Back" aria-selected="true"></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -926,38 +832,10 @@
 
             html += '</div>';
             container.innerHTML = html;
-            initializeMpgCards();
+            if (window.initFuelCards) {
+                window.initFuelCards(container);
+            }
         }
-
-        function initializeMpgCards() {
-            const cards = document.querySelectorAll('.mpg-card');
-            cards.forEach((card) => {
-                const setDots = (side) => {
-                    card.querySelectorAll('.mpg-dot').forEach((dot) => {
-                        dot.setAttribute('aria-selected', String(dot.dataset.side === side));
-                    });
-                };
-
-                const flipTo = (side) => {
-                    const toBack = side === 'back';
-                    card.classList.toggle('is-flipped', toBack);
-                    setDots(side);
-                };
-
-                setDots('front');
-
-                card.querySelectorAll('.mpg-dot').forEach((dot) => {
-                    dot.addEventListener('click', () => flipTo(dot.dataset.side));
-                    dot.addEventListener('keydown', (event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            flipTo(dot.dataset.side);
-                        }
-                    });
-                });
-            });
-        }
-
         // Quick Fill-Up Functions
         async function loadQuickFillData() {
             const vehicleId = document.getElementById('vehicleSelect').value;

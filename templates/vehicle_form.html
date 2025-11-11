@@ -141,15 +141,13 @@
                             </div>
 
                             <div class="d-flex gap-2 justify-content-center">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fa-solid fa-floppy-disk fa-fw icon-left" aria-hidden="true"></i>
-                                    <span>{% if vehicle %}Update Vehicle{% else %}Add Vehicle{% endif %}</span>
+                                <button type="submit" class="btn-action btn-action-primary">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                    <span class="ms-1">{% if vehicle %}Update Vehicle{% else %}Add Vehicle{% endif %}</span>
                                 </button>
-                                <a href="/vehicles" class="btn btn-outline-secondary">
-                                    <span class="icon-row-sm">
-                                        <i class="fa-solid fa-xmark icon-m icon-base"></i>
-                                        <span>Cancel</span>
-                                    </span>
+                                <a href="/vehicles" class="btn-action btn-action-outline">
+                                    <i class="fa-solid fa-xmark"></i>
+                                    <span class="ms-1">Cancel</span>
                                 </a>
                             </div>
                         </form>

@@ -858,15 +858,13 @@
                             {% endif %}
 
                             <div class="d-flex gap-2 justify-content-center mt-4">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fa-solid fa-floppy-disk fa-fw icon-left" aria-hidden="true"></i>
-                                    <span>{% if record %}Update Record{% else %}Add Record{% endif %}</span>
+                                <button type="submit" class="btn-action btn-action-primary">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                    <span class="ms-1">{% if record %}Update Record{% else %}Add Record{% endif %}</span>
                                 </button>
-                                <a href="{{ return_url }}" class="btn btn-outline-secondary">
-                                    <span class="icon-row-sm">
-                                        <i class="fa-solid fa-xmark icon-m icon-base"></i>
-                                        <span>Cancel</span>
-                                    </span>
+                                <a href="{{ return_url }}" class="btn-action btn-action-outline">
+                                    <i class="fa-solid fa-xmark"></i>
+                                    <span class="ms-1">Cancel</span>
                                 </a>
                             </div>
                         </form>

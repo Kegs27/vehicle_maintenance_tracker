@@ -314,11 +314,8 @@
                 <span>My Vehicles</span>
             </h2>
             <div class="d-flex flex-wrap gap-2">
-                <a href="/vehicles/new?return_url=/vehicles" class="btn btn-primary btn-standard">
-                    <span class="icon-row-sm">
-                        <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
-                        <span>Add Vehicle</span>
-                    </span>
+                <a href="/vehicles/new?return_url=/vehicles" class="btn-action btn-action-primary">
+                    <i class="fa-solid fa-plus"></i> Add Vehicle
                 </a>
                 <div class="dropdown">
                     <button class="btn btn-outline-success btn-standard dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -533,24 +530,30 @@
                                     </div>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-sm btn-outline-primary">
-                                            <i class="fa-solid fa-pen-to-square fa-fw icon-left" aria-hidden="true"></i>
-                                            Edit
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles"
+                                           class="btn-icon btn-sm is-primary"
+                                           title="Edit"
+                                           aria-label="Edit">
+                                            <i class="fa-solid fa-pen"></i>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary transfer-vehicle-btn"
+                                        <button type="button"
+                                                class="btn-icon btn-sm is-success transfer-vehicle-btn"
+                                                title="Transfer"
+                                                aria-label="Transfer"
                                                 data-vehicle-id="{{ vehicle.id }}"
                                                 data-vehicle-name="{{ vehicle.name }}"
                                                 data-account-id="{{ vehicle.account_id }}">
-                                            <i class="fa-solid fa-right-left fa-fw icon-left" aria-hidden="true"></i>
-                                            Transfer
+                                            <i class="fa-solid fa-right-left"></i>
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger delete-vehicle-btn"
+                                        <button type="button"
+                                                class="btn-icon btn-sm is-danger delete-vehicle-btn"
+                                                title="Delete"
+                                                aria-label="Delete"
                                                 data-vehicle-id="{{ vehicle.id }}"
                                                 data-vehicle-name="{{ vehicle.name }}">
-                                            <i class="fa-solid fa-trash-can fa-fw icon-left" aria-hidden="true"></i>
-                                            Delete
+                                            <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -617,31 +620,31 @@
                 </div>
                 {% endif %}
                 
-                <div class="vehicle-card-actions">
-                    <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fa-solid fa-list fa-fw icon-left" aria-hidden="true"></i>
-                        Records
+                <div class="vehicle-card-actions d-flex gap-2 flex-wrap">
+                    <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="btn-action btn-action-outline btn-sm">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        <span class="ms-1">Records</span>
                     </a>
-                    <a href="/maintenance/new?vehicle_id={{ vehicle.id }}" class="btn btn-outline-success btn-sm">
-                        <i class="fa-solid fa-circle-plus fa-fw icon-left" aria-hidden="true"></i>
-                        Add
+                    <a href="/maintenance/new?vehicle_id={{ vehicle.id }}" class="btn-action btn-action-primary btn-sm">
+                        <i class="fa-solid fa-wrench"></i>
+                        <span class="ms-1">Add</span>
                     </a>
-                    <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn btn-outline-secondary btn-sm">
-                        <i class="fa-solid fa-pen-to-square fa-fw icon-left" aria-hidden="true"></i>
-                        Edit
+                    <a href="/vehicles/{{ vehicle.id }}/edit?return_url=/vehicles" class="btn-action btn-action-outline btn-sm">
+                        <i class="fa-solid fa-pen"></i>
+                        <span class="ms-1">Edit</span>
                     </a>
-                    <button type="button" class="btn btn-outline-secondary btn-sm transfer-vehicle-btn"
+                    <button type="button" class="btn-action btn-action-outline btn-sm transfer-vehicle-btn"
                             data-vehicle-id="{{ vehicle.id }}"
                             data-vehicle-name="{{ vehicle.name }}"
                             data-account-id="{{ vehicle.account_id }}">
-                        <i class="fa-solid fa-right-left fa-fw icon-left" aria-hidden="true"></i>
-                        Transfer
+                        <i class="fa-solid fa-right-left"></i>
+                        <span class="ms-1">Transfer</span>
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm delete-vehicle-btn"
+                    <button type="button" class="btn-action btn-action-outline btn-sm text-danger border-danger delete-vehicle-btn"
                             data-vehicle-id="{{ vehicle.id }}" 
                             data-vehicle-name="{{ vehicle.name }}">
-                        <i class="fa-solid fa-trash-can fa-fw icon-left" aria-hidden="true"></i>
-                        Delete
+                        <i class="fa-solid fa-trash"></i>
+                        <span class="ms-1">Delete</span>
                     </button>
                 </div>
             </div>
@@ -654,22 +657,16 @@
             <i class="fa-solid fa-car empty-state text-muted icon-xl icon-base"></i>
             <h4 class="text-muted">No Vehicles Yet</h4>
             <p class="text-muted mb-4">Get started by adding your first vehicle to track maintenance.</p>
-            <a href="/vehicles/new?return_url=/vehicles" class="btn btn-primary btn-lg">
-                <span class="icon-row-sm">
-                    <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
-                    <span>Add Your First Vehicle</span>
-                </span>
+            <a href="/vehicles/new?return_url=/vehicles" class="btn-action btn-action-primary">
+                <i class="fa-solid fa-plus"></i> Add Your First Vehicle
             </a>
         </div>
         {% endif %}
 
         <!-- Quick Actions -->
         <div class="mt-4 text-center">
-            <a href="/" class="btn btn-outline-secondary">
-                <span class="icon-row-sm">
-                    <i class="fa-solid fa-house icon-m icon-base"></i>
-                    <span>Back to Home</span>
-                </span>
+            <a href="/" class="btn-action btn-action-outline">
+                <i class="fa-solid fa-house"></i> <span class="ms-1">Back to Home</span>
             </a>
         </div>
     </div>
@@ -733,15 +730,13 @@
                         <input type="hidden" id="modalVehicleId" name="vehicle_id">
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <span class="icon-row-sm">
-                                <i class="fa-solid fa-xmark icon-m icon-base"></i>
-                                <span>Cancel</span>
-                            </span>
+                        <button type="button" class="btn-action btn-action-outline" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-xmark"></i>
+                            <span class="ms-1">Cancel</span>
                         </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-floppy-disk fa-fw icon-left" aria-hidden="true"></i>
-                            <span>Update Mileage</span>
+                        <button type="submit" class="btn-action btn-action-primary">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span class="ms-1">Update Mileage</span>
                         </button>
                     </div>
                 </form>
@@ -776,17 +771,13 @@
                     <input type="hidden" id="transferVehicleId">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <span class="icon-row-sm">
-                            <i class="fa-solid fa-xmark icon-m icon-base"></i>
-                            <span>Cancel</span>
-                        </span>
+                    <button type="button" class="btn-action btn-action-outline" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark"></i>
+                        <span class="ms-1">Cancel</span>
                     </button>
-                    <button type="submit" class="btn btn-primary" id="transferSubmitBtn">
-                        <span class="icon-row-sm">
-                            <i class="fa-solid fa-right-left icon-m icon-base"></i>
-                            <span>Transfer Vehicle</span>
-                        </span>
+                    <button type="submit" class="btn-action btn-action-primary" id="transferSubmitBtn">
+                        <i class="fa-solid fa-right-left"></i>
+                        <span class="ms-1">Transfer Vehicle</span>
                     </button>
                 </div>
             </form>
