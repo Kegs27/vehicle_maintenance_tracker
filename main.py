@@ -1327,7 +1327,6 @@ async def update_maintenance_route(
         if result["success"]:
             # If oil analysis linking was requested, create or link oil analysis record
             # Check if this is an oil change (either from form, existing record, or description)
-            from data_operations import get_maintenance_by_id
             updated_record = get_maintenance_by_id(record_id)
             
             # Detect oil change from description if not explicitly marked
@@ -1340,7 +1339,6 @@ async def update_maintenance_route(
             
             # Handle oil analysis linking/unlinking
             if is_oil_change_record:
-                from data_operations import get_maintenance_records_by_vehicle
                 vehicle_records = get_maintenance_records_by_vehicle(vehicle_id)
                 
                 # Simple mileage-based oil analysis creation
@@ -1358,9 +1356,7 @@ async def update_maintenance_route(
                     if not existing_analysis:
                         # Create new oil analysis placeholder at same mileage
                         try:
-                            from data_operations import create_maintenance_record as create_maintenance_record_fn
-
-                            create_maintenance_record_fn(
+                            oil_analysis_result = create_maintenance_record(
                                 vehicle_id=vehicle_id,
                                 date=date_str,  # Same date as oil change
                                 description=f"Oil Analysis - {mileage:,} miles",
@@ -1378,10 +1374,10 @@ async def update_maintenance_route(
                                 labor_cost=labor_cost
                             )
                             
-                            if oil_analysis_result["success"]:
+                            if oil_analysis_result.get("success"):
                                 print(f"Created oil analysis placeholder at {mileage:,} miles")
                             else:
-                                print(f"Failed to create oil analysis: {oil_analysis_result['error']}")
+                                print(f"Failed to create oil analysis: {oil_analysis_result.get('error')}")
                         except Exception as e:
                             print(f"Error creating oil analysis: {e}")
                     else:
