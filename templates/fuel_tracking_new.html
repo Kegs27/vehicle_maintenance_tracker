@@ -779,15 +779,39 @@
                                         }
                                     </div>
                                     
-                                    ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
-                                        `<div class="mpg-front-footer">
-                                            <div class="gap-warning">
+                                    <!-- Fuel Stats Section -->
+                                    <div class="mpg-front-footer" style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 0.75rem; margin-top: 0.5rem;">
+                                        <div class="small text-muted">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <span>Miles traveled:</span>
+                                                <span class="fw-semibold">${vehicle.miles_traveled !== null && vehicle.miles_traveled !== undefined ? formatMiles(vehicle.miles_traveled) + ' mi' : '—'}</span>
+                                            </div>
+                                            ${vehicle.gallons_filled ? 
+                                                `<div class="d-flex justify-content-between mb-1">
+                                                    <span>Gallons filled:</span>
+                                                    <span class="fw-semibold">${formatGallons(vehicle.gallons_filled)} gal</span>
+                                                </div>` : ''
+                                            }
+                                            ${vehicle.avg_price_per_gal !== null && vehicle.avg_price_per_gal !== undefined ? 
+                                                `<div class="d-flex justify-content-between mb-1">
+                                                    <span>Avg price/gal:</span>
+                                                    <span class="fw-semibold">${formatCurrency(vehicle.avg_price_per_gal)}</span>
+                                                </div>` : ''
+                                            }
+                                            ${vehicle.avg_days_between_fills !== null && vehicle.avg_days_between_fills !== undefined ? 
+                                                `<div class="d-flex justify-content-between">
+                                                    <span>Refuel frequency:</span>
+                                                    <span class="fw-semibold">${formatDays(vehicle.avg_days_between_fills)}</span>
+                                                </div>` : ''
+                                            }
+                                        </div>
+                                        ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
+                                            `<div class="gap-warning mt-2">
                                                 <i class="fa-solid fa-triangle-exclamation"></i>
                                                 <span>${vehicle.gaps_detected.length} gap(s) detected</span>
-                                            </div>
-                                        </div>` : 
-                                        `<div class="mpg-front-footer"></div>`
-                                    }
+                                            </div>` : ''
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
