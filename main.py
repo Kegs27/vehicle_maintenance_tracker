@@ -227,7 +227,13 @@ if os.getenv("ENV") == "development":
 # Templates
 templates = Jinja2Templates(directory="./templates")
 
-from database import ENV, APP_IS_DEV
+try:
+    from database import ENV, APP_IS_DEV  # type: ignore
+except ImportError:
+    # Fallback so prod doesn't crash if ENV/APP_IS_DEV aren't exported
+    ENV = os.getenv("ENV", "prod").lower()
+    APP_IS_DEV = ENV != "prod"
+
 templates.env.globals["APP_ENV"] = ENV
 templates.env.globals["APP_IS_DEV"] = APP_IS_DEV
 
