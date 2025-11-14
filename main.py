@@ -723,7 +723,10 @@ async def delete_vehicle_route(request: Request, vehicle_id: int):
         raise HTTPException(status_code=500, detail=f"Failed to delete vehicle: {str(e)}")
 
 @app.get("/maintenance", response_class=HTMLResponse)
-async def list_maintenance(request: Request, vehicle_id: Optional[int] = Query(None)):
+async def list_maintenance(
+    request: Request, 
+    vehicle_id: Optional[int] = Query(None, alias="vehicleId")
+):
     """List maintenance records using centralized data operations"""
     try:
         account_context = get_account_context(request)
@@ -2749,6 +2752,10 @@ async def get_notifications_api():
         total_count = 0
         has_overdue = False
         
+        # Get all vehicles to map vehicle_id to account_id
+        vehicles = get_all_vehicles()
+        vehicle_to_account = {vehicle.id: vehicle.account_id for vehicle in vehicles}
+        
         # Oil change notifications using unified status helper
         oil_statuses = get_oil_status_for_all()
         for status in oil_statuses:
@@ -2757,18 +2764,25 @@ async def get_notifications_api():
             urgency = "high" if status["state"] == "due" else "medium"
             if urgency == "high":
                 has_overdue = True
+            
+            vehicle_id = status['vehicle_id']
+            account_id = vehicle_to_account.get(vehicle_id)
+            
+            # Build link_url: always include accountId, include vehicleId if available
+            # If account_id is None, use empty string or omit it (shouldn't happen for vehicles)
+            link_url = f"/maintenance?accountId={account_id}" if account_id else "/maintenance"
+            if vehicle_id:
+                link_url += f"&vehicleId={vehicle_id}" if account_id else f"?vehicleId={vehicle_id}"
+            
             notifications.append(
                 {
                     "type": "Oil Change",
                     "vehicle": status["vehicle_name"],
                     "urgency": urgency,
-                    "link": f"/oil-management?vehicle_id={status['vehicle_id']}",
+                    "link_url": link_url,
                 }
             )
             total_count += 1
-
-        # Get all vehicles to check other future maintenance status
-        vehicles = get_all_vehicles()
         
         for vehicle in vehicles:
             mileage_info = get_vehicle_current_mileage(vehicle.id)
@@ -2785,11 +2799,17 @@ async def get_notifications_api():
                         if item['urgency'] == 'high':
                             has_overdue = True
                         
+                        # Build link_url: always include accountId, include vehicleId if available
+                        # Vehicles always have account_id (required field), but handle gracefully if missing
+                        link_url = f"/maintenance?accountId={vehicle.account_id}" if vehicle.account_id else "/maintenance"
+                        if vehicle.id:
+                            link_url += f"&vehicleId={vehicle.id}" if vehicle.account_id else f"?vehicleId={vehicle.id}"
+                        
                         notifications.append({
                             'type': item['maintenance_type'],
                             'vehicle': f"{vehicle.year} {vehicle.make} {vehicle.model}",
                             'urgency': item['urgency'],
-                            'link': f'/maintenance?tab=future-maintenance&vehicle_id={vehicle.id}'
+                            'link_url': link_url
                         })
                         total_count += 1
             except Exception as e:

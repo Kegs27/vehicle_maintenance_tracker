@@ -233,10 +233,13 @@
             const urgencyClass = notification.urgency === 'high' ? 'text-danger' : 'text-warning';
             const urgencyText = notification.urgency === 'high' ? 'Overdue' : 'Due Soon';
             
+            // Use link_url if available, fall back to link for backwards compatibility
+            const linkUrl = notification.link_url || notification.link || '/maintenance';
+            
             html += `
                 <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
                     <div>
-                        <a href="${notification.link}" class="text-decoration-none ${urgencyClass} fw-bold">
+                        <a href="${linkUrl}" class="text-decoration-none ${urgencyClass} fw-bold notification-link">
                             ${notification.type} - ${notification.vehicle}
                         </a>
                         <div class="small text-muted">${urgencyText}</div>
