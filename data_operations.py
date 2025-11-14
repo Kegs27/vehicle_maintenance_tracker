@@ -14,8 +14,29 @@ from io import StringIO
 from datetime import datetime
 from pathlib import Path
 import os
+from pydantic import ValidationError
+from schemas import TireMeta
 
 DEFAULT_OWNER_ID = "kory"
+UNSET = object()
+def normalize_tire_meta_payload(meta: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Validate and normalize tire metadata payloads."""
+    if not meta:
+        return None
+    try:
+        model = TireMeta.model_validate(meta)
+        if not model.has_measurements():
+            return None
+        if model.measured_at is None:
+            model = model.model_copy(update={"measured_at": datetime.utcnow()})
+        return model.model_dump(mode="json", exclude_none=True)
+    except ValidationError as exc:
+        print(f"Invalid tire_meta payload: {exc}")
+        return None
+    except Exception as exc:  # noqa: BLE001
+        print(f"Unexpected tire_meta payload error: {exc}")
+        return None
+
 
 
 # ============================================================================
@@ -691,7 +712,10 @@ def create_basic_maintenance_record(vehicle_id: int, date: str, description: str
         # Create record
         # Ensure description is never None for database compatibility
         safe_description = description if description and description.strip() else "N/A"
-        
+        normalized_tire_meta = None
+        if tire_meta is not None:
+            normalized_tire_meta = normalize_tire_meta_payload(tire_meta)
+
         record = MaintenanceRecord(
             vehicle_id=vehicle_id,
             date=parsed_date,
@@ -830,7 +854,8 @@ def create_maintenance_record(vehicle_id: int, date: str, description: Optional[
                             linked_oil_change_id: Optional[int] = None,
                             oil_analysis_report: Optional[str] = None,
                             photo_path: Optional[str] = None,
-                            photo_description: Optional[str] = None) -> Dict[str, Any]:
+                            photo_description: Optional[str] = None,
+                            tire_meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Create a new maintenance record"""
     session = SessionLocal()
     try:
@@ -875,6 +900,9 @@ def create_maintenance_record(vehicle_id: int, date: str, description: Optional[
         # Create maintenance record
         # Ensure description is never None for database compatibility
         safe_description = description if description and description.strip() else "N/A"
+        normalized_tire_meta = None
+        if tire_meta is not None:
+            normalized_tire_meta = normalize_tire_meta_payload(tire_meta)
         
         record = MaintenanceRecord(
             vehicle_id=vehicle_id,
@@ -902,7 +930,8 @@ def create_maintenance_record(vehicle_id: int, date: str, description: Optional[
             oil_analysis_report=oil_analysis_report,
             # Photo documentation fields
             photo_path=photo_path,
-            photo_description=photo_description
+            photo_description=photo_description,
+            tire_meta=normalized_tire_meta
         )
         
         session.add(record)
@@ -971,7 +1000,8 @@ def update_maintenance_record(record_id: int, vehicle_id: int, date: str, descri
                             oil_analysis_report: Optional[str] = None,
                             # Photo documentation fields
                             photo_path: Optional[str] = None,
-                            photo_description: Optional[str] = None) -> Dict[str, Any]:
+                            photo_description: Optional[str] = None,
+                            tire_meta: Any = UNSET) -> Dict[str, Any]:
     """Update an existing maintenance record"""
     session = SessionLocal()
     try:
@@ -1052,6 +1082,8 @@ def update_maintenance_record(record_id: int, vehicle_id: int, date: str, descri
         # Photo documentation fields
         record.photo_path = photo_path
         record.photo_description = photo_description
+        if tire_meta is not UNSET:
+            record.tire_meta = normalize_tire_meta_payload(tire_meta)
         
         session.commit()
         session.refresh(record)
@@ -1637,6 +1669,150 @@ def get_future_maintenance_by_id(future_maintenance_id: int) -> Optional[Any]:
     finally:
         session.close()
 
+def get_oil_status_for_all(
+    account_id: Optional[str] = None, owner_user_id: str = DEFAULT_OWNER_ID
+) -> List[Dict[str, Any]]:
+    """
+    Compute oil change status for every vehicle. Returns a list of dictionaries
+    with mileage/date remaining along with a unified state:
+        - due:  inside 50 miles or 5 days (or overdue)
+        - soon: inside 500 miles or 30 days
+        - ok:   otherwise
+    """
+    from datetime import date, timedelta
+
+    SOON_MILES = 500
+    SOON_DAYS = 30
+    DUE_MILES = 50
+    DUE_DAYS = 5
+    DEFAULT_INTERVAL_DAYS = 180  # 6 months fallback when only mileage interval is known
+
+    today = date.today()
+
+    vehicles = get_all_vehicles(account_id=account_id, owner_user_id=owner_user_id)
+    records = get_all_maintenance_records(account_id=account_id, owner_user_id=owner_user_id)
+    mileage_map = get_all_vehicles_current_mileage(account_id=account_id, owner_user_id=owner_user_id)
+    future_items = get_all_future_maintenance(account_id=account_id, owner_user_id=owner_user_id)
+
+    # Group future maintenance oil-change reminders by vehicle, using the earliest trigger
+    future_by_vehicle: Dict[int, Dict[str, Any]] = {}
+    for item in future_items:
+        maintenance_type = (item.get("maintenance_type") or "").lower()
+        if "oil" not in maintenance_type:
+            continue
+        vehicle_id = item["vehicle_id"]
+        existing = future_by_vehicle.get(vehicle_id)
+
+        def _due_key(entry: Dict[str, Any]):
+            due_date = entry.get("target_date")
+            due_miles = entry.get("target_mileage") if entry.get("target_mileage") is not None else float("inf")
+            return (
+                due_date or date.max,
+                due_miles,
+                entry.get("id"),
+            )
+
+        if not existing or _due_key(item) < _due_key(existing):
+            future_by_vehicle[vehicle_id] = item
+
+    statuses: List[Dict[str, Any]] = []
+
+    for vehicle in vehicles:
+        vehicle_id = vehicle.id
+        vehicle_name = vehicle.name
+
+        mileage_info = mileage_map.get(vehicle_id, {})
+        current_miles = mileage_info.get("current_mileage", 0) or 0
+
+        # Locate most recent oil change record
+        vehicle_records = [r for r in records if r.vehicle_id == vehicle_id]
+        oil_changes = [r for r in vehicle_records if getattr(r, "is_oil_change", False)]
+        last_oil_change = max(oil_changes, key=lambda r: r.date or date.min) if oil_changes else None
+
+        interval_miles = None
+        interval_days = None
+        last_oil_miles = None
+        last_oil_date = None
+        miles_to_due = None
+        due_date_from_interval = None
+
+        if last_oil_change:
+            interval_miles = get_oil_change_interval_from_record(last_oil_change)
+            interval_days = DEFAULT_INTERVAL_DAYS
+            last_oil_miles = getattr(last_oil_change, "mileage", 0) or 0
+            last_oil_date = getattr(last_oil_change, "date", None)
+            if interval_miles and current_miles:
+                miles_since = current_miles - last_oil_miles
+                miles_to_due = interval_miles - miles_since
+            if last_oil_date:
+                due_date_from_interval = last_oil_date + timedelta(days=DEFAULT_INTERVAL_DAYS)
+
+        future_item = future_by_vehicle.get(vehicle_id)
+        fm_miles_to_due = None
+        fm_due_date = None
+        if future_item:
+            target_mileage = future_item.get("target_mileage")
+            if target_mileage is not None and current_miles:
+                fm_miles_to_due = target_mileage - current_miles
+            fm_due_date = future_item.get("target_date")
+
+        miles_signals: List[int] = []
+        days_signals: List[int] = []
+
+        if miles_to_due is not None:
+            miles_signals.append(miles_to_due)
+        if due_date_from_interval:
+            days_signals.append((due_date_from_interval - today).days)
+        if fm_miles_to_due is not None:
+            miles_signals.append(fm_miles_to_due)
+        if fm_due_date:
+            days_signals.append((fm_due_date - today).days)
+
+        best_miles = min(miles_signals) if miles_signals else None
+        best_days = min(days_signals) if days_signals else None
+
+        has_interval_signal = (miles_to_due is not None) or (due_date_from_interval is not None)
+        has_future_signal = (fm_miles_to_due is not None) or (fm_due_date is not None)
+
+        reason = "both" if (has_interval_signal and has_future_signal) else (
+            "future_maintenance" if has_future_signal else ("mileage_interval" if has_interval_signal else "none")
+        )
+
+        state = "ok"
+        if (
+            (best_miles is not None and best_miles <= DUE_MILES)
+            or (best_days is not None and best_days <= DUE_DAYS)
+        ):
+            state = "due"
+        elif (
+            (best_miles is not None and best_miles <= SOON_MILES)
+            or (best_days is not None and best_days <= SOON_DAYS)
+        ):
+            state = "soon"
+
+        statuses.append(
+            {
+                "vehicle_id": vehicle_id,
+                "vehicle_name": vehicle_name,
+                "current_miles": current_miles,
+                "last_oil_miles": last_oil_miles,
+                "last_oil_date": last_oil_date,
+                "interval_miles": interval_miles,
+                "interval_days": interval_days,
+                "miles_to_due": best_miles,
+                "days_to_due": best_days,
+                "state": state,
+                "reason": reason,
+                "future_item_id": future_item["id"] if future_item else None,
+                "due_date": fm_due_date or due_date_from_interval,
+                "mileage_source": mileage_info.get("source"),
+                "mileage_confidence": mileage_info.get("confidence"),
+            }
+        )
+
+    return statuses
+
+
 def get_home_dashboard_summary() -> Dict[str, Any]:
     """Get enhanced summary statistics for home page dashboard using centralized mileage tracking"""
     try:
@@ -1759,63 +1935,37 @@ def get_home_dashboard_summary() -> Dict[str, Any]:
                         'note': 'Insufficient records to calculate miles driven this year'
                     })
         
-        # Enhanced oil change reminders with dynamic intervals
+        # Enhanced oil change reminders using unified helper
+        oil_statuses = get_oil_status_for_all()
         oil_change_reminders = []
-        for vehicle in vehicles:
-            vehicle_id = vehicle.id
-            current_mileage_info = vehicles_current_mileage.get(vehicle_id, {})
-            current_mileage = current_mileage_info.get('current_mileage', 0)
-            
-            if current_mileage > 0:
-                # Find last oil change for this vehicle
-                oil_changes = [
-                    record for record in records 
-                    if record.vehicle_id == vehicle_id and record.is_oil_change
-                ]
-                
-                if oil_changes:
-                    # Get most recent oil change
-                    last_oil_change = max(oil_changes, key=lambda x: x.date)
-                    
-                    # Get the oil change interval from the record
-                    oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
-                    
-                    miles_since_oil_change = current_mileage - last_oil_change.mileage
-                    miles_until_next = oil_change_interval - miles_since_oil_change
-                    
-                    # Show reminder if due within 500 miles OR overdue
-                    if miles_until_next <= 500:
-                        oil_change_reminders.append({
-                            "vehicle_name": vehicle.name,
-                            "vehicle_id": vehicle.id,
-                            "miles_until_due": miles_until_next,
-                            "current_mileage": current_mileage,
-                            "last_oil_change_mileage": last_oil_change.mileage,
-                            "oil_change_interval": oil_change_interval,
-                            "status": "overdue" if miles_until_next < 0 else "due_soon",
-                            "last_oil_change_date": last_oil_change.date,
-                            "mileage_source": current_mileage_info.get('source', 'unknown'),
-                            "mileage_confidence": current_mileage_info.get('confidence', 'low')
-                        })
-                else:
-                    # No oil change records, estimate based on current mileage
-                    # Use default interval for estimation
-                    default_interval = 5000
-                    miles_until_next = default_interval - current_mileage % default_interval
-                    if miles_until_next <= 500:
-                        oil_change_reminders.append({
-                            "vehicle_name": vehicle.name,
-                            "vehicle_id": vehicle.id,
-                            "miles_until_due": miles_until_next,
-                            "current_mileage": current_mileage,
-                            "last_oil_change_mileage": None,
-                            "oil_change_interval": default_interval,
-                            "status": "due_soon",
-                            "last_oil_change_date": None,
-                            "mileage_source": current_mileage_info.get('source', 'unknown'),
-                            "mileage_confidence": current_mileage_info.get('confidence', 'low'),
-                            "note": "No oil change records found, using default interval"
-                        })
+        for status in oil_statuses:
+            if status["state"] not in ("soon", "due"):
+                continue
+
+            is_overdue = (
+                (status["miles_to_due"] is not None and status["miles_to_due"] < 0)
+                or (status["days_to_due"] is not None and status["days_to_due"] < 0)
+            )
+            health_status = "overdue" if is_overdue or status["state"] == "due" else "due_soon"
+            mileage_info = vehicles_current_mileage.get(status["vehicle_id"], {})
+
+            oil_change_reminders.append(
+                {
+                    "vehicle_name": status["vehicle_name"],
+                    "vehicle_id": status["vehicle_id"],
+                    "miles_until_due": status["miles_to_due"],
+                    "days_until_due": status["days_to_due"],
+                    "current_mileage": status["current_miles"],
+                    "last_oil_change_mileage": status["last_oil_miles"],
+                    "oil_change_interval": status["interval_miles"],
+                    "status": health_status,
+                    "last_oil_change_date": status["last_oil_date"],
+                    "mileage_source": mileage_info.get("source", "unknown"),
+                    "mileage_confidence": mileage_info.get("confidence", "low"),
+                    "due_date": status["due_date"],
+                    "reason": status["reason"],
+                }
+            )
         
         return {
             "recent_activity_count": len(recent_records),
@@ -1861,7 +2011,7 @@ def get_fuel_entries_for_vehicle(
     session = SessionLocal()
     try:
         from models import FuelEntry
-
+        
         normalized_account_id = (
             account_id if account_id and account_id.lower() not in ("all", "null") else None
         )
@@ -1904,9 +2054,9 @@ def get_fuel_entries_for_vehicle(
                     "updated_at": entry.updated_at,
                 }
             )
-
+        
         return entries
-
+        
     except Exception as e:
         print(f"Error getting fuel entries for vehicle {vehicle_id}: {e}")
         return []
@@ -1921,7 +2071,7 @@ def get_all_fuel_entries(
     session = SessionLocal()
     try:
         from models import FuelEntry
-
+        
         normalized_account_id = (
             account_id if account_id and account_id.lower() not in ("all", "null") else None
         )
@@ -1967,9 +2117,9 @@ def get_all_fuel_entries(
                     "updated_at": entry.updated_at,
                 }
             )
-
+        
         return entries
-
+        
     except Exception as e:
         print(f"Error getting all fuel entries: {e}")
         return []
@@ -1983,52 +2133,52 @@ def get_vehicle_health_status(
     try:
         vehicles = get_all_vehicles(account_id=account_id, owner_user_id=owner_user_id)
         records = get_all_maintenance_records(account_id=account_id, owner_user_id=owner_user_id)
-
+        
         # Get current mileage for all vehicles
         vehicles_current_mileage = get_all_vehicles_current_mileage(
             account_id=account_id, owner_user_id=owner_user_id
         )
-
+        
         from datetime import datetime
 
         current_year = datetime.now().year
-
+        
         vehicle_health: List[Dict[str, Any]] = []
-
+        
         for vehicle in vehicles:
             vehicle_id = vehicle.id
             current_mileage_info = vehicles_current_mileage.get(vehicle_id, {})
             current_mileage = current_mileage_info.get("current_mileage", 0)
-
+            
             # Get maintenance records for this vehicle this year
             vehicle_records = [r for r in records if r.vehicle_id == vehicle_id]
             vehicle_year_records = [r for r in vehicle_records if r.date and r.date.year == current_year]
-
+            
             # Calculate cost this year
             cost_this_year = sum(r.cost or 0 for r in vehicle_year_records)
-
+            
             # Get oil change status
             oil_changes = [r for r in vehicle_records if getattr(r, "is_oil_change", False)]
             oil_change_status = "unknown"
-
+            
             if oil_changes and current_mileage > 0:
                 # Sort by date (most recent first)
                 oil_changes.sort(key=lambda x: x.date or datetime.min.date(), reverse=True)
                 last_oil_change = oil_changes[0]
-
+                
                 # Get oil change interval
                 oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
                 last_mileage = getattr(last_oil_change, "mileage", 0) or 0
                 miles_since_oil_change = current_mileage - last_mileage
                 miles_until_next = oil_change_interval - miles_since_oil_change
-
+                
                 if miles_until_next < 0:
                     oil_change_status = "overdue"
                 elif miles_until_next <= 500:
                     oil_change_status = "due_soon"
                 else:
                     oil_change_status = "good"
-
+            
             # Determine overall health indicator
             if oil_change_status == "overdue":
                 health_indicator = "🔴"
@@ -2046,23 +2196,23 @@ def get_vehicle_health_status(
                 health_indicator = "⚪"
                 health_text = "Unknown"
                 health_class = "text-muted"
-
+            
             vehicle_health.append(
                 {
-                    "vehicle": vehicle,
-                    "current_mileage": current_mileage,
-                    "cost_this_year": cost_this_year,
-                    "health_indicator": health_indicator,
-                    "health_text": health_text,
-                    "health_class": health_class,
-                    "oil_change_status": oil_change_status,
-                    "maintenance_count": len(vehicle_records),
+                "vehicle": vehicle,
+                "current_mileage": current_mileage,
+                "cost_this_year": cost_this_year,
+                "health_indicator": health_indicator,
+                "health_text": health_text,
+                "health_class": health_class,
+                "oil_change_status": oil_change_status,
+                "maintenance_count": len(vehicle_records),
                     "year_records_count": len(vehicle_year_records),
                 }
             )
-
+        
         return vehicle_health
-
+        
     except Exception as e:
         print(f"Error getting vehicle health status: {e}")
         return []
@@ -2260,7 +2410,7 @@ def get_all_future_maintenance(
     session = SessionLocal()
     try:
         from models import FutureMaintenance
-
+        
         normalized_account_id = (
             account_id if account_id and account_id.lower() not in ("all", "null") else None
         )
@@ -2313,9 +2463,9 @@ def get_all_future_maintenance(
                     "updated_at": fm.updated_at,
                 }
             )
-
+        
         return result
-
+        
     except Exception as e:
         print(f"Error getting future maintenance: {e}")
         return []
@@ -2330,7 +2480,7 @@ def get_future_maintenance_by_vehicle(
     session = SessionLocal()
     try:
         from models import FutureMaintenance
-
+        
         normalized_account_id = (
             account_id if account_id and account_id.lower() not in ("all", "null") else None
         )
@@ -2380,9 +2530,9 @@ def get_future_maintenance_by_vehicle(
                     "account_name": account.name if account else None,
                 }
             )
-
+        
         return result
-
+        
     except Exception as e:
         print(f"Error getting future maintenance for vehicle {vehicle_id}: {e}")
         return []
@@ -2527,17 +2677,17 @@ def get_all_vehicles_triggered_maintenance(
     try:
         vehicles = get_all_vehicles(account_id=account_id, owner_user_id=owner_user_id)
         vehicles_current_mileage = get_all_vehicles_current_mileage()
-
+        
         result: Dict[int, List[Dict[str, Any]]] = {}
         for vehicle in vehicles:
             current_mileage = vehicles_current_mileage.get(vehicle.id, {}).get("current_mileage", 0)
             triggered_items = get_triggered_future_maintenance(vehicle.id, current_mileage)
-
+            
             if triggered_items:
                 result[vehicle.id] = triggered_items
-
+        
         return result
-
+        
     except Exception as e:
         print(f"Error getting all vehicles triggered maintenance: {e}")
         return {}

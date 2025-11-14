@@ -1,0 +1,147 @@
+{% from "partials/forms/macros.html" import field, text_input, select_input, number_input, money_input, date_input, textarea %}
+
+<div class="modal fade" id="tireRotationModal" tabindex="-1" aria-labelledby="tireRotationTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tireRotationTitle">
+          <i class="fa-solid fa-rotate me-2"></i> Add Tire Rotation
+        </h5>
+        <button type="button" class="btn-icon is-muted" data-bs-dismiss="modal" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form method="post"
+            action="/maintenance"
+            enctype="multipart/form-data"
+            data-enhanced-form="true"
+            data-draft-key="tire-rotation-form">
+        <input type="hidden" name="service_type" value="tire_rotation">
+        <input type="hidden" name="description" id="tr_description_auto">
+        <input type="hidden" name="tire_depths_json" id="tr_depths_json">
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              {% call field("vehicle_id", "Vehicle", required=True) %}
+                {{ select_input(
+                    "vehicle_id", "vehicle_id",
+                    vehicles | map(attribute='id') | list | zip(vehicles | map(attribute='name') | list),
+                    value=selected_vehicle_id|default('', true),
+                    required=True
+                ) }}
+              {% endcall %}
+            </div>
+            <div class="col-md-3">
+              {% call field("date_str", "Date") %}
+                {{ date_input("date_str","date_str", value="") }}
+              {% endcall %}
+            </div>
+            <div class="col-md-3">
+              {% call field("mileage", "Mileage", required=True) %}
+                {{ number_input("mileage","mileage", value="", min=0, step=1, required=True) }}
+              {% endcall %}
+            </div>
+
+            <div class="col-md-6">
+              {% call field("rotation_pattern", "Rotation Pattern (optional)") %}
+                {{ select_input("rotation_pattern","rotation_pattern", [
+                    ("","— Select pattern —"),
+                    ("front_to_rear","Front to Rear"),
+                    ("cross","Cross"),
+                    ("five_tire","5-Tire Rotation"),
+                    ("custom","Custom")
+                ]) }}
+              {% endcall %}
+            </div>
+            <div class="col-md-6">
+              {% call field("cost","Cost (optional)") %}
+                {{ money_input("cost","cost", value="") }}
+              {% endcall %}
+            </div>
+
+            <div class="col-12 d-none" id="customPatternGroup">
+              {% call field("custom_pattern_notes", "Custom Pattern Details") %}
+                {{ text_input("custom_pattern_notes", "custom_pattern_notes", value="", placeholder="Example: FL→RR, FR→RL, RL→FR, RR→FL") }}
+                <div class="form-text">Describe how each tire moved so you can reference it later.</div>
+              {% endcall %}
+            </div>
+
+            <div class="col-12">
+              <div class="h6 mb-2">Tread Depths (after rotation)</div>
+              <div class="small text-muted mb-2">Enter in 32nds (e.g. 8/32) or decimals (e.g. 6.5). We’ll normalize.</div>
+              <div class="tr-grid card p-3">
+                {% set tires = [("FL","Front Left"),("FR","Front Right"),("RL","Rear Left"),("RR","Rear Right")] %}
+                <div class="row g-3">
+                  {% for code,label in tires %}
+                  <div class="col-md-6">
+                    <div class="border rounded p-2">
+                      <div class="fw-semibold mb-1">{{ label }}</div>
+                      <div class="row g-2">
+                        <div class="col-4">
+                          {% call field("td_%s_in"|format(code|lower), "Inside") %}
+                            {{ text_input("td_%s_in"|format(code|lower), "td_%s_in"|format(code|lower), value="", placeholder="e.g. 7/32") }}
+                          {% endcall %}
+                        </div>
+                        <div class="col-4">
+                          {% call field("td_%s_mid"|format(code|lower), "Middle") %}
+                            {{ text_input("td_%s_mid"|format(code|lower), "td_%s_mid"|format(code|lower), value="", placeholder="e.g. 7/32") }}
+                          {% endcall %}
+                        </div>
+                        <div class="col-4">
+                          {% call field("td_%s_out"|format(code|lower), "Outside") %}
+                            {{ text_input("td_%s_out"|format(code|lower), "td_%s_out"|format(code|lower), value="", placeholder="e.g. 6/32") }}
+                          {% endcall %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              {% call field("description_notes", "Notes (optional)") %}
+                {{ textarea("description_notes","description_notes", rows=2, placeholder="Any observations, uneven wear, torque, etc.") }}
+              {% endcall %}
+            </div>
+
+            <div class="col-12 mt-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="true" id="tr_create_fm" name="create_future_maintenance">
+                <label class="form-check-label fw-semibold" for="tr_create_fm">
+                  Add Future Maintenance record
+                </label>
+              </div>
+            </div>
+
+            <div class="col-md-6 tr-fm d-none">
+              {% call field("tr_target_mileage", "Target Mileage") %}
+                {{ number_input("tr_target_mileage","tr_target_mileage", min=0, step=1) }}
+              {% endcall %}
+            </div>
+            <div class="col-md-6 tr-fm d-none">
+              {% call field("tr_target_date", "Estimated Date (optional)") %}
+                {{ date_input("tr_target_date","tr_target_date") }}
+              {% endcall %}
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-action btn-action-outline" data-bs-dismiss="modal">
+            <i class="fa-solid fa-xmark"></i> Cancel
+          </button>
+          <button type="submit" class="btn-action btn-action-primary" id="tr_submit_btn">
+            <i class="fa-solid fa-floppy-disk"></i> Save Rotation
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+

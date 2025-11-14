@@ -6,6 +6,9 @@
 
 :root {
     --ui-border-faint: rgba(0, 0, 0, 0.08);
+    --status-normal-fg: #7a4ef8;
+    --status-soon-fg: #8a6a00;
+    --status-due-fg: #dc2626;
 }
 
 /* ============================================================================
@@ -221,6 +224,12 @@ body::before {
     background-color: rgba(108, 117, 125, 0.65);
 }
 
+/* Tire rotation modal scrollable guardrail */
+.modal-dialog-scrollable .modal-body {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
 /* ============================================================================
    FORM STYLES
    ============================================================================ */
@@ -278,6 +287,30 @@ body::before {
 /* Badge styling */
 .badge.bg-purple-600 {
     background-color: #9333ea !important;
+}
+
+/* Environment badge styling */
+.env-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    margin-right: 0.5rem;
+}
+
+.env-badge-dev {
+    color: #1d4ed8;
+    background-color: rgba(37, 99, 235, 0.08);
+}
+
+.env-badge-prod {
+    color: #15803d;
+    background-color: rgba(22, 163, 74, 0.08);
 }
 
 /* Ghost/Outlined button styling */
@@ -513,6 +546,103 @@ a.btn-icon {
     background-color: rgba(0, 0, 0, 0.15);
     color: #000;
     border-color: rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+   OIL MANAGEMENT STYLES
+   ============================================================================ */
+
+/* Status-colored vehicle icon */
+.status-normal {
+    --oil-status-color: var(--status-normal-fg);
+}
+
+.status-soon {
+    --oil-status-color: var(--status-soon-fg);
+}
+
+.status-due {
+    --oil-status-color: var(--status-due-fg);
+}
+
+/* Status-colored vehicle icon */
+.oil-status-icon {
+    color: var(--oil-status-color, var(--status-normal-fg));
+    transition: color 0.2s ease;
+}
+
+/* Summary banner */
+.oil-summary-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 1rem;
+    min-height: 2.6rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #444;
+    background: rgba(120, 72, 240, 0.05);
+    border: 1px solid rgba(120, 72, 240, 0.15);
+    margin: 0.5rem 0 1rem 0;
+}
+
+.oil-summary-banner i {
+    color: var(--oil-status-color, var(--status-normal-fg));
+}
+
+.oil-summary-banner .separator {
+    color: rgba(0, 0, 0, 0.2);
+}
+
+.oil-summary-banner .next {
+    font-weight: 600;
+}
+
+.oil-summary-banner.status-soon {
+    background: rgba(234, 179, 8, 0.10);
+    border-color: rgba(234, 179, 8, 0.35);
+}
+
+.oil-summary-banner.status-due {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.25);
+}
+
+/* Section cards */
+.oil-card {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1rem;
+}
+
+.oil-card-header {
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.oil-card-body {
+    padding: 0.75rem 0.9rem;
+}
+
+.section-divider {
+    border: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    margin: 1rem 0;
+}
+
+/* Keep icons sized nicely inside headers */
+.oil-card-header .h6 i {
+    font-size: 0.95rem;
+}
+
+@media (prefers-contrast: more) {
+    .oil-summary-banner.status-soon .next {
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+    }
 }
 
 /* ============================================================================

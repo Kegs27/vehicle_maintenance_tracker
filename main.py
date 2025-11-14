@@ -2,10 +2,14 @@
 import os
 import sys
 import csv
+import json
+import re
 from decimal import Decimal
 from datetime import date, datetime
 from typing import Optional, Dict, Any
 from io import StringIO
+from urllib.parse import urlencode
+from itertools import zip_longest
 
 # Third-party imports
 from fastapi import FastAPI, Request, Depends, HTTPException, Form, UploadFile, File, Query
@@ -16,7 +20,7 @@ from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, Field, ConfigDict, ValidationError
 
-from schemas import MaintenanceCreate
+from schemas import MaintenanceCreate, TireMeta
 
 # Define dummy functions at module level to ensure they're always available
 def dummy_get_all_vehicles():
@@ -92,6 +96,9 @@ export_maintenance_csv = dummy_export_maintenance_csv
 get_vehicle_names = dummy_get_vehicle_names
 get_maintenance_summary = dummy_get_maintenance_summary
 sort_maintenance_records = dummy_sort_maintenance_records
+
+# Limits
+MAX_TIRE_META_BYTES = 4096
 
 # Simplified import system
 try:
@@ -219,6 +226,16 @@ if os.getenv("ENV") == "development":
 
 # Templates
 templates = Jinja2Templates(directory="./templates")
+
+from database import ENV, APP_IS_DEV
+templates.env.globals["APP_ENV"] = ENV
+templates.env.globals["APP_IS_DEV"] = APP_IS_DEV
+
+def zip_filter(a, b):
+    """Jinja filter to zip two sequences."""
+    return zip(a, b)
+
+templates.env.filters["zip"] = zip_filter
 
 # Static files
 if os.path.exists("static"):
@@ -446,6 +463,15 @@ async def startup_event():
                     print("⚠️ Photo columns migration failed, but continuing startup...")
             except Exception as e:
                 print(f"⚠️ Photo columns migration error: {e}, but continuing startup...")
+            
+            # Run tire_meta migration if needed
+            try:
+                from migrate_tire_meta import run
+                print("Running tire_meta migration...")
+                run()
+                print("✅ tire_meta migration completed successfully!")
+            except Exception as e:
+                print(f"⚠️ tire_meta migration error: {e}, but continuing startup...")
         
         # Ensure account and vehicle linkage migration runs for all environments
         try:
@@ -760,12 +786,35 @@ async def new_maintenance_form(
     """Unified form handler for creating new maintenance, oil changes, and oil analysis"""
     account_context = get_account_context(request)
     account_id = account_context["account_id"] if account_context["scope"] != "all" else None
+    incoming_params = dict(request.query_params)
     vehicles_for_account = get_all_vehicles(account_id=account_id)
     vehicle_options = [{"id": v.id, "name": v.name} for v in vehicles_for_account]
     allowed_vehicle_ids = {v.id for v in vehicles_for_account}
     
     # Determine what type of form to show using unified logic
     detected_form_type = determine_form_type(None, return_url, form_type)
+
+    if detected_form_type == "oil_change":
+        params = [("open", "add-oil")]
+
+        vehicle_param = (
+            vehicle_id
+            or incoming_params.get("vehicleId")
+            or incoming_params.get("vehicle_id")
+        )
+        if vehicle_param:
+            params.append(("vehicleId", str(vehicle_param)))
+
+        account_param = (
+            incoming_params.get("accountId")
+            or incoming_params.get("account_id")
+            or (account_context["account_id"] if account_context["scope"] != "all" else None)
+        )
+        if account_param:
+            params.append(("accountId", str(account_param)))
+
+        query_string = urlencode(params)
+        return RedirectResponse(url=f"/oil-management?{query_string}", status_code=303)
     
     # Pre-populate data from future maintenance if provided
     pre_populated_data = None
@@ -818,6 +867,43 @@ async def create_maintenance_route(
         form = await request.form()
         data = dict(form)
 
+        service_type = data.get("service_type")
+        rotation_pattern = data.get("rotation_pattern")
+        notes_value = data.get("description_notes")
+        create_future_raw = data.get("create_future_maintenance")
+        target_mileage_raw = data.get("tr_target_mileage")
+        target_date_raw = data.get("tr_target_date")
+        raw_tire_json = data.get("tire_depths_json")
+
+        payload_extras = {
+            "service_type",
+            "rotation_pattern",
+            "description_notes",
+            "create_future_maintenance",
+            "tr_target_mileage",
+            "tr_target_date",
+            "tire_depths_json",
+        }
+        payload_input = {key: value for key, value in data.items() if key not in payload_extras}
+
+        pattern_labels = {
+            "front_to_rear": "Front to Rear",
+            "cross": "Cross",
+            "five_tire": "5-Tire Rotation",
+            "custom": "Custom",
+        }
+        pattern_label = pattern_labels.get(rotation_pattern, rotation_pattern if rotation_pattern else "")
+
+        pattern_schema_map = {
+            "front_to_rear": "front-to-rear",
+            "cross": "cross",
+            "five_tire": "five-tire",
+            "custom": "custom",
+        }
+        pattern_schema_value = None
+        if rotation_pattern:
+            pattern_schema_value = pattern_schema_map.get(rotation_pattern, "unknown")
+
         account_context = get_account_context(request)
         account_id = account_context["account_id"] if account_context["scope"] != "all" else None
         vehicles_for_account = get_all_vehicles(account_id=account_id)
@@ -851,8 +937,61 @@ async def create_maintenance_route(
             }
             return templates.TemplateResponse("maintenance_form.html", context, status_code=422)
 
+        if raw_tire_json and len(raw_tire_json.encode("utf-8")) > MAX_TIRE_META_BYTES:
+            return render_with_errors({"tire_depths_json": "Tire tread data is too large."})
+
+        tire_meta = None
+        tire_meta_model: Optional[TireMeta] = None
+        if raw_tire_json:
+            try:
+                parsed_meta = json.loads(raw_tire_json)
+                if not isinstance(parsed_meta, dict):
+                    raise ValueError("Tire data must be an object.")
+
+                meta_payload: Dict[str, Any] = {
+                    key: parsed_meta.get(key)
+                    for key in ("fl", "fr", "rl", "rr")
+                    if key in parsed_meta
+                }
+                if pattern_schema_value:
+                    meta_payload["pattern"] = pattern_schema_value
+
+                tire_meta_model = TireMeta.model_validate(meta_payload)
+                if tire_meta_model.has_measurements():
+                    if tire_meta_model.measured_at is None:
+                        tire_meta_model = tire_meta_model.model_copy(update={"measured_at": datetime.utcnow()})
+                    tire_meta = tire_meta_model.model_dump(exclude_none=True)
+                else:
+                    tire_meta_model = None
+            except ValidationError as exc:
+                error_messages = "; ".join(
+                    {err.get("msg", "Invalid tire depth values") for err in exc.errors()}
+                )
+                return render_with_errors({"tire_depths_json": error_messages})
+            except Exception as exc:  # noqa: BLE001
+                print(f"⚠️ invalid tire_depths_json: {exc}")
+                return render_with_errors({"tire_depths_json": "Unable to read tire tread data."})
+
+        create_future_flag = isinstance(create_future_raw, str) and create_future_raw.strip().lower() == "true"
+        target_mileage = None
+        if target_mileage_raw not in (None, "", "None"):
+            try:
+                target_mileage = int(str(target_mileage_raw).replace(",", ""))
+            except (TypeError, ValueError):
+                try:
+                    target_mileage = int(float(target_mileage_raw))
+                except (TypeError, ValueError):
+                    print(f"⚠️ invalid tire rotation target mileage: {target_mileage_raw}")
+                    target_mileage = None
+
+        target_date = target_date_raw.strip() if isinstance(target_date_raw, str) and target_date_raw.strip() else None
+        if isinstance(notes_value, str):
+            notes_value = notes_value.strip()
+            if not notes_value:
+                notes_value = None
+
         try:
-            payload = MaintenanceCreate(**data)
+            payload = MaintenanceCreate(**payload_input)
         except ValidationError as exc:
             return render_with_errors(_errors_dict(exc))
 
@@ -894,13 +1033,63 @@ async def create_maintenance_route(
         def dec_to_float(value: Optional[Decimal]) -> Optional[float]:
             return float(value) if value is not None else None
 
+        def clean_fragment(value: Optional[str]) -> Optional[str]:
+            if value is None:
+                return None
+            cleaned = re.sub(r"[\r\n\t]+", " ", value)
+            cleaned = cleaned.strip()
+            return cleaned or None
+
+        def summarize_tire_meta(meta: Optional[Dict[str, Any]]) -> Optional[str]:
+            if not isinstance(meta, dict):
+                return None
+            segments = []
+            order = (("fl", "FL"), ("fr", "FR"), ("rl", "RL"), ("rr", "RR"))
+            for code, label in order:
+                section = meta.get(code)
+                if not isinstance(section, dict):
+                    continue
+                depths = [section.get(key) for key in ("i", "m", "o")]
+                if not any(depth is not None for depth in depths):
+                    continue
+                display_values = []
+                for depth in depths:
+                    if depth is None:
+                        display_values.append("—")
+                    else:
+                        try:
+                            display_values.append(str(int(depth)))
+                        except (TypeError, ValueError):
+                            display_values.append("—")
+                segments.append(f"{label} {'/'.join(display_values)}")
+            return "; ".join(segments) if segments else None
+
+        notes_value = clean_fragment(notes_value)
+        description_for_record = clean_fragment(payload.description)
+        if service_type == "tire_rotation":
+            description_parts = ["Tire Rotation"]
+            if pattern_label:
+                description_parts.append(f"Pattern: {pattern_label}")
+            if payload.mileage is not None:
+                description_parts.append(f"{payload.mileage:,} mi")
+            if notes_value:
+                description_parts.append(f"Notes: {notes_value}")
+            description_for_record = clean_fragment(" · ".join(description_parts))
+            tread_summary = summarize_tire_meta(tire_meta)
+            if tread_summary:
+                description_for_record = f"{description_for_record} | Tread (I/M/O): {tread_summary}"
+
+        payload_description = description_for_record
+        if payload_description:
+            data["description"] = payload_description
+
         date_str = payload.date_str or "01/01/1900"
         cost_value = float(payload.cost) if payload.cost is not None else 0.0
 
         result = create_maintenance_record(
             vehicle_id=payload.vehicle_id,
             date=date_str,
-            description=payload.description,
+            description=payload_description,
             cost=cost_value,
             mileage=payload.mileage,
             oil_change_interval=payload.oil_change_interval,
@@ -920,7 +1109,26 @@ async def create_maintenance_route(
             oil_analysis_report=pdf_file_path,
             photo_path=photo_path,
             photo_description=payload.photo_description,
+            tire_meta=tire_meta,
         )
+
+        if result["success"] and service_type == "tire_rotation":
+            try:
+                if create_future_flag and (target_mileage is not None or target_date):
+                    from data_operations import create_future_maintenance
+
+                    fm_payload = {
+                        "vehicle_id": payload.vehicle_id,
+                        "maintenance_type": "Tire Rotation",
+                        "target_mileage": target_mileage or 0,
+                        "target_date": target_date or "0",
+                        "notes": "Auto-created from Tire Rotation form",
+                    }
+                    fm_result = create_future_maintenance(**fm_payload)
+                    if not fm_result.get("success"):
+                        print(f"Failed to create future tire rotation reminder: {fm_result.get('error')}")
+            except Exception as exc:  # noqa: BLE001
+                print("Failed to create future tire rotation reminder", exc)
 
         is_oil_change_flag = bool(payload.is_oil_change)
         oil_type = payload.oil_type
@@ -934,7 +1142,7 @@ async def create_maintenance_route(
                     record_id=result["record"].id,
                     vehicle_id=payload.vehicle_id,
                     date=date_str,
-                    description=payload.description,
+                    description=payload_description,
                     cost=cost_value,
                     mileage=payload.mileage,
                     oil_change_interval=payload.oil_change_interval or 3000,
@@ -960,7 +1168,7 @@ async def create_maintenance_route(
                 oil_analysis_result = create_placeholder_oil_analysis(
                     payload.vehicle_id,
                     date_str,
-                    f"Oil analysis for {payload.description}" if payload.description else "Oil analysis",
+                    f"Oil analysis for {payload_description}" if payload_description else "Oil analysis",
                     payload.mileage,
                     result["record"].id,
                 )
@@ -1399,6 +1607,29 @@ async def update_maintenance_route(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update maintenance record: {str(e)}")
+
+@app.get("/maintenance/oil-new")
+async def maintenance_oil_new_redirect(
+    request: Request,
+    vehicle_id: Optional[int] = Query(default=None, alias="vehicleId"),
+    account_id: Optional[str] = Query(default=None, alias="accountId"),
+):
+    """
+    Redirect to the Oil Management add-oil flow, preserving vehicle/account context.
+    """
+    params: Dict[str, str] = {"open": "add-oil"}
+    incoming = dict(request.query_params)
+
+    vehicle_param = vehicle_id or incoming.get("vehicleId") or incoming.get("vehicle_id")
+    if vehicle_param:
+        params["vehicleId"] = str(vehicle_param)
+
+    account_param = account_id or incoming.get("accountId") or incoming.get("account_id")
+    if account_param:
+        params["accountId"] = str(account_param)
+
+    query_string = urlencode(params)
+    return RedirectResponse(url=f"/oil-management?{query_string}", status_code=302)
 
 @app.delete("/maintenance/{record_id}")
 async def delete_maintenance(request: Request, record_id: int):
@@ -2458,78 +2689,45 @@ async def get_notifications_api():
             get_all_vehicles,
             get_triggered_future_maintenance,
             get_vehicle_current_mileage,
+            get_oil_status_for_all,
         )
         
         notifications = []
         total_count = 0
         has_overdue = False
         
-        # Get all vehicles to check oil change status
+        # Oil change notifications using unified status helper
+        oil_statuses = get_oil_status_for_all()
+        for status in oil_statuses:
+            if status["state"] not in ("soon", "due"):
+                continue
+            urgency = "high" if status["state"] == "due" else "medium"
+            if urgency == "high":
+                has_overdue = True
+            notifications.append(
+                {
+                    "type": "Oil Change",
+                    "vehicle": status["vehicle_name"],
+                    "urgency": urgency,
+                    "link": f"/oil-management?vehicle_id={status['vehicle_id']}",
+                }
+            )
+            total_count += 1
+
+        # Get all vehicles to check other future maintenance status
         vehicles = get_all_vehicles()
         
         for vehicle in vehicles:
-            # Get current mileage for this vehicle
             mileage_info = get_vehicle_current_mileage(vehicle.id)
             current_mileage = mileage_info.get('current_mileage', 0) or 0
             
-            # Check oil change notifications using the same logic as vehicle health
-            try:
-                # Get oil change records for this vehicle
-                from models import MaintenanceRecord
-                from sqlalchemy import select
-                from sqlalchemy.orm import Session
-                from database import SessionLocal
-                
-                session = SessionLocal()
-                try:
-                    # Get all maintenance records for this vehicle
-                    records = session.execute(
-                        select(MaintenanceRecord).where(MaintenanceRecord.vehicle_id == vehicle.id)
-                    ).scalars().all()
-                    
-                    # Filter for oil change records
-                    oil_changes = [
-                        record for record in records 
-                        if record.vehicle_id == vehicle.id and record.is_oil_change
-                    ]
-                    
-                    if oil_changes:
-                        # Get most recent oil change
-                        last_oil_change = max(oil_changes, key=lambda x: x.date)
-                        
-                        # Get the oil change interval from the record
-                        from data_operations import get_oil_change_interval_from_record
-                        oil_change_interval = get_oil_change_interval_from_record(last_oil_change)
-                        
-                        if oil_change_interval:
-                            miles_since_oil_change = current_mileage - last_oil_change.mileage
-                            miles_until_next = oil_change_interval - miles_since_oil_change
-                            
-                            # Show notification if due within 500 miles OR overdue
-                            if miles_until_next <= 500:
-                                urgency = 'high' if miles_until_next < 0 else 'medium'
-                                if urgency == 'high':
-                                    has_overdue = True
-                                
-                                notifications.append({
-                                    'type': 'Oil Change',
-                                    'vehicle': f"{vehicle.year} {vehicle.make} {vehicle.model}",
-                                    'urgency': urgency,
-                                    'link': f'/oil-management?vehicle_id={vehicle.id}'
-                                })
-                                total_count += 1
-                    
-                finally:
-                    session.close()
-                    
-            except Exception as e:
-                print(f"Error checking oil change for vehicle {vehicle.id}: {e}")
-                continue
-            
-            # Check future maintenance notifications
             try:
                 future_maintenance = get_triggered_future_maintenance(vehicle.id, current_mileage)
                 for item in future_maintenance:
+                    maintenance_type = (item.get('maintenance_type') or "").lower()
+                    if "oil" in maintenance_type:
+                        # Oil reminders already handled via unified helper
+                        continue
                     if item['urgency'] in ['high', 'medium']:  # Only show overdue and due soon
                         if item['urgency'] == 'high':
                             has_overdue = True
@@ -2720,13 +2918,33 @@ async def debug_oil_linking(vehicle_id: int):
 async def oil_management_new(request: Request):
     """New Oil Management page with collapsible cards and smart linking"""
     try:
-        from data_operations import get_all_vehicles, get_maintenance_records_by_vehicle
+        from data_operations import (
+            get_all_vehicles,
+            get_maintenance_records_by_vehicle,
+            get_oil_status_for_all,
+        )
         
         account_context = get_account_context(request)
         account_id = account_context["account_id"] if account_context["scope"] != "all" else None
 
         # Get vehicles scoped to the active account (or all)
         vehicles = get_all_vehicles(account_id=account_id)
+        oil_status_list = get_oil_status_for_all(account_id=account_id)
+        oil_status_map = {status["vehicle_id"]: status for status in oil_status_list}
+
+        def _format_date(value):
+            if isinstance(value, date):
+                return value.strftime("%m/%d/%Y")
+            return value
+
+        def _safe_int(value):
+            if value is None:
+                return None
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return value
+
         vehicles_oil_data = []
         
         for vehicle in vehicles:
@@ -2789,6 +3007,24 @@ async def oil_management_new(request: Request):
             if oil_analysis and (not most_recent_activity or oil_analysis[0].date > most_recent_activity):
                 most_recent_activity = oil_analysis[0].date
 
+            status = oil_status_map.get(vehicle.id, {})
+            current_miles = _safe_int(status.get("current_miles"))
+            last_oil_miles = status.get("last_oil_miles")
+            interval_miles = status.get("interval_miles")
+            miles_to_due = status.get("miles_to_due")
+            next_due_miles = None
+
+            if interval_miles and last_oil_miles is not None:
+                try:
+                    next_due_miles = int(last_oil_miles) + int(interval_miles)
+                except (TypeError, ValueError):
+                    next_due_miles = None
+            elif current_miles is not None and miles_to_due is not None:
+                try:
+                    next_due_miles = int(current_miles) + int(miles_to_due)
+                except (TypeError, ValueError):
+                    next_due_miles = None
+
             vehicles_oil_data.append({
                 'vehicle': vehicle,
                 'oil_changes': oil_changes,
@@ -2798,7 +3034,14 @@ async def oil_management_new(request: Request):
                 'latest_mileage': latest_mileage,
                 'latest_date': latest_date,
                 'analysis_status': analysis_status,
-                'most_recent_activity': most_recent_activity
+                'most_recent_activity': most_recent_activity,
+                'oil_status': {
+                    'state': status.get('state', 'ok'),
+                    'current_miles': current_miles,
+                    'last_change_date': _format_date(status.get('last_oil_date')),
+                    'next_due_miles': next_due_miles,
+                    'next_due_date': _format_date(status.get('due_date')),
+                },
             })
         
         # Find the vehicle with the most recent activity for default expansion
@@ -2813,7 +3056,6 @@ async def oil_management_new(request: Request):
                         most_recent_vehicle_id = vehicle_data['vehicle'].id
         
         # Sort by most recent activity by default (most recent first)
-        from datetime import date
         vehicles_oil_data.sort(key=lambda x: x['most_recent_activity'] or date(1900, 1, 1), reverse=True)
         
         # Convert data to JSON-serializable format

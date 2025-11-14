@@ -1,8 +1,9 @@
 from decimal import Decimal, InvalidOperation
 import re
-from typing import Optional
+from typing import Optional, Literal
+from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 def to_decimal(val):
@@ -49,6 +50,59 @@ class BaseForm(BaseModel):
     if isinstance(value, str) and value.strip() == "":
       return None
     return value
+
+
+class Tread(BaseModel):
+  model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+  i: Optional[int] = Field(default=None, alias="in")
+  m: Optional[int] = Field(default=None, alias="mid")
+  o: Optional[int] = Field(default=None, alias="out")
+
+  @field_validator("i", "m", "o", mode="before")
+  @classmethod
+  def validate_depth(cls, value):
+    if value is None:
+      return None
+    if isinstance(value, str):
+      parsed = value.strip()
+      if parsed == "":
+        return None
+      value = parsed
+    try:
+      number = float(value)
+    except (TypeError, ValueError):
+      raise ValueError("Tread depth must be numeric")
+    if not number.is_integer():
+      raise ValueError("Tread depth must be a whole number in 32nds")
+    depth = int(number)
+    if depth < 0 or depth > 20:
+      raise ValueError("Tread depth must be between 0 and 20 (32nds)")
+    return depth
+
+
+class TireMeta(BaseModel):
+  model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+  fl: Optional[Tread] = None
+  fr: Optional[Tread] = None
+  rl: Optional[Tread] = None
+  rr: Optional[Tread] = None
+  units: Literal["32nds"] = "32nds"
+  measured_at: Optional[datetime] = None
+  pattern: Optional[Literal["front-to-rear", "cross", "five-tire", "custom", "unknown"]] = None
+  schema_version: Literal[1] = 1
+
+  def has_measurements(self) -> bool:
+    for tire in (self.fl, self.fr, self.rl, self.rr):
+      if not tire:
+        continue
+      if any(
+          getattr(tire, attr) is not None
+          for attr in ("i", "m", "o")
+      ):
+        return True
+    return False
 
 
 class MaintenanceCreate(BaseForm):

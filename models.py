@@ -3,7 +3,8 @@ from typing import Optional, List
 from datetime import date as date_type, datetime
 from pydantic import ConfigDict
 from uuid import uuid4
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, Column, JSON
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 def generate_uuid() -> str:
@@ -110,6 +111,10 @@ class MaintenanceRecord(SQLModel, table=True):
     # Photo Documentation
     photo_path: Optional[str] = Field(default=None, description="Path to uploaded photo file")
     photo_description: Optional[str] = Field(default=None, max_length=500, description="Description/tags for the photo")
+    tire_meta: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSON().with_variant(JSONB, "postgresql"), nullable=True),
+    )
     
     # Relationship to vehicle
     vehicle: Vehicle = Relationship(back_populates="maintenance_records")
