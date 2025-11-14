@@ -759,16 +759,74 @@ a.btn-icon {
    FUEL TRACKING CARD STYLES
    ============================================================================ */
 
-/* Simplified fuel stat card styles - removed complex flex/height rules that caused collapse */
+/* Vehicle fuel stat cards - Simple flexbox layout for equal height cards */
 .mpg-card {
-    /* Let cards size naturally based on content */
+    height: 100%;
 }
 
-.mpg-card .mpg-card-inner {
-    /* Height is set by CSS variable in template inline styles */
+.mpg-card-inner {
+    height: 100%;
+    display: flex;
 }
 
-.mpg-card .mpg-card-face {
-    /* Ensure faces are visible and have proper height */
-    min-height: var(--mpg-card-h, 220px);
+.mpg-card-face {
+    /* One face that fills the card */
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(2, 8, 23, 0.06);
+    /* IMPORTANT: we do NOT hide overflow here */
+    overflow: visible;
+    text-align: center;
+    width: 100%;
+}
+
+.mpg-front-main {
+    flex: 1 1 auto;
+    /* Content flows naturally, takes available space */
+}
+
+.mpg-front-footer {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    min-height: 1.5rem; /* Ensure footer always takes space for proper spacing */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mpg-front-footer .gap-warning {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: #ca8a04; /* warm yellow-ish */
+    white-space: normal; /* allow wrapping */
+    text-align: center;
+    padding: 0.25rem 0.5rem;
+}
+
+.mpg-front-footer .gap-warning i {
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* ============================================================================
+   RECENT FUEL ENTRIES TABLE STYLES
+   ============================================================================ */
+
+/* Recent Fuel Entries: show ~10 rows and scroll the rest */
+.recent-fuel-table-wrapper {
+    max-height: 420px; /* Target about 8-10 rows - JavaScript will adjust based on actual row height */
+    overflow-y: auto;
+    /* Border and other styles are handled by JavaScript for consistency */
+}
+
+/* Ensure card body doesn't interfere with table scrolling */
+.card-body .recent-fuel-table-wrapper {
+    margin: 0; /* Remove any default margins that might interfere */
 }
