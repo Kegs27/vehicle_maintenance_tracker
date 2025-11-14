@@ -230,6 +230,13 @@ body::before {
     overflow-y: auto;
 }
 
+/* Fuel tracker notes height: ~10 lines */
+textarea.fuel-notes {
+    height: calc(1.5em * 10 + 0.75rem);
+    max-height: calc(1.5em * 10 + 0.75rem);
+    resize: vertical;
+}
+
 /* ============================================================================
    FORM STYLES
    ============================================================================ */
