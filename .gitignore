@@ -1,2 +1,4 @@
 vehicle_maintenance_local.db
 .env
+__pycache__/
+tests/__pycache__/

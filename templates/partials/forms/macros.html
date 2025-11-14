@@ -78,20 +78,20 @@
   {% set describedby = _describedby(help_id, error_id).strip() %}
   <div class="input-group">
     <span class="input-group-text">$</span>
-    <input
-      id="{{ id }}"
-      name="{{ name }}"
+  <input
+    id="{{ id }}"
+    name="{{ name }}"
       type="text"
       value="{{ value if value is not none else '' }}"
       class="form-control {% if invalid %}is-invalid{% endif %}"
-      {% if required %}required{% endif %}
+    {% if required %}required{% endif %}
       {% if describedby %}aria-describedby="{{ describedby }}"{% endif %}
       aria-invalid="{{ 'true' if invalid else 'false' }}"
       data-money="true"
       {% for attr, val in attrs.items() %}
         {{ attr }}="{{ val }}"
       {% endfor %}
-    >
+  >
   </div>
 {%- endmacro %}
 

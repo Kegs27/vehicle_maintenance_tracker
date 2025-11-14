@@ -36,10 +36,10 @@
     {% include 'nav.html' %}
 
     <div class="container mt-4">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card form-card" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
-                    <div class="card-header bg-primary text-white text-center py-3">
+                    <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card form-card" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
+                        <div class="card-header bg-primary text-white text-center py-3">
                         <h4 class="mb-0">
                             {% if form_type == "oil_analysis" %}
                                 <i class="fa-solid fa-flask me-2"></i>
@@ -97,6 +97,19 @@
                         </div>
                         {% endif %}
 
+                        {% if form_type == "oil_change" and not record %}
+                        <div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap gap-2" role="alert">
+                            <span>
+                                <i class="fa-solid fa-circle-info me-2"></i>
+                                Use the Oil Management page to add oil changes.
+                            </span>
+                            <a class="btn-action btn-action-primary"
+                               href="/oil-management?open=add-oil{% if selected_vehicle_id %}&vehicleId={{ selected_vehicle_id }}{% endif %}">
+                                <i class="fa-solid fa-oil-can" aria-hidden="true"></i>
+                                <span>Add Oil Change</span>
+                            </a>
+                        </div>
+                        {% else %}
                         <form method="post"
                               action="{% if record %}/maintenance/{{ record.id }}{% else %}/maintenance{% endif %}"
                               enctype="multipart/form-data"
@@ -109,7 +122,7 @@
                             {% if future_maintenance_id %}
                             <input type="hidden" name="future_maintenance_id" value="{{ future_maintenance_id }}">
                             {% endif %}
-
+                            
                             {% if not record %}
                                 {% call field("vehicle_id", "Vehicle", required=True, error=field_error(form_errors, "vehicle_id")) %}
                                     {{ select_input(
@@ -217,7 +230,7 @@
 
                                 {% call field("photo", "Photo Documentation", error=field_error(form_errors, "photo")) %}
                                     <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
-                                    <div class="form-text">
+                                <div class="form-text">
                                         <i class="fa-solid fa-circle-info me-1"></i>
                                         Upload a photo of the work performed, parts replaced, or issues addressed
                                     </div>
@@ -226,8 +239,8 @@
                                         <img src="/{{ record.photo_path }}" alt="Maintenance photo" class="img-fluid rounded" style="max-width: 300px;">
                                         <div class="mt-1">
                                             <small class="text-muted">{{ record.photo_description or 'No description' }}</small>
-                                        </div>
-                                    </div>
+                                </div>
+                            </div>
                                     {% endif %}
                                 {% endcall %}
 
@@ -251,275 +264,12 @@
                             {% endif %}
 
                             {% if form_type == "oil_change" %}
-                                {% set oil_date_value = form_values.get("date_str") %}
-                                {% if oil_date_value is none %}
-                                    {% if record and record.date and record.date.year > 1900 %}
-                                        {% set oil_date_value = record.date.strftime('%m/%d/%Y') %}
-                                    {% elif pre_populated_data and pre_populated_data.target_date %}
-                                        {% set oil_date_value = pre_populated_data.target_date.strftime('%m/%d/%Y') %}
-                                    {% else %}
-                                        {% set oil_date_value = "" %}
-                                    {% endif %}
+                                {% if record %}
+                                    {% set vehicle_options_list = vehicle_options.items %}
+                                    {% set vehicle_options = vehicle_options_list %}
+                                    {% set id_prefix = 'edit_' %}
+                                    {% include "partials/forms/oil_change_form.html" %}
                                 {% endif %}
-                                {% call field("oil_date", "Oil Change Date", help_text="Date when oil change was performed", error=field_error(form_errors, "date_str")) %}
-                                    {{ date_input(
-                                        "oil_date",
-                                        "date_str",
-                                        value=oil_date_value|default('', true),
-                                        invalid=form_errors.get("date_str"),
-                                        attrs={
-                                            "placeholder": "MM/DD/YYYY",
-                                            "pattern": "\\d{1,2}/\\d{1,2}/\\d{4}",
-                                            "data-date-max-today": ""
-                                        }
-                                    ) }}
-                                {% endcall %}
-
-                                {% set oil_mileage_value = form_values.get("mileage") %}
-                                {% if oil_mileage_value is none %}
-                                    {% if record %}
-                                        {% set oil_mileage_value = record.mileage %}
-                                    {% elif pre_populated_data %}
-                                        {% set oil_mileage_value = pre_populated_data.target_mileage %}
-                                    {% else %}
-                                        {% set oil_mileage_value = "" %}
-                                    {% endif %}
-                                {% endif %}
-                                {% call field("oil_mileage", "Mileage", required=True, help_text="Vehicle mileage at time of oil change", error=field_error(form_errors, "mileage")) %}
-                                    {{ number_input(
-                                        "oil_mileage",
-                                        "mileage",
-                                        value=oil_mileage_value|default('', true),
-                                        step="1",
-                                        min="0",
-                                        required=True,
-                                        invalid=form_errors.get("mileage"),
-                                        attrs={
-                                            "inputmode": "numeric",
-                                            "data-mileage": "true"
-                                        }
-                                    ) }}
-                                {% endcall %}
-
-                                {% set oil_description_value = form_values.get("description") %}
-                                {% if oil_description_value is none %}
-                                    {% if record %}
-                                        {% set oil_description_value = record.description %}
-                                    {% elif pre_populated_data %}
-                                        {% set oil_description_value = pre_populated_data.description %}
-                                    {% else %}
-                                        {% set oil_description_value = "" %}
-                                    {% endif %}
-                                {% endif %}
-                                {% call field("oil_description", "Description", error=field_error(form_errors, "description")) %}
-                                    {{ textarea(
-                                        "oil_description",
-                                        "description",
-                                        value=oil_description_value|default('', true),
-                                        rows=2,
-                                        placeholder="e.g., Oil Change - 5W-30 Mobil 1"
-                                    ) }}
-                                {% endcall %}
-
-                                {% set interval_value = form_values.get("oil_change_interval") %}
-                                {% if interval_value is none %}
-                                    {% if record and record.oil_change_interval %}
-                                        {% set interval_value = record.oil_change_interval %}
-                                    {% else %}
-                                        {% set interval_value = "5000" %}
-                                    {% endif %}
-                                {% endif %}
-                                {% call field("oil_change_interval", "Oil Change Interval (Miles)", help_text="Set the mileage interval for the next oil change. Default is 5,000 miles.<br><strong>Adding a past oil change?</strong> Leave this field <em>blank</em> to avoid creating an upcoming reminder. Do not enter 0. You can edit later to add an interval without creating a reminder.", error=field_error(form_errors, "oil_change_interval")) %}
-                                    {{ number_input(
-                                        "oil_change_interval",
-                                        "oil_change_interval",
-                                        value=interval_value|default('', true),
-                                        step="100",
-                                        min="1000",
-                                        max="20000",
-                                        invalid=form_errors.get("oil_change_interval"),
-                                        attrs={"placeholder": "5000"}
-                                    ) }}
-                                {% endcall %}
-
-                                {% set oil_type_value = form_values.get("oil_type") if form_values.get("oil_type") is not none else (record.oil_type if record else "") %}
-                                {% set oil_brand_value = form_values.get("oil_brand") if form_values.get("oil_brand") is not none else (record.oil_brand if record else "") %}
-                                {% set oil_filter_brand_value = form_values.get("oil_filter_brand") if form_values.get("oil_filter_brand") is not none else (record.oil_filter_brand if record else "") %}
-                                {% set oil_filter_part_value = form_values.get("oil_filter_part_number") if form_values.get("oil_filter_part_number") is not none else (record.oil_filter_part_number if record else "") %}
-                                {% set oil_type_options = [
-                                    ("", "Select oil type..."),
-                                    ("0W-20", "0W-20"),
-                                    ("0W-30", "0W-30"),
-                                    ("5W-20", "5W-20"),
-                                    ("5W-30", "5W-30"),
-                                    ("5W-40", "5W-40"),
-                                    ("10W-30", "10W-30"),
-                                    ("10W-40", "10W-40"),
-                                    ("15W-40", "15W-40"),
-                                    ("20W-50", "20W-50")
-                                ] %}
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        {% call field("oil_type", "Oil Type", error=field_error(form_errors, "oil_type")) %}
-                                            {{ select_input(
-                                                "oil_type",
-                                                "oil_type",
-                                                oil_type_options,
-                                                value=oil_type_value|default('', true),
-                                                invalid=form_errors.get("oil_type")
-                                            ) }}
-                                        {% endcall %}
-                                    </div>
-                                    <div class="col-md-6">
-                                        {% call field("oil_brand", "Oil Brand", error=field_error(form_errors, "oil_brand")) %}
-                                            {{ text_input(
-                                                "oil_brand",
-                                                "oil_brand",
-                                                value=oil_brand_value|default('', true),
-                                                placeholder="e.g., Mobil 1, Castrol, Valvoline",
-                                                invalid=form_errors.get("oil_brand")
-                                            ) }}
-                                        {% endcall %}
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        {% call field("oil_filter_brand", "Filter Brand", error=field_error(form_errors, "oil_filter_brand")) %}
-                                            {{ text_input(
-                                                "oil_filter_brand",
-                                                "oil_filter_brand",
-                                                value=oil_filter_brand_value|default('', true),
-                                                placeholder="e.g., Mobil 1, K&N, Fram",
-                                                invalid=form_errors.get("oil_filter_brand")
-                                            ) }}
-                                        {% endcall %}
-                                    </div>
-                                    <div class="col-md-6">
-                                        {% call field("oil_filter_part_number", "Filter Part Number", error=field_error(form_errors, "oil_filter_part_number")) %}
-                                            {{ text_input(
-                                                "oil_filter_part_number",
-                                                "oil_filter_part_number",
-                                                value=oil_filter_part_value|default('', true),
-                                                placeholder="e.g., M1-110A",
-                                                invalid=form_errors.get("oil_filter_part_number")
-                                            ) }}
-                                        {% endcall %}
-                                    </div>
-                                </div>
-
-                                {% set oil_cost_value = form_values.get("oil_cost") %}
-                                {% if oil_cost_value is none %}
-                                    {% if record and record.oil_cost %}
-                                        {% set oil_cost_value = '%.2f'|format(record.oil_cost) %}
-                                    {% else %}
-                                        {% set oil_cost_value = "" %}
-                                    {% endif %}
-                                {% endif %}
-                                {% set filter_cost_value = form_values.get("filter_cost") %}
-                                {% if filter_cost_value is none %}
-                                    {% if record and record.filter_cost %}
-                                        {% set filter_cost_value = '%.2f'|format(record.filter_cost) %}
-                                    {% else %}
-                                        {% set filter_cost_value = "" %}
-                                    {% endif %}
-                                {% endif %}
-                                {% set labor_cost_value = form_values.get("labor_cost") %}
-                                {% if labor_cost_value is none %}
-                                    {% if record and record.labor_cost %}
-                                        {% set labor_cost_value = '%.2f'|format(record.labor_cost) %}
-                                    {% else %}
-                                        {% set labor_cost_value = "" %}
-                                    {% endif %}
-                                {% endif %}
-                                {% set total_cost_value = form_values.get("cost") %}
-                                {% if total_cost_value is none %}
-                                    {% if record and record.cost %}
-                                        {% set total_cost_value = '%.2f'|format(record.cost) %}
-                                    {% elif pre_populated_data and pre_populated_data.estimated_cost %}
-                                        {% set total_cost_value = '%.2f'|format(pre_populated_data.estimated_cost) %}
-                                    {% else %}
-                                        {% set total_cost_value = "" %}
-                                    {% endif %}
-                                {% endif %}
-
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        {% call field("oil_cost", "Oil Cost", error=field_error(form_errors, "oil_cost")) %}
-                                            {{ money_input(
-                                                "oil_cost",
-                                                "oil_cost",
-                                                value=oil_cost_value|default('', true),
-                                                invalid=form_errors.get("oil_cost")
-                                            ) }}
-                                        {% endcall %}
-                                    </div>
-                                    <div class="col-md-4">
-                                        {% call field("filter_cost", "Filter Cost", error=field_error(form_errors, "filter_cost")) %}
-                                            {{ money_input(
-                                                "filter_cost",
-                                                "filter_cost",
-                                                value=filter_cost_value|default('', true),
-                                                invalid=form_errors.get("filter_cost")
-                                            ) }}
-                                        {% endcall %}
-                                    </div>
-                                    <div class="col-md-4">
-                                        {% call field("labor_cost", "Labor Cost", error=field_error(form_errors, "labor_cost")) %}
-                                            {{ money_input(
-                                                "labor_cost",
-                                                "labor_cost",
-                                                value=labor_cost_value|default('', true),
-                                                invalid=form_errors.get("labor_cost")
-                                            ) }}
-                                        {% endcall %}
-                                    </div>
-                                </div>
-
-                                {% call field("cost", "Total Cost", help_text="Total will auto-calculate from oil + filter + labor costs above", error=field_error(form_errors, "cost")) %}
-                                    {{ money_input(
-                                        "cost",
-                                        "cost",
-                                        value=total_cost_value|default('', true),
-                                        invalid=form_errors.get("cost")
-                                    ) }}
-                                {% endcall %}
-
-                                {% call field("photo", "Photo Documentation", error=field_error(form_errors, "photo")) %}
-                                    <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
-                                    <div class="form-text">
-                                        <i class="fa-solid fa-circle-info me-1"></i>
-                                        Upload a photo of the oil change work performed
-                                    </div>
-                                    {% if record and record.photo_path %}
-                                    <div class="mt-2">
-                                        <img src="/{{ record.photo_path }}" alt="Oil change photo" class="img-fluid rounded" style="max-width: 300px;">
-                                        <div class="mt-1">
-                                            <small class="text-muted">{{ record.photo_description or 'No description' }}</small>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-                                {% endcall %}
-
-                                {% set oil_photo_desc_value = form_values.get("photo_description") %}
-                                {% if oil_photo_desc_value is none %}
-                                    {% if record %}
-                                        {% set oil_photo_desc_value = record.photo_description %}
-                                    {% else %}
-                                        {% set oil_photo_desc_value = "" %}
-                                    {% endif %}
-                                {% endif %}
-                                {% call field("photo_description", "Photo Description", error=field_error(form_errors, "photo_description")) %}
-                                    {{ textarea(
-                                        "photo_description",
-                                        "photo_description",
-                                        value=oil_photo_desc_value|default('', true),
-                                        rows=2,
-                                        placeholder="Describe what's shown in the photo"
-                                    ) }}
-                                {% endcall %}
-
-                                <input type="hidden" name="is_oil_change" value="true">
                             {% endif %}
 
                             {% if form_type == "oil_analysis" %}
@@ -761,8 +511,8 @@
                                                 attrs={"placeholder": "e.g., 2.1"}
                                             ) }}
                                         {% endcall %}
-                                    </div>
                                 </div>
+                            </div>
 
                                 {% set driving_conditions_value = form_values.get("driving_conditions") if form_values.get("driving_conditions") is not none else (record.driving_conditions if record else "") %}
                                 {% set driving_options = [
@@ -774,7 +524,7 @@
                                     ("Mixed", "Mixed")
                                 ] %}
                                 <div class="row">
-                                    <div class="col-md-6">
+                                <div class="col-md-6">
                                         {% call field("driving_conditions", "Driving Conditions", error=field_error(form_errors, "driving_conditions")) %}
                                             {{ select_input(
                                                 "driving_conditions",
@@ -784,8 +534,8 @@
                                                 invalid=form_errors.get("driving_conditions")
                                             ) }}
                                         {% endcall %}
-                                    </div>
-                                    <div class="col-md-6">
+                                </div>
+                                <div class="col-md-6">
                                         {% set coolant_value = form_values.get("coolant_contamination") %}
                                         {% set coolant_checked = coolant_value is not none %}
                                         {% if not coolant_checked and record and record.coolant_contamination %}
@@ -825,14 +575,14 @@
                                     <div class="form-text icon-row">
                                         <i class="fa-solid fa-circle-info me-1"></i>
                                         <span>Upload a photo of the oil sample or analysis setup</span>
-                                    </div>
+                            </div>
                                     {% if record and record.photo_path %}
                                     <div class="mt-2">
                                         <img src="/{{ record.photo_path }}" alt="Oil analysis photo" class="img-fluid rounded" style="max-width: 300px;">
                                         <div class="mt-1">
                                             <small class="text-muted">{{ record.photo_description or 'No description' }}</small>
-                                        </div>
-                                    </div>
+                                </div>
+                            </div>
                                     {% endif %}
                                 {% endcall %}
 
@@ -870,6 +620,7 @@
                                 </a>
                             </div>
                         </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -887,7 +638,7 @@
                 const filterCost = parseFloat(document.getElementById('filter_cost').value) || 0;
                 const laborCost = parseFloat(document.getElementById('labor_cost').value) || 0;
                 const totalCost = oilCost + filterCost + laborCost;
-                
+            
                 if (totalCost > 0) {
                     document.getElementById('cost').value = totalCost.toFixed(2);
                 }

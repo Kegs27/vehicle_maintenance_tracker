@@ -52,24 +52,6 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
         }
-        .feature-card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-        
-        .feature-card {
-            transition: all 0.3s ease;
-        }
-        
-        .feature-card:hover .badge {
-            background-color: #6f42c1 !important;
-        }
         .nav-link {
             color: #6c757d;
             font-weight: 500;
@@ -104,11 +86,6 @@
             color: #9333ea !important;
         }
         
-        /* Feature card icon styling */
-        .feature-card .icon-xl {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
     </style>
 </head>
 <body>
@@ -232,59 +209,49 @@
     <section class="py-5">
         <div class="container">
             <h3 class="text-center mb-5">Features</h3>
-            <div class="row g-4">
-                <div class="col-lg-3 col-md-6">
-                    <div class="card feature-card h-100 text-center" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
-                        <div class="card-body p-4">
-                            <i class="fa-solid fa-car icon-xl text-purple-600 icon-mb"></i>
-                            <h5 class="card-title">Vehicle Management</h5>
-                            <p class="card-text">Add and manage multiple vehicles with detailed information including VIN, year, make, and model.</p>
-                            <a href="/vehicles" class="btn-action btn-action-outline justify-content-center" data-account-aware="true">
-                                <i class="fa-solid fa-list" aria-hidden="true"></i>
-                                <span>Manage Vehicles</span>
-                            </a>
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-car" aria-hidden="true"></i>
                         </div>
+                        <h3 class="feature-title">Vehicle Management</h3>
+                        <p class="feature-text">
+                            Add and manage multiple vehicles with detailed information including VIN, year, make, and model.
+                        </p>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="card feature-card h-100 text-center" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
-                        <div class="card-body p-4">
-                            <i class="fa-solid fa-screwdriver-wrench icon-xl text-purple-600 icon-mb"></i>
-                            <h5 class="card-title">Maintenance Tracking</h5>
-                            <p class="card-text">Record and track all maintenance activities with dates, mileage, descriptions, and costs.</p>
-                            <a href="/maintenance/new?return_url=/" class="btn-action btn-action-outline justify-content-center" data-account-aware="true">
-                                <i class="fa-solid fa-wrench" aria-hidden="true"></i>
-                                <span>Add Maintenance</span>
-                            </a>
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i>
                         </div>
+                        <h3 class="feature-title">Maintenance Tracking</h3>
+                        <p class="feature-text">
+                            Record and track all maintenance activities with dates, mileage, descriptions, and costs.
+                        </p>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="card feature-card h-100 text-center" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
-                        <div class="card-body p-4">
-                            <i class="fa-solid fa-right-left icon-xl text-purple-600 icon-mb"></i>
-                            <h5 class="card-title">Data Transfer</h5>
-                            <p class="card-text">Import maintenance records from CSV files and transfer data to various formats.</p>
-                            <a href="/import" class="btn-action btn-action-outline justify-content-center" data-account-aware="true">
-                                <i class="fa-solid fa-upload" aria-hidden="true"></i>
-                                <span>Import Data</span>
-                            </a>
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-right-left" aria-hidden="true"></i>
                         </div>
+                        <h3 class="feature-title">Data Transfer</h3>
+                        <p class="feature-text">
+                            Import maintenance records from CSV files and transfer data to various formats.
+                        </p>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="card feature-card h-100 text-center" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
-                        <div class="card-body p-4">
-                            <i class="fa-solid fa-gas-pump icon-xl text-purple-600 icon-mb"></i>
-                            <h5 class="card-title">Fuel Tracking</h5>
-                            <p class="card-text">Track fuel consumption, mileage, and efficiency with photo verification.</p>
-                                            <a href="/fuel-new" class="btn btn-outline-primary" data-account-aware="true">
-                    <span class="icon-row">
-                        <i class="fa-solid fa-gas-pump icon-m icon-base"></i>
-                        <span>Track Fuel</span>
-                    </span>
-                </a>
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-gas-pump" aria-hidden="true"></i>
                         </div>
+                        <h3 class="feature-title">Fuel Tracking</h3>
+                        <p class="feature-text">
+                            Track fuel consumption, mileage, and efficiency with photo verification.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -298,7 +265,7 @@
         <div class="container">
             <h3 class="text-center mb-4">Professional Resources</h3>
             <div class="row justify-content-center g-4">
-                                <div class="col-md-6">
+                <div class="col-md-6">
                     <div class="card feature-card h-100" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
                         <div class="card-body text-center p-4">
                             <i class="fa-solid fa-book icon-xl text-purple-600 icon-mb"></i>
@@ -315,7 +282,7 @@
                         </div>
                     </div>
                 </div>
-                                <div class="col-md-6">
+                <div class="col-md-6">
                     <div class="card feature-card h-100" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
                         <div class="card-body text-center p-4">
                             <i class="fa-solid fa-cart-shopping icon-xl text-warning icon-mb"></i>
@@ -332,7 +299,7 @@
                         </div>
                     </div>
                 </div>
-                                <div class="col-md-6">
+                <div class="col-md-6">
                     <div class="card feature-card h-100" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
                         <div class="card-body text-center p-4">
                             <i class="fa-solid fa-screwdriver-wrench icon-xl text-danger icon-mb"></i>
@@ -349,7 +316,7 @@
                         </div>
                     </div>
                 </div>
-                                <div class="col-md-6">
+                <div class="col-md-6">
                     <div class="card feature-card h-100" style="background-color: #f8f9fa; border: 2px solid #dee2e6 !important;">
                         <div class="card-body text-center p-4">
                             <i class="fa-solid fa-truck icon-xl text-info icon-mb"></i>
@@ -416,7 +383,7 @@
                 document.body.removeChild(modal);
             });
         }
-
+        
 
 
         function loadRecentActivityData() {

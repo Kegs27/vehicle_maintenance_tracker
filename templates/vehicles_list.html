@@ -431,9 +431,9 @@
                                         <div class="mb-2 text-center">
                                             <span class="icon-row">
                                                 <i class="fa-solid fa-car icon-m icon-base icon-primary"></i>
-                                                <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="text-decoration-none fw-bold text-dark hover-primary">
-                                                    {{ vehicle.name }}
-                                                </a>
+                                            <a href="/maintenance?vehicle_id={{ vehicle.id }}" class="text-decoration-none fw-bold text-dark hover-primary">
+                                                {{ vehicle.name }}
+                                            </a>
                                             </span>
                                         </div>
                                         {% set health_data = vehicle_health | selectattr("vehicle.id", "equalto", vehicle.id) | first %}
@@ -446,7 +446,7 @@
                                                       title="Click to update mileage"
                                                       data-vehicle-id="{{ vehicle.id }}"
                                                       data-current-mileage="{{ health_data.current_mileage }}">
-                                                    {{ "{:,}".format(health_data.current_mileage) }} mi
+                                            {{ "{:,}".format(health_data.current_mileage) }} mi
                                                 </span>
                                             </span>
                                         </div>
@@ -550,7 +550,7 @@
                                                 class="btn-icon btn-sm is-danger delete-vehicle-btn"
                                                 title="Delete vehicle"
                                                 aria-label="Delete vehicle"
-                                                data-vehicle-id="{{ vehicle.id }}"
+                                                data-vehicle-id="{{ vehicle.id }}" 
                                                 data-vehicle-name="{{ vehicle.name }}">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
@@ -869,16 +869,16 @@
              // Build modal content
              let html = `<div class="fw-bold mb-2">${maintenanceType}</div>`;
              
-            if (targetMileage && targetMileage !== '') {
+             if (targetMileage && targetMileage !== '') {
                 html += `<div class="mb-1"><span class="icon-row"><i class="fa-solid fa-gauge icon-xs icon-base icon-primary"></i><span>Due at ${parseInt(targetMileage).toLocaleString()} mi</span></span></div>`;
-            }
-            
-            if (targetDate && targetDate !== '') {
+             }
+             
+             if (targetDate && targetDate !== '') {
                 html += `<div class="mb-1"><span class="icon-row"><i class="fa-regular fa-calendar icon-xs icon-base icon-primary"></i><span>Due on ${targetDate}</span></span></div>`;
-            }
-            
-            // Get current mileage from the vehicle row
-            const vehicleRow = event.target.closest('tr');
+             }
+             
+             // Get current mileage from the vehicle row
+             const vehicleRow = event.target.closest('tr');
             const mileageElement = vehicleRow.querySelector('.fa-gauge');
              if (mileageElement) {
                  const mileageText = mileageElement.parentElement.textContent;

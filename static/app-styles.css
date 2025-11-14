@@ -78,20 +78,51 @@ body::before {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Home page features grid */
 .feature-card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background-color: #ffffff;
+    padding: 1.25rem 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    height: 100%;
 }
 
+.feature-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    margin-bottom: 0.35rem;
+}
+
+.feature-icon i {
+    font-size: 1.1rem;
+}
+
+.feature-title {
+    font-size: 0.98rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.feature-text {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Optional hover polish */
 .feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.feature-card:hover .badge {
-    background-color: #6f42c1 !important;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    border-color: rgba(148, 163, 184, 0.6);
+    transform: translateY(-1px);
+    transition: box-shadow 120ms ease, transform 120ms ease, border-color 120ms ease;
 }
 
 /* ============================================================================

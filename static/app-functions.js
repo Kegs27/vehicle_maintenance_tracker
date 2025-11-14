@@ -286,7 +286,7 @@ function updateAccountDropdownButton(button, account, totalVehicleCount, isAllSe
     const countLabel = typeof account.vehicle_count === 'number' ? ` (${account.vehicle_count})` : '';
     const defaultBadge = account.is_default ? ' <i class="fa-solid fa-star fa-fw icon-right text-warning" title="Default account" aria-hidden="true"></i>' : '';
     button.innerHTML = `<span class="icon-row"><i class="fa-solid fa-circle-user fa-fw icon-primary" aria-hidden="true"></i><span>${account.name}${countLabel}${defaultBadge}</span></span>`;
-}
+    }
 
 function buildAccountListMarkup(accounts, selectedAccountId, totalVehicleCount) {
     const items = [];
