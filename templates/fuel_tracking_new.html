@@ -1298,6 +1298,24 @@
                 return dateString; // Return original if parsing fails
             }
         }
+
+        // Auto-scroll the Fuel Notes field into view on mobile
+        document.addEventListener("focusin", function (e) {
+            if (!e.target.classList.contains("fuel-notes")) return;
+
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (!isMobile) return;
+
+            const modalBody = e.target.closest(".modal-body");
+            if (!modalBody) return;
+
+            setTimeout(() => {
+                e.target.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            }, 250); // delay helps account for keyboard animation
+        });
     </script>
 </body>
 </html>

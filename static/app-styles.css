@@ -237,6 +237,14 @@ textarea.fuel-notes {
     resize: vertical;
 }
 
+/* Ensure 10-line height on mobile too */
+@supports (-webkit-touch-callout: none) {
+    textarea.fuel-notes {
+        height: calc(1.5em * 10 + 0.75rem) !important;
+        max-height: calc(1.5em * 10 + 0.75rem) !important;
+    }
+}
+
 /* ============================================================================
    FORM STYLES
    ============================================================================ */
