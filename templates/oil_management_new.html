@@ -8,7 +8,7 @@
     {% include 'partials/head_resources.html' %}
     
     <style>
-        .oil-card {
+        .oil-vehicle-card {
             border: 2px solid #e9ecef;
             border-radius: 12px;
             margin-bottom: 1rem;
@@ -16,34 +16,34 @@
             background: white;
         }
         
-        .oil-card:hover {
+        .oil-vehicle-card:hover {
             border-color: #8b5cf6;
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
         }
         
-        .oil-card.expanded {
+        .oil-vehicle-card.expanded {
             border-color: #8b5cf6;
             box-shadow: 0 6px 20px rgba(139, 92, 246, 0.2);
         }
         
-        .card-header-custom {
+        .vehicle-header {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-bottom: 1px solid #dee2e6;
             cursor: pointer;
             padding: 1rem;
         }
         
-        .card-header-custom:hover {
+        .vehicle-header:hover {
             background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
         }
         
-        .vehicle-name {
+        .vehicle-title {
             font-weight: 600;
             color: #495057;
             font-size: 1.1rem;
         }
         
-        .oil-summary {
+        .oil-summary-details {
             color: #6c757d;
             font-size: 0.9rem;
             margin-top: 0.25rem;
@@ -57,12 +57,12 @@
             transform: rotate(180deg);
         }
         
-        .card-content {
+        .oil-vehicle-content {
             display: none;
             padding: 1.5rem;
         }
         
-        .card-content.show {
+        .oil-vehicle-content.show {
             display: block;
         }
         
@@ -292,221 +292,274 @@
                 <!-- Vehicle Oil Cards -->
                 <div id="oilCardsContainer">
                     {% for vehicle_data in vehicles_oil_data %}
-                    <div class="oil-card" data-vehicle="{{ vehicle_data.vehicle.name }}" data-date="{{ vehicle_data.latest_date_str or '1900-01-01' }}" data-mileage="{{ vehicle_data.latest_mileage }}">
-                        <!-- Card Header (Always Visible) -->
-                        <div class="card-header-custom" onclick="toggleCard(this)">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <div class="vehicle-name icon-row">
-                                        <i class="fa-solid fa-car icon-m icon-base icon-primary"></i>
-                                        <span>{{ vehicle_data.vehicle.name }}</span>
-                                    </div>
-                                    <div class="oil-summary">
-                                        {% if vehicle_data.latest_oil_change %}
-                                            <span class="icon-row">
-                                                <i class="fa-solid fa-gauge icon-xs icon-base"></i>
-                                                <span>{{ '{:,}'.format(vehicle_data.latest_mileage) }} miles</span>
-                                            </span>
-                                            • <span class="icon-row">
-                                                <i class="fa-regular fa-calendar icon-xs icon-base"></i>
-                                                <span>{{ vehicle_data.latest_date.strftime('%m/%d/%Y') if vehicle_data.latest_date else 'No date' }}</span>
-                                            </span>
-                                            • <span class="icon-row">
-                                                <i class="fa-solid fa-oil-can icon-xs icon-base"></i>
-                                                <span>{{ vehicle_data.latest_oil_change.oil_type or 'Unknown' }} {{ vehicle_data.latest_oil_change.oil_brand or '' }}</span>
-                                            </span>
-                                            {% if vehicle_data.latest_oil_change.cost %}• ${{ "%.2f"|format(vehicle_data.latest_oil_change.cost) }}{% endif %}
-                                        {% else %}
-                                            <span class="icon-row">
-                                                <i class="fa-solid fa-circle-info icon-xs icon-base"></i>
-                                                <span>No oil changes recorded</span>
-                                            </span>
-                                        {% endif %}
-                                    </div>
+                    {% set vehicle = vehicle_data.vehicle %}
+                    {% set oil_status = vehicle_data.oil_status or {} %}
+                    {% set raw_state = oil_status.state or 'ok' %}
+                    {% set status_map = {'ok': 'status-normal', 'normal': 'status-normal', 'soon': 'status-soon', 'due': 'status-due'} %}
+                    {% set status_class = status_map.get(raw_state, 'status-normal') %}
+                    {% if raw_state not in status_map %}
+                        <!-- unknown oil state: {{ raw_state }} -->
+                    {% endif %}
+                    {% set current_miles = oil_status.current_miles | default(None) %}
+                    {% set last_change = oil_status.last_change_date | default(None) %}
+                    {% set next_miles = oil_status.next_due_miles | default(None) %}
+                    {% set next_date = oil_status.next_due_date | default(None) %}
+                    <div class="oil-vehicle-card" data-vehicle="{{ vehicle.name }}" data-date="{{ vehicle_data.latest_date_str or '1900-01-01' }}" data-mileage="{{ vehicle_data.latest_mileage }}">
+                        <div class="vehicle-header d-flex align-items-center gap-2"
+                             role="button"
+                             tabindex="0"
+                             aria-controls="oil-card-{{ vehicle.id }}"
+                             aria-expanded="false"
+                             data-target="oil-card-{{ vehicle.id }}">
+                            <i class="fa-solid fa-car oil-status-icon {{ status_class }}" aria-hidden="true"></i>
+                            <div class="d-flex flex-column">
+                                <div class="vehicle-title">
+                                    {% if vehicle.year and vehicle.make and vehicle.model %}
+                                        {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}
+                                    {% else %}
+                                        {{ vehicle.name }}
+                                    {% endif %}
                                 </div>
-                                <div class="col-md-4 text-end">
-                                    <div class="mb-2">
-                                        {% if vehicle_data.analysis_status == 'linked' %}
-                                            <span class="analysis-status analysis-linked">
-                                                <span class="icon-row">
-                                                    <i class="fa-solid fa-link icon-xs icon-base"></i>
-                                                    <span>Analysis Linked</span>
-                                                </span>
-                                            </span>
-                                        {% elif vehicle_data.analysis_status == 'available' %}
-                                            <span class="analysis-status analysis-available">
-                                                <span class="icon-row">
-                                                    <i class="fa-solid fa-flask icon-xs icon-base"></i>
-                                                    <span>Analysis Available</span>
-                                                </span>
-                                            </span>
-                                        {% else %}
-                                            <span class="analysis-status analysis-none">
-                                                <span class="icon-row">
-                                                    <i class="fa-solid fa-xmark icon-xs icon-base"></i>
-                                                    <span>No Analysis</span>
-                                                </span>
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                    <i class="fa-solid fa-chevron-down expand-icon text-muted"></i>
-                                </div>
+                                {% if vehicle.name and (not vehicle.year or not vehicle.make or not vehicle.model) %}
+                                    <span class="text-muted small">{{ vehicle.name }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1"></div>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if vehicle_data.analysis_status == 'linked' %}
+                                    <span class="analysis-status analysis-linked">
+                                        <span class="icon-row">
+                                            <i class="fa-solid fa-link icon-xs icon-base"></i>
+                                            <span>Analysis Linked</span>
+                                        </span>
+                                    </span>
+                                {% elif vehicle_data.analysis_status == 'available' %}
+                                    <span class="analysis-status analysis-available">
+                                        <span class="icon-row">
+                                            <i class="fa-solid fa-flask icon-xs icon-base"></i>
+                                            <span>Analysis Available</span>
+                                        </span>
+                                    </span>
+                                {% else %}
+                                    <span class="analysis-status analysis-none">
+                                        <span class="icon-row">
+                                            <i class="fa-solid fa-xmark icon-xs icon-base"></i>
+                                            <span>No Analysis</span>
+                                        </span>
+                                    </span>
+                                {% endif %}
+                                <i class="fa-solid fa-chevron-down expand-icon text-muted ms-1" aria-hidden="true"></i>
                             </div>
                         </div>
 
-                        <!-- Card Content (Expandable) -->
-                        <div class="card-content">
-                            <!-- Recent Oil Changes -->
-                            <div class="mb-4">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0 d-flex align-items-center gap-2">
-                                        <i class="fa-solid fa-oil-can icon-s icon-base icon-primary"></i>
-                                        <span>Recent Oil Changes</span>
-                                    </h6>
-                                    <button class="btn btn-primary btn-sm" onclick="openOilChangeModal({{ vehicle_data.vehicle.id }}, '{{ vehicle_data.vehicle.name }}')">
-                                        <span class="icon-row-sm">
-                                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
-                                            <span>Add Oil Change</span>
-                                        </span>
-                                    </button>
-                                </div>
-                                
-                                {% if vehicle_data.oil_changes %}
-                                    {% for oil_change in vehicle_data.oil_changes[:3] %}
-                                    <div class="oil-detail-row">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-6">
-                                                <strong>{{ '{:,}'.format(oil_change.mileage) }} miles</strong>
-                                                <small class="text-muted d-block">{{ oil_change.date.strftime('%m/%d/%Y') }}</small>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <span class="text-muted">{{ oil_change.oil_type or 'Unknown' }} {{ oil_change.oil_brand or '' }}</span>
-                                                {% if oil_change.cost %}<small class="d-block">${{ "%.2f"|format(oil_change.cost) }}</small>{% endif %}
-                                            </div>
-                                            <div class="col-md-2 text-end">
-                                                <button class="btn btn-outline-primary btn-sm" onclick="editOilChange({{ oil_change.id }})" aria-label="Edit oil change">
-                                                    <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                    {% if vehicle_data.oil_changes|length > 3 %}
-                                    <div class="text-center mt-2">
-                                        <small class="text-muted">... and {{ vehicle_data.oil_changes|length - 3 }} more</small>
-                                    </div>
+                        <span id="oil-summary-{{ vehicle.id }}" class="visually-hidden">
+                            Oil status for {{ vehicle.name }}. Current mileage:
+                            {% if current_miles is not none %}
+                                {{ '{:,}'.format(current_miles) }}
+                            {% else %}
+                                not available
+                            {% endif %}.
+                            Last change:
+                            {{ last_change or 'not recorded' }}.
+                            Next due:
+                            {% if next_miles is not none %}
+                                {{ '{:,}'.format(next_miles) }} miles{% if next_date %} on {{ next_date }}{% endif %}
+                            {% elif next_date %}
+                                {{ next_date }}
+                            {% else %}
+                                not scheduled
+                            {% endif %}.
+                        </span>
+
+                        <div class="oil-summary-banner {{ status_class }}" role="group" aria-label="Oil summary" aria-describedby="oil-summary-{{ vehicle.id }}">
+                            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                            <span class="current">
+                                Current:
+                                {% if current_miles is not none %}
+                                    {{ '{:,}'.format(current_miles) }} mi
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </span>
+                            <span class="separator">•</span>
+                            <i class="fa-solid fa-droplet" aria-hidden="true"></i>
+                            <span class="last">
+                                Last Change: {{ last_change or '—' }}
+                            </span>
+                            <span class="separator">•</span>
+                            <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                            <span class="next">
+                                Next Due:
+                                {% if next_miles is not none %}
+                                    {{ '{:,}'.format(next_miles) }} mi
+                                {% endif %}
+                                {% if next_date %}
+                                    {% if next_miles is not none %}
+                                        ({{ next_date }})
+                                    {% else %}
+                                        {{ next_date }}
                                     {% endif %}
-                                {% else %}
-                                    <div class="text-center text-muted py-3">
-                                        <span class="icon-row">
-                                            <i class="fa-solid fa-circle-info icon-s icon-base"></i>
-                                            <span>No oil changes recorded</span>
-                                        </span>
-                                    </div>
                                 {% endif %}
-                            </div>
+                                {% if next_miles is none and not next_date %}
+                                    —
+                                {% endif %}
+                            </span>
+                        </div>
 
-                            <!-- Future Oil Changes -->
-                            {% if vehicle_data.future_oil_changes %}
-                            <div class="mb-4">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0 d-flex align-items-center gap-2">
-                                        <i class="fa-regular fa-calendar-plus icon-s icon-base text-success"></i>
-                                        <span>Upcoming Oil Changes</span>
-                                    </h6>
-                                </div>
-                                
-                                {% for future_oil_change in vehicle_data.future_oil_changes %}
-                                <div class="oil-detail-row border border-success border-opacity-25 bg-light">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-6">
-                                            <strong class="text-success">{{ '{:,}'.format(future_oil_change.target_mileage) }} miles</strong>
-                                            <small class="text-muted d-block">{{ future_oil_change.target_date.strftime('%m/%d/%Y') if future_oil_change.target_date else 'Date TBD' }}</small>
-                                            {% if future_oil_change.notes %}
-                                            <small class="text-muted d-block">{{ future_oil_change.notes }}</small>
-                                            {% endif %}
-                                        </div>
-                                        <div class="col-md-3">
-                                            {% if future_oil_change.estimated_cost %}
-                                            <span class="text-success fw-semibold">${{ '{:.2f}'.format(future_oil_change.estimated_cost) }}</span>
-                                            {% endif %}
-                                        </div>
-                                        <div class="col-md-3 text-end">
-                                            <button class="btn btn-success btn-sm" onclick="completeOilChange({{ future_oil_change.id }}, {{ vehicle_data.vehicle.id }}, '{{ vehicle_data.vehicle.name }}')">
-                                                <span class="icon-row-sm">
-                                                    <i class="fa-solid fa-check icon-m icon-base"></i>
-                                                    <span>Complete</span>
-                                                </span>
-                                            </button>
-                                        </div>
+                        <div id="oil-card-{{ vehicle.id }}" class="oil-vehicle-content">
+                            <div class="oil-card">
+                                <div class="oil-card-header d-flex align-items-center justify-content-between">
+                                    <div class="h6 m-0 d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-droplet" aria-hidden="true"></i>
+                                        <span>Recent Oil Changes</span>
                                     </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-
-                            <!-- Divider between Oil Changes and Oil Analysis -->
-                            <div class="border-top border-2 border-secondary my-4"></div>
-
-                            <!-- Oil Analysis Section -->
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0 d-flex align-items-center gap-2">
-                                        <i class="fa-solid fa-flask icon-s icon-base text-success"></i>
-                                        <span>Oil Analysis</span>
-                                    </h6>
-                                    <button class="btn btn-success btn-sm" onclick="openAnalysisModal({{ vehicle_data.vehicle.id }}, '{{ vehicle_data.vehicle.name }}')">
-                                        <span class="icon-row-sm">
-                                            <i class="fa-solid fa-circle-plus icon-m icon-base"></i>
-                                            <span>Add Analysis</span>
-                                        </span>
+                                    <button type="button" class="btn-icon is-primary" onclick="openOilChangeModal({{ vehicle.id }}, '{{ vehicle.name }}')" aria-label="Add oil change for {{ vehicle.name }}">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
                                     </button>
                                 </div>
-
-                                {% if vehicle_data.oil_analysis %}
-                                    {% for analysis in vehicle_data.oil_analysis[:2] %}
-                                    <div class="oil-detail-row">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-6">
-                                                <strong>{{ '{:,}'.format(analysis.mileage) }} miles</strong>
-                                                <small class="text-muted d-block">Sample: {{ analysis.date.strftime('%m/%d/%Y') }}</small>
-                                            </div>
-                                            <div class="col-md-4">
-                                                {% if analysis.oil_analysis_report %}
-                                                    <a href="/oil-analysis/pdf/{{ analysis.id }}" target="_blank" class="badge bg-primary text-decoration-none icon-row">
-                                                        <i class="fa-solid fa-file-pdf icon-xs icon-base"></i>
-                                                        <span>View PDF</span>
-                                                    </a>
-                                                {% endif %}
-                                                {% set matching_oil_change = None %}
-                                                {% for oil_change in vehicle_data.oil_changes %}
-                                                    {% if oil_change.mileage == analysis.mileage %}
-                                                        {% set matching_oil_change = oil_change %}
-                                                    {% endif %}
-                                                {% endfor %}
-                                                {% if matching_oil_change %}
-                                                    <small class="d-block text-success icon-row">
-                                                        <i class="fa-solid fa-link icon-xs icon-base"></i>
-                                                        <span>Linked to oil change</span>
-                                                    </small>
-                                                {% endif %}
-                                            </div>
-                                            <div class="col-md-2 text-end">
-                                                <button class="btn btn-outline-success btn-sm" onclick="editAnalysis({{ analysis.id }})" aria-label="Edit oil analysis">
-                                                    <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
-                                                </button>
+                                <div class="oil-card-body">
+                                    {% if vehicle_data.oil_changes %}
+                                        {% for oil_change in vehicle_data.oil_changes[:3] %}
+                                        <div class="oil-detail-row">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-6">
+                                                    <strong>{{ '{:,}'.format(oil_change.mileage) }} miles</strong>
+                                                    <small class="text-muted d-block">{{ oil_change.date.strftime('%m/%d/%Y') }}</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <span class="text-muted">{{ oil_change.oil_type or 'Unknown' }} {{ oil_change.oil_brand or '' }}</span>
+                                                    {% if oil_change.cost %}<small class="d-block">${{ "%.2f"|format(oil_change.cost) }}</small>{% endif %}
+                                                </div>
+                                                <div class="col-md-2 text-end">
+                                                    <button class="btn btn-outline-primary btn-sm" onclick="editOilChange({{ oil_change.id }})" aria-label="Edit oil change">
+                                                        <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
+                                        {% endfor %}
+                                        {% if vehicle_data.oil_changes|length > 3 %}
+                                        <div class="text-center mt-2">
+                                            <small class="text-muted">... and {{ vehicle_data.oil_changes|length - 3 }} more</small>
+                                        </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-center text-muted py-3">
+                                            <span class="icon-row">
+                                                <i class="fa-solid fa-circle-info icon-s icon-base" aria-hidden="true"></i>
+                                                <span>No oil changes recorded</span>
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider"/>
+
+                            <div class="oil-card">
+                                <div class="oil-card-header d-flex align-items-center justify-content-between">
+                                    <div class="h6 m-0 d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                                        <span>Upcoming Oil Changes</span>
                                     </div>
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="text-center text-muted py-3">
-                                        <span class="icon-row">
-                                            <i class="fa-solid fa-circle-info icon-s icon-base"></i>
-                                            <span>No analysis reports</span>
-                                        </span>
+                                </div>
+                                <div class="oil-card-body">
+                                    {% if vehicle_data.future_oil_changes %}
+                                        {% for future_oil_change in vehicle_data.future_oil_changes %}
+                                        <div class="oil-detail-row border border-success border-opacity-25 bg-light">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-6">
+                                                    <strong class="text-success">{{ '{:,}'.format(future_oil_change.target_mileage) }} miles</strong>
+                                                    <small class="text-muted d-block">{{ future_oil_change.target_date.strftime('%m/%d/%Y') if future_oil_change.target_date else 'Date TBD' }}</small>
+                                                    {% if future_oil_change.notes %}
+                                                    <small class="text-muted d-block">{{ future_oil_change.notes }}</small>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    {% if future_oil_change.estimated_cost %}
+                                                    <span class="text-success fw-semibold">${{ '{:.2f}'.format(future_oil_change.estimated_cost) }}</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3 text-end">
+                                                    <button class="btn btn-success btn-sm" onclick="completeOilChange({{ future_oil_change.id }}, {{ vehicle.id }}, '{{ vehicle.name }}')" aria-label="Complete scheduled oil change">
+                                                        <span class="icon-row-sm">
+                                                            <i class="fa-solid fa-check icon-m icon-base" aria-hidden="true"></i>
+                                                            <span>Complete</span>
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-center text-muted py-3">
+                                            <span class="icon-row">
+                                                <i class="fa-solid fa-circle-info icon-s icon-base" aria-hidden="true"></i>
+                                                <span>No upcoming oil changes</span>
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider"/>
+
+                            <div class="oil-card">
+                                <div class="oil-card-header d-flex align-items-center justify-content-between">
+                                    <div class="h6 m-0 d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-flask-vial" aria-hidden="true"></i>
+                                        <span>Oil Analysis</span>
                                     </div>
-                                {% endif %}
+                                    <button type="button" class="btn-icon is-success" onclick="openAnalysisModal({{ vehicle.id }}, '{{ vehicle.name }}')" aria-label="Add oil analysis for {{ vehicle.name }}">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="oil-card-body">
+                                    {% if vehicle_data.oil_analysis %}
+                                        {% for analysis in vehicle_data.oil_analysis[:2] %}
+                                        <div class="oil-detail-row">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-6">
+                                                    <strong>{{ '{:,}'.format(analysis.mileage) }} miles</strong>
+                                                    <small class="text-muted d-block">Sample: {{ analysis.date.strftime('%m/%d/%Y') }}</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    {% if analysis.oil_analysis_report %}
+                                                        <a href="/oil-analysis/pdf/{{ analysis.id }}" target="_blank" class="badge bg-primary text-decoration-none icon-row">
+                                                            <i class="fa-solid fa-file-pdf icon-xs icon-base" aria-hidden="true"></i>
+                                                            <span>View PDF</span>
+                                                        </a>
+                                                    {% endif %}
+                                                    {% set matching_oil_change = None %}
+                                                    {% for oil_change in vehicle_data.oil_changes %}
+                                                        {% if oil_change.mileage == analysis.mileage %}
+                                                            {% set matching_oil_change = oil_change %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    {% if matching_oil_change %}
+                                                        <small class="d-block text-success icon-row">
+                                                            <i class="fa-solid fa-link icon-xs icon-base" aria-hidden="true"></i>
+                                                            <span>Linked to oil change</span>
+                                                        </small>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-2 text-end">
+                                                    <button class="btn btn-outline-success btn-sm" onclick="editAnalysis({{ analysis.id }})" aria-label="Edit oil analysis">
+                                                        <i class="fa-solid fa-pen-to-square fa-fw" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-center text-muted py-3">
+                                            <span class="icon-row">
+                                                <i class="fa-solid fa-circle-info icon-s icon-base" aria-hidden="true"></i>
+                                                <span>No analysis reports</span>
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -531,6 +584,18 @@
         </div>
     </div>
 
+    {% set oil_modal_vehicle_options = namespace(items=[]) %}
+    {% for vehicle_data in vehicles_oil_data %}
+        {% set modal_vehicle = vehicle_data.vehicle %}
+        {% if modal_vehicle.year and modal_vehicle.make and modal_vehicle.model %}
+            {% set modal_label = modal_vehicle.year ~ " " ~ modal_vehicle.make ~ " " ~ modal_vehicle.model %}
+        {% else %}
+            {% set modal_label = modal_vehicle.name %}
+        {% endif %}
+        {% set oil_modal_vehicle_options.items = oil_modal_vehicle_options.items + [(modal_vehicle.id, modal_label)] %}
+    {% endfor %}
+    {% set oil_modal_vehicle_options = oil_modal_vehicle_options.items %}
+
     <!-- Add Oil Change Modal -->
     <div class="modal fade" id="addOilChangeModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -544,124 +609,13 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="addOilChangeForm" onsubmit="submitOilChange(event)" data-enhanced-form="true" data-draft-key="oil-change-modal">
+                <form id="addOilChangeForm" onsubmit="submitOilChange(event)" method="post" action="/maintenance" enctype="multipart/form-data" data-enhanced-form="true" data-draft-key="oil-change-modal">
                     <div class="modal-body">
                         {% set form_errors = {} %}
                         {% set form_values = {} %}
-                        <input type="hidden" id="oilChangeVehicleId" name="vehicle_id">
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                {% call field("oil_change_modal_mileage", "Mileage", required=True) %}
-                                    {{ number_input(
-                                        "oil_change_modal_mileage",
-                                        "mileage",
-                                        value=form_values.get("mileage", ""),
-                                        required=True,
-                                        step="1",
-                                        min="0",
-                                        attrs={
-                                            "inputmode": "numeric",
-                                            "data-mileage": "true"
-                                        }
-                                    ) }}
-                                {% endcall %}
-                            </div>
-                            <div class="col-md-6">
-                                {% call field("oil_change_modal_date", "Date") %}
-                                    {{ date_input(
-                                        "oil_change_modal_date",
-                                        "date_str",
-                                        value=form_values.get("date_str", ""),
-                                        attrs={
-                                            "placeholder": "MM/DD/YYYY",
-                                            "pattern": "\\d{1,2}/\\d{1,2}/\\d{4}",
-                                            "data-date-max-today": ""
-                                        }
-                                    ) }}
-                                {% endcall %}
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                {% call field("oil_change_modal_type", "Oil Type") %}
-                                    {{ text_input(
-                                        "oil_change_modal_type",
-                                        "oil_type",
-                                        value=form_values.get("oil_type", ""),
-                                        placeholder="e.g., 0W-20, 5W-30"
-                                    ) }}
-                                {% endcall %}
-                            </div>
-                            <div class="col-md-6">
-                                {% call field("oil_change_modal_brand", "Oil Brand") %}
-                                    {{ text_input(
-                                        "oil_change_modal_brand",
-                                        "oil_brand",
-                                        value=form_values.get("oil_brand", ""),
-                                        placeholder="e.g., Mobil 1, Valvoline"
-                                    ) }}
-                                {% endcall %}
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                {% call field("oil_change_modal_oil_cost", "Oil Cost") %}
-                                    {{ money_input(
-                                        "oil_change_modal_oil_cost",
-                                        "oil_cost",
-                                        value=form_values.get("oil_cost", "")
-                                    ) }}
-                                {% endcall %}
-                            </div>
-                            <div class="col-md-4">
-                                {% call field("oil_change_modal_filter_cost", "Filter Cost") %}
-                                    {{ money_input(
-                                        "oil_change_modal_filter_cost",
-                                        "filter_cost",
-                                        value=form_values.get("filter_cost", "")
-                                    ) }}
-                                {% endcall %}
-                            </div>
-                            <div class="col-md-4">
-                                {% set interval_help = "Set the mileage interval for the next oil change. Default is 5,000 miles.<br><strong>Recording a past oil change?</strong> Leave this field <em>blank</em> to prevent creating an upcoming reminder. Do not enter 0. You can add an interval later without creating a reminder." %}
-                                {% call field("oil_change_modal_interval", "Oil Change Interval (Miles)", help_text=interval_help|safe) %}
-                                    {{ number_input(
-                                        "oil_change_modal_interval",
-                                        "oil_change_interval",
-                                        value=form_values.get("oil_change_interval", "5000"),
-                                        step="1000",
-                                        min="1000",
-                                        max="20000",
-                                        attrs={"placeholder": "5000"}
-                                    ) }}
-                                {% endcall %}
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                {% call field("oil_change_modal_labor_cost", "Labor Cost") %}
-                                    {{ money_input(
-                                        "oil_change_modal_labor_cost",
-                                        "labor_cost",
-                                        value=form_values.get("labor_cost", "")
-                                    ) }}
-                                {% endcall %}
-                            </div>
-                        </div>
-
-                        {% call field("oil_change_modal_notes", "Additional Notes") %}
-                            {{ textarea(
-                                "oil_change_modal_notes",
-                                "description",
-                                value=form_values.get("description", ""),
-                                rows=2,
-                                placeholder="Optional notes about this oil change"
-                            ) }}
-                        {% endcall %}
+                        {% set vehicle_options = oil_modal_vehicle_options %}
+                        {% set id_prefix = 'om_' %}
+                        {% include "partials/forms/oil_change_form.html" %}
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -889,30 +843,86 @@
         let linkToOilChange = false;
         let matchedOilChange = null;
 
+        function resolveVehicleName(vehicleId) {
+            if (!vehicleId || !Array.isArray(vehiclesData)) {
+                return "";
+            }
+            const match = vehiclesData.find((entry) => String(entry.vehicle.id) === String(vehicleId));
+            return match ? match.vehicle.name : "";
+        }
+
         // Card expansion functionality
         function toggleCard(header) {
-            const card = header.closest('.oil-card');
-            const content = card.querySelector('.card-content');
-            const icon = card.querySelector('.expand-icon');
-            
-            if (content.classList.contains('show')) {
-                content.classList.remove('show');
-                icon.classList.remove('rotated');
-                card.classList.remove('expanded');
-            } else {
-                // Close all other cards
-                document.querySelectorAll('.oil-card').forEach(c => {
-                    c.querySelector('.card-content').classList.remove('show');
-                    c.querySelector('.expand-icon').classList.remove('rotated');
-                    c.classList.remove('expanded');
-                });
-                
-                // Open this card
-                content.classList.add('show');
-                icon.classList.add('rotated');
-                card.classList.add('expanded');
+            if (!header) {
+                return;
             }
+
+            const card = header.closest('.oil-vehicle-card');
+            if (!card) {
+                return;
+            }
+
+            const targetId = header.getAttribute('data-target');
+            const content = targetId ? document.getElementById(targetId) : card.querySelector('.oil-vehicle-content');
+            const icon = header.querySelector('.expand-icon') || card.querySelector('.expand-icon');
+            const isExpanded = header.getAttribute('aria-expanded') === 'true';
+
+            if (isExpanded) {
+                header.setAttribute('aria-expanded', 'false');
+                if (content) {
+                    content.classList.remove('show');
+                }
+                if (icon) {
+                    icon.classList.remove('rotated');
+                }
+                card.classList.remove('expanded');
+                return;
+            }
+
+            document.querySelectorAll('.vehicle-header[role="button"]').forEach(otherHeader => {
+                otherHeader.setAttribute('aria-expanded', 'false');
+            });
+
+            document.querySelectorAll('.oil-vehicle-content').forEach(section => {
+                section.classList.remove('show');
+            });
+
+            document.querySelectorAll('.oil-vehicle-card').forEach(otherCard => {
+                otherCard.classList.remove('expanded');
+            });
+
+            document.querySelectorAll('.oil-vehicle-card .expand-icon').forEach(otherIcon => {
+                otherIcon.classList.remove('rotated');
+            });
+
+            header.setAttribute('aria-expanded', 'true');
+            if (content) {
+                content.classList.add('show');
+            }
+            if (icon) {
+                icon.classList.add('rotated');
+            }
+            card.classList.add('expanded');
         }
+
+        document.addEventListener('click', (event) => {
+            const header = event.target.closest('.vehicle-header[role="button"]');
+            if (!header || event.target.closest('a, button, input, select, textarea')) {
+                return;
+            }
+            toggleCard(header);
+        });
+
+        document.addEventListener('keydown', (event) => {
+            const header = event.target.closest('.vehicle-header[role="button"]');
+            if (!header) {
+                return;
+            }
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleCard(header);
+            }
+        });
 
         // Sorting functionality
         document.querySelectorAll('.sort-btn').forEach(btn => {
@@ -928,7 +938,7 @@
 
         function sortCards(sortType) {
             const container = document.getElementById('oilCardsContainer');
-            const cards = Array.from(container.querySelectorAll('.oil-card'));
+            const cards = Array.from(container.querySelectorAll('.oil-vehicle-card'));
             
             cards.sort((a, b) => {
                 switch(sortType) {
@@ -954,10 +964,47 @@
         }
 
         // Modal functions
-        function openOilChangeModal(vehicleId, vehicleName) {
-            // Redirect to maintenance form with oil change type
-            const url = `/maintenance/new?vehicle_id=${vehicleId}&form_type=oil_change&return_url=/oil-management`;
-            window.location.href = url;
+        function openOilChangeModal(vehicleId, vehicleName = "", futureMaintenanceId = null) {
+            const modalEl = document.getElementById('addOilChangeModal');
+            if (!modalEl || !window.bootstrap || !bootstrap.Modal) {
+                return false;
+            }
+
+            const form = document.getElementById('addOilChangeForm');
+            if (form) {
+                form.reset();
+            }
+
+            const resolvedVehicleId = vehicleId ?? mostRecentVehicleId ?? "";
+            const vehicleSelect = modalEl.querySelector('#om_vehicle_id');
+            if (vehicleSelect) {
+                vehicleSelect.value = resolvedVehicleId ?? "";
+                vehicleSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const hiddenFutureInput = modalEl.querySelector('#om_future_maintenance_id');
+            if (hiddenFutureInput) {
+                hiddenFutureInput.value = futureMaintenanceId ?? "";
+            }
+
+            const headerName = modalEl.querySelector('#oilChangeVehicleName');
+            if (headerName) {
+                const resolvedName =
+                    vehicleName ||
+                    resolveVehicleName(resolvedVehicleId) ||
+                    "";
+                headerName.textContent = resolvedName || 'Select Vehicle';
+            }
+
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modalInstance.show();
+
+            const focusTarget = modalEl.querySelector('input[name="mileage"]');
+            if (focusTarget) {
+                setTimeout(() => focusTarget.focus(), 120);
+            }
+
+            return true;
         }
 
         function openAnalysisModal(vehicleId, vehicleName) {
@@ -1035,13 +1082,13 @@
             const formData = new FormData(form);
             
             // Ensure vehicle_id is set
-            const vehicleId = document.getElementById('oilChangeVehicleId').value;
+            const vehicleSelect = form.querySelector('select[name="vehicle_id"]');
+            const vehicleId = vehicleSelect ? vehicleSelect.value : "";
             console.log('Oil Change Vehicle ID:', vehicleId);
             if (!vehicleId) {
                 alert('Vehicle ID is missing. Please close the modal and try again.');
                 return;
             }
-            formData.set('vehicle_id', vehicleId);
             
             // Ensure date_str is set
             if (!formData.get('date_str')) {
@@ -1155,17 +1202,120 @@
         }
 
         function completeOilChange(futureMaintenanceId, vehicleId, vehicleName) {
-            // Redirect to maintenance form with pre-populated data
-            const url = `/maintenance/new?vehicle_id=${vehicleId}&future_maintenance_id=${futureMaintenanceId}&form_type=oil_change&return_url=/oil-management`;
-            window.location.href = url;
+            const url = new URL('/oil-management', window.location.origin);
+            url.searchParams.set('open', 'add-oil');
+            if (vehicleId) {
+                url.searchParams.set('vehicleId', vehicleId);
+            }
+            if (futureMaintenanceId) {
+                url.searchParams.set('futureMaintenanceId', futureMaintenanceId);
+            }
+            const currentAccountId = new URLSearchParams(window.location.search).get('accountId');
+            if (currentAccountId) {
+                url.searchParams.set('accountId', currentAccountId);
+            }
+            window.location.href = url.toString();
         }
 
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            // All cards start collapsed by default
-            // Users can click to expand any card they want to view
-            console.log('Oil Management page loaded - all cards collapsed by default');
+    </script>
+
+    <script>
+    // Belt-and-suspenders auto-open script: robust handling of open=add-oil parameter
+    (function() {
+        'use strict';
+        
+        // Wait for DOM to be ready
+        const readyCheck = (callback) => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', callback);
+            } else {
+                callback();
+            }
+        };
+
+        readyCheck(function() {
+            try {
+                const url = new URL(window.location.href);
+                const openParam = url.searchParams.get('open');
+                
+                // Only proceed if open=add-oil is explicitly present
+                if (!openParam || openParam.toLowerCase() !== 'add-oil') {
+                    return;
+                }
+
+                // Extract parameters
+                const vehicleId = url.searchParams.get('vehicleId') || '';
+                const futureId = 
+                    url.searchParams.get('futureMaintenanceId') || 
+                    url.searchParams.get('future_maintenance_id') || 
+                    '';
+
+                // Robust attempt function that checks for all prerequisites
+                const attemptOpen = () => {
+                    // Check 1: openOilChangeModal function exists
+                    if (typeof openOilChangeModal !== 'function') {
+                        return false;
+                    }
+                    
+                    // Check 2: Bootstrap is loaded and Modal class exists
+                    if (!window.bootstrap || !bootstrap.Modal) {
+                        return false;
+                    }
+                    
+                    // Check 3: Modal element exists in DOM
+                    const modalEl = document.getElementById('addOilChangeModal');
+                    if (!modalEl) {
+                        return false;
+                    }
+                    
+                    // All prerequisites met - attempt to open
+                    try {
+                        const opened = openOilChangeModal(vehicleId, "", futureId);
+                        
+                        if (opened) {
+                            // Clean URL after successful open
+                            url.searchParams.delete('open');
+                            if (!vehicleId) {
+                                url.searchParams.delete('vehicleId');
+                            }
+                            if (!futureId) {
+                                url.searchParams.delete('futureMaintenanceId');
+                                url.searchParams.delete('future_maintenance_id');
+                            }
+                            const newUrl = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '');
+                            history.replaceState({}, '', newUrl);
+                        }
+                        
+                        return opened;
+                    } catch (err) {
+                        console.error('Error calling openOilChangeModal:', err);
+                        return false;
+                    }
+                };
+
+                // Try immediately first
+                if (attemptOpen()) {
+                    return; // Success!
+                }
+
+                // If not ready, retry with exponential backoff up to 3 seconds
+                let tries = 0;
+                const maxTries = 30; // 30 * 100ms = 3 seconds max wait
+                const retryInterval = setInterval(() => {
+                    tries += 1;
+                    if (attemptOpen() || tries >= maxTries) {
+                        clearInterval(retryInterval);
+                        if (tries >= maxTries && !attemptOpen()) {
+                            console.warn('Auto-open failed: openOilChangeModal not available after 3 seconds. URL param open=add-oil may need manual action.');
+                        }
+                    }
+                }, 100);
+                
+            } catch (err) {
+                console.error('Error in auto-open add-oil script:', err);
+            }
         });
+    })();
     </script>
 </body>
 </html>

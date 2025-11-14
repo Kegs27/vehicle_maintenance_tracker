@@ -11,6 +11,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Environment configuration
+ENV = os.getenv("ENV", "dev").lower()
+APP_IS_DEV = ENV != "prod"
+
 # Database configuration
 def get_database_url():
     """Get database URL from environment or use default SQLite"""
@@ -18,6 +22,7 @@ def get_database_url():
     database_url = os.getenv("DATABASE_URL")
     # Debug logging
     print(f"Environment check - DATABASE_URL: {'SET' if database_url else 'NOT SET'}")
+    
     if database_url:
         print(f"Using PostgreSQL: {database_url[:20]}...")  # Show first 20 chars for security
     else:
@@ -44,9 +49,16 @@ DATABASE_URL = get_database_url()
 
 # Create engine with appropriate configuration
 if DATABASE_URL.startswith("postgresql"):
-    # PostgreSQL (cloud) configuration - convert to psycopg format
-    # Replace postgresql:// with postgresql+psycopg:// for psycopg compatibility
-    psycopg_url = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+    # PostgreSQL (cloud) configuration - ensure psycopg driver is specified
+    # Handle URLs that already have a driver (postgresql+psycopg:// or postgresql+psycopg2://)
+    # or plain postgresql:// URLs
+    if "postgresql+psycopg" in DATABASE_URL or "postgresql+psycopg2" in DATABASE_URL:
+        # URL already has driver specified, use as-is (but convert psycopg2 to psycopg if needed)
+        psycopg_url = DATABASE_URL.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
+    else:
+        # Plain postgresql:// URL, convert to postgresql+psycopg:// for psycopg v3 compatibility
+        psycopg_url = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+    
     engine = create_engine(
         psycopg_url,
         echo=False,
