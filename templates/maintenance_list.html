@@ -1980,23 +1980,71 @@
                         const form = document.getElementById('futureMaintenanceForm');
                         if (form) {
                             // Set vehicle
-                            const vehicleSelect = document.getElementById('vehicle_id');
+                            const vehicleSelect = document.getElementById('future_vehicle_id');
                             if (vehicleSelect) {
                                 vehicleSelect.value = record.vehicle_id;
                             }
                             
                             // Set other fields
-                            document.getElementById('maintenance_type').value = record.maintenance_type || '';
-                            document.getElementById('target_mileage').value = record.target_mileage || '';
-                            document.getElementById('target_date').value = record.target_date || '';
-                            document.getElementById('mileage_reminder').value = record.mileage_reminder || 100;
-                            document.getElementById('date_reminder').value = record.date_reminder || 30;
-                            document.getElementById('estimated_cost').value = record.estimated_cost || '';
-                            document.getElementById('parts_link').value = record.parts_link || '';
-                            document.getElementById('notes').value = record.notes || '';
-                            document.getElementById('is_recurring').checked = record.is_recurring || false;
-                            document.getElementById('recurrence_interval_miles').value = record.recurrence_interval_miles || '';
-                            document.getElementById('recurrence_interval_months').value = record.recurrence_interval_months || '';
+                            const maintenanceTypeField = document.getElementById('future_maintenance_type');
+                            if (maintenanceTypeField) {
+                                maintenanceTypeField.value = record.maintenance_type || '';
+                            }
+                            
+                            const targetMileageField = document.getElementById('future_target_mileage');
+                            if (targetMileageField) {
+                                targetMileageField.value = record.target_mileage || '';
+                            }
+                            
+                            const targetDateField = document.getElementById('future_target_date');
+                            if (targetDateField) {
+                                targetDateField.value = record.target_date || '';
+                            }
+                            
+                            const mileageReminderField = document.getElementById('future_mileage_reminder');
+                            if (mileageReminderField) {
+                                mileageReminderField.value = record.mileage_reminder || 100;
+                            }
+                            
+                            const dateReminderField = document.getElementById('future_date_reminder');
+                            if (dateReminderField) {
+                                dateReminderField.value = record.date_reminder || 30;
+                            }
+                            
+                            const estimatedCostField = document.getElementById('future_estimated_cost');
+                            if (estimatedCostField) {
+                                estimatedCostField.value = record.estimated_cost || '';
+                            }
+                            
+                            const partsLinkField = document.getElementById('future_parts_link');
+                            if (partsLinkField) {
+                                partsLinkField.value = record.parts_link || '';
+                            }
+                            
+                            const notesField = document.getElementById('future_notes');
+                            if (notesField) {
+                                notesField.value = record.notes || '';
+                            }
+                            
+                            const isRecurringField = document.getElementById('future_is_recurring');
+                            if (isRecurringField) {
+                                isRecurringField.checked = record.is_recurring || false;
+                                // Show/hide recurrence fields based on checkbox
+                                const recurrenceFields = document.getElementById('recurrenceFields');
+                                if (recurrenceFields) {
+                                    recurrenceFields.style.display = isRecurringField.checked ? 'block' : 'none';
+                                }
+                            }
+                            
+                            const recurrenceMilesField = document.getElementById('future_recurrence_miles');
+                            if (recurrenceMilesField) {
+                                recurrenceMilesField.value = record.recurrence_interval_miles || '';
+                            }
+                            
+                            const recurrenceMonthsField = document.getElementById('future_recurrence_months');
+                            if (recurrenceMonthsField) {
+                                recurrenceMonthsField.value = record.recurrence_interval_months || '';
+                            }
                         }
                         
                         // Update modal title and add hidden field for record ID
