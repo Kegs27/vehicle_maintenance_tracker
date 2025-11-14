@@ -760,22 +760,16 @@ a.btn-icon {
    FUEL TRACKING CARD STYLES
    ============================================================================ */
 
-/* Normalize fuel stat card heights for uniform rows */
+/* Simplified fuel stat card styles - removed complex flex/height rules that caused collapse */
 .mpg-card {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    /* Let cards size naturally based on content */
 }
 
 .mpg-card .mpg-card-inner {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    /* Height is set by CSS variable in template inline styles */
 }
 
-.mpg-card .card-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+.mpg-card .mpg-card-face {
+    /* Ensure faces are visible and have proper height */
+    min-height: var(--mpg-card-h, 220px);
 }
