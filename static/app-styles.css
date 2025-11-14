@@ -257,6 +257,15 @@ body::before {
     box-shadow: 0 0 0 0.2rem rgba(139, 92, 246, 0.25);
 }
 
+/* Fuel tracker notes height: clamp to 10 lines */
+#fuelEntryModal #notes.form-control,
+#fuelEntryForm #notes.form-control {
+    height: calc(1.5em * 10 + 0.75rem); /* line-height * rows + padding */
+    min-height: calc(1.5em * 10 + 0.75rem);
+    max-height: calc(1.5em * 10 + 0.75rem);
+    resize: vertical; /* Allow vertical resize if user wants more space */
+}
+
 /* ============================================================================
    UTILITY STYLES
    ============================================================================ */
