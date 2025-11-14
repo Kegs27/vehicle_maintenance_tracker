@@ -888,16 +888,9 @@
                                             }
                                             
                                             ${vehicle.gaps_detected && vehicle.gaps_detected.length > 0 ? 
-                                                `<div class="mt-2">
-                                                    <small class="text-warning icon-row">
-                                                        <i class="fa-solid fa-triangle-exclamation icon-xs icon-base"></i>
-                                                        <span>${vehicle.gaps_detected.length} gap(s) detected</span>
-                                                    </small>
-                                                    <div class="small text-muted mt-1">
-                                                        ${vehicle.gaps_detected.map(gap => 
-                                                            `${gap.gap_miles} miles`
-                                                        ).join(', ')}
-                                                    </div>
+                                                `<div class="mt-2 small text-warning d-flex align-items-center justify-content-center gap-1">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    <span>${vehicle.gaps_detected.length} gap(s) detected</span>
                                                 </div>` : ''
                                             }
                                         </div>
