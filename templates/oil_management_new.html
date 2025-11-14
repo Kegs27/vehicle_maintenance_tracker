@@ -423,7 +423,7 @@
                                         <div class="oil-detail-row">
                                             <div class="row align-items-center">
                                                 <div class="col-md-6">
-                                                    <strong>{{ '{:,}'.format(oil_change.mileage) }} miles</strong>
+                                                    <strong>{% if oil_change.mileage is not none %}{{ '{:,}'.format(oil_change.mileage) }} miles{% else %}<span class="text-muted">—</span>{% endif %}</strong>
                                                     <small class="text-muted d-block">{{ oil_change.date.strftime('%m/%d/%Y') }}</small>
                                                 </div>
                                                 <div class="col-md-4">
@@ -469,7 +469,7 @@
                                         <div class="oil-detail-row border border-success border-opacity-25 bg-light">
                                             <div class="row align-items-center">
                                                 <div class="col-md-6">
-                                                    <strong class="text-success">{{ '{:,}'.format(future_oil_change.target_mileage) }} miles</strong>
+                                                    <strong class="text-success">{% if future_oil_change.target_mileage is not none %}{{ '{:,}'.format(future_oil_change.target_mileage) }} miles{% else %}<span class="text-muted">—</span>{% endif %}</strong>
                                                     <small class="text-muted d-block">{{ future_oil_change.target_date.strftime('%m/%d/%Y') if future_oil_change.target_date else 'Date TBD' }}</small>
                                                     {% if future_oil_change.notes %}
                                                     <small class="text-muted d-block">{{ future_oil_change.notes }}</small>
@@ -520,7 +520,7 @@
                                         <div class="oil-detail-row">
                                             <div class="row align-items-center">
                                                 <div class="col-md-6">
-                                                    <strong>{{ '{:,}'.format(analysis.mileage) }} miles</strong>
+                                                    <strong>{% if analysis.mileage is not none %}{{ '{:,}'.format(analysis.mileage) }} miles{% else %}<span class="text-muted">—</span>{% endif %}</strong>
                                                     <small class="text-muted d-block">Sample: {{ analysis.date.strftime('%m/%d/%Y') }}</small>
                                                 </div>
                                                 <div class="col-md-4">

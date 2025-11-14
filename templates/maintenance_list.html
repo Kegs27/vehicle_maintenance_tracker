@@ -683,14 +683,14 @@
                             </div>
                             <div class="col-6 col-md-3">
                                 <div class="border-end border-md-end">
-                                    <h5 class="text-warning mb-1">${{ "%.2f"|format(summary.total_cost) }}</h5>
+                                    <h5 class="text-warning mb-1">${{ "%.2f"|format(summary.total_cost or 0) }}</h5>
                                     <small class="text-muted d-none d-md-inline">Total Cost</small>
                                     <small class="text-muted d-inline d-md-none">Total Cost</small>
                                 </div>
                             </div>
                             <div class="col-6 col-md-3">
                                 <div>
-                                    <h5 class="text-secondary mb-1">${{ "%.2f"|format(summary.average_cost_per_record) }}</h5>
+                                    <h5 class="text-secondary mb-1">${{ "%.2f"|format(summary.average_cost_per_record or 0) }}</h5>
                                     <small class="text-muted d-none d-md-inline">Avg. Cost/Record</small>
                                     <small class="text-muted d-inline d-md-none">Avg. Cost</small>
                                 </div>
@@ -792,7 +792,11 @@
                                             <span class="badge bg-primary">{{ future_record.maintenance_type }}</span>
                                         </td>
                                         <td class="text-center">
-                                            <span class="fw-semibold">{{ "{:,}".format(future_record.target_mileage) }} mi</span>
+                                            {% if future_record.target_mileage is not none %}
+                                                <span class="fw-semibold">{{ "{:,}".format(future_record.target_mileage) }} mi</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
                                         </td>
                                         <td class="text-center">
                                             {% if future_record.target_date %}
@@ -1038,7 +1042,7 @@
                     <div class="maintenance-card-info">
                         <span class="icon-row">
                             <i class="fa-solid fa-gauge icon-s icon-base icon-subtle"></i>
-                            <span>{{ "{:,}".format(record.mileage) }} mi</span>
+                            <span>{% if record.mileage is not none %}{{ "{:,}".format(record.mileage) }} mi{% else %}<span class="text-muted">—</span>{% endif %}</span>
                         </span>
                     </div>
                     <div class="maintenance-card-info">
@@ -1129,7 +1133,7 @@
                     <div class="maintenance-card-info">
                         <span class="icon-row">
                             <i class="fa-solid fa-gauge icon-s icon-base icon-subtle"></i>
-                            <span>{{ "{:,}".format(future_record.target_mileage) }} mi</span>
+                            <span>{% if future_record.target_mileage is not none %}{{ "{:,}".format(future_record.target_mileage) }} mi{% else %}<span class="text-muted">—</span>{% endif %}</span>
                         </span>
                     </div>
                 </div>
